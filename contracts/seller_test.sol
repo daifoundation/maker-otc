@@ -8,8 +8,8 @@ contract AtomicSellerTest is Test
     MakerUserTester user1;
     AtomicSeller otc;
     function setUp() {
-        otc = new AtomicSeller(_maker_tokens);
-        user1 = new MakerUserTester(_maker_tokens);
+        otc = new AtomicSeller(_M);
+        user1 = new MakerUserTester(_M);
         user1._target(otc);
         transfer(user1, 100, "DAI");
         user1.doApprove(otc, 100, "DAI");
