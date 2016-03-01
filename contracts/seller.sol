@@ -8,7 +8,7 @@ import 'makeruser/user.sol';
 contract ItemUpdateEvent {
     event ItemUpdate( uint id );
 }
-contract AtomicSeller is MakerUserGeneric, ItemUpdateEvent {
+contract AtomicSeller is MakerUser, ItemUpdateEvent {
     struct OfferInfo {
         uint sell_how_much;
         bytes32 sell_which_token;
@@ -20,8 +20,8 @@ contract AtomicSeller is MakerUserGeneric, ItemUpdateEvent {
     uint public last_offer_id;
     mapping( uint => OfferInfo ) _offers;
 
-    function AtomicSeller( MakerTokenRegistry reg )
-             MakerUserGeneric( reg )
+    function AtomicSeller( MakerUserLinkType registry )
+             MakerUser( registry )
     {
     }
     
@@ -66,3 +66,6 @@ contract AtomicSeller is MakerUserGeneric, ItemUpdateEvent {
         }
     }
 }
+
+contract AtomicSellerMainnet is AtomicSeller(MakerUserLinkType(0x0)) {}
+contract AtomicSellerMorden is AtomicSeller(MakerUserLinkType(0x1)) {}
