@@ -1,3 +1,6 @@
 [submodule "dapple_packages/makeruser"]
 	path = dapple_packages/makeruser
 	url = https://github.com/makerdao/makeruser
+[submodule "dapple_packages/dappsys"]
+	path = dapple_packages/dappsys
+	url = https://github.com/nexusdev/dappsys
