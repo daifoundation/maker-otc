@@ -1,0 +1,89 @@
+* { font: inherit; margin: 0; padding: 0 }
+* { outline: none }
+* { box-sizing: border-box }
+
+body { padding: 1rem }
+body { padding-bottom: 3rem }
+body { max-width: 20rem }
+body { font-family: sans-serif }
+body { line-height: 1rem }
+body { font-size: .8rem }
+body { margin: auto }
+
+h1, h2 { color: #546979 }
+h1, h2 { line-height: 2rem }
+h1, h2 { margin-top: 1rem }
+
+h1 { text-align: center }
+h1 { font-size: 1.5rem }
+h1 img { width: 8rem }
+h1 img { margin-left: 1rem }
+h1 span { position: relative }
+h1 span { top: -.55rem }
+h1 span { left: -1.25rem }
+
+h2 { border-top: .1rem solid currentcolor }
+h2 { font-weight: bold }
+h2 span { font-size: .6rem }
+h2 span { font-weight: normal }
+h2 span { margin-left: .5rem }
+h2 span { color: gray }
+
+p { max-width: 30rem }
+
+table { border-collapse: collapse }
+table { width: 100% }
+th { text-transform: uppercase }
+th { font-size: .6rem }
+td, th { padding: .2rem }
+
+small { color: lightgray }
+.o td { text-align: right }
+.o th { text-align: right }
+.o th { color: gray }
+.o th:first-child { text-align: left }
+.o td:nth-child(2) { text-align: left }
+.o tbody tr { cursor: pointer }
+.o tbody tr:hover { background: #eee }
+
+form th { text-align: right }
+form th { padding: .2rem 1rem }
+form th { color: gray }
+form tfoot td { text-align: right }
+form tfoot td { padding-top: 1rem }
+
+.radios label { display: inline-block }
+.radios label { width: 5rem }
+[type=radio] { vertical-align: middle }
+[type=radio] { margin-right: .2rem }
+[type=radio] { margin-top: -.2rem }
+[type=number] { width: 8rem }
+
+button { border: .075rem solid currentcolor }
+button { background: none }
+button { padding: .1rem .8rem }
+button { color: #546979 }
+button { text-transform: uppercase }
+button { font-size: .6rem }
+button { border-radius: .2rem }
+button { cursor: pointer }
+button:hover { background: #546979 }
+button:hover { color: white }
+
+.input { border: none }
+.input { border-bottom: .075rem solid #546979 }
+.input { background: none }
+.input { padding: .1rem 0rem }
+.input { text-transform: uppercase }
+
+@media (min-width: 640px)
+{ :root { font-size: 20pt } }
+
+@media (min-width: 1280px) {
+body { max-width: 40rem }
+h1 { text-align: left }
+h1 img { margin-left: -1.2rem }
+.o { overflow: hidden }
+section { float: right; width: 48% }
+section:first-of-type { float: left }
+}
