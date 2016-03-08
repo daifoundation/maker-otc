@@ -1,14 +1,14 @@
 import 'makeruser/user_test.sol';
 import 'seller.sol';
 
-contract AtomicSellerTest is Test
+contract AtomicTradeTest is Test
                            , MakerUserGeneric(new MakerUserMockRegistry())
                            , ItemUpdateEvent
 {
     MakerUserTester user1;
-    AtomicSeller otc;
+    AtomicTrade otc;
     function setUp() {
-        otc = new AtomicSeller(_M);
+        otc = new AtomicTrade(_M);
         user1 = new MakerUserTester(_M);
         user1._target(otc);
         transfer(user1, 100, "DAI");
@@ -23,7 +23,7 @@ contract AtomicSellerTest is Test
         var user1_dai_balance_before = balanceOf(user1, "DAI");
 
         var id = otc.offer( 30, "MKR", 100, "DAI" );
-        AtomicSeller(user1).buy(id);
+        AtomicTrade(user1).buy(id);
         var my_mkr_balance_after = balanceOf(this, "MKR");
         var my_dai_balance_after = balanceOf(this, "DAI");
         var user1_mkr_balance_after = balanceOf(user1, "MKR");
@@ -58,7 +58,7 @@ contract AtomicSellerTest is Test
         user1.doApprove(otc, 101, "DAI");
         log_named_uint("user1 dai allowance", allowance(user1, otc, "DAI"));
         log_named_uint("user1 dai balance before", balanceOf(user1, "DAI"));
-        AtomicSeller(user1).buy(id);
+        AtomicTrade(user1).buy(id);
         log_named_uint("user1 dai allowance", allowance(user1, otc, "DAI"));
         log_named_uint("user1 dai balance after", balanceOf(user1,"DAI"));
     }
@@ -69,7 +69,7 @@ contract AtomicSellerTest is Test
         user1.doApprove(otc, 99, "DAI");
         log_named_uint("user1 dai allowance", allowance(user1, otc, "DAI"));
         log_named_uint("user1 dai balance before", balanceOf(user1, "DAI"));
-        AtomicSeller(user1).buy(id);
+        AtomicTrade(user1).buy(id);
         log_named_uint("user1 dai allowance", allowance(user1, otc, "DAI"));
         log_named_uint("user1 dai balance after", balanceOf(user1,"DAI"));
     }

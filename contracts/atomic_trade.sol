@@ -3,12 +3,11 @@ import 'makeruser/user.sol';
 
 // A simple direct exchange order manager.
 // Orders cannot be partially filled.
-// Buy/sell function auto-deposits to the ETH token wrapper if msg.value equals deposit amount.
 
 contract ItemUpdateEvent {
     event ItemUpdate( uint id );
 }
-contract AtomicSeller is MakerUser, ItemUpdateEvent {
+contract AtomicTrade is MakerUser, ItemUpdateEvent {
     struct OfferInfo {
         uint sell_how_much;
         bytes32 sell_which_token;
@@ -18,9 +17,9 @@ contract AtomicSeller is MakerUser, ItemUpdateEvent {
         bool active;
     }
     uint public last_offer_id;
-    mapping( uint => OfferInfo ) _offers;
+    mapping( uint => OfferInfo ) public offers;
 
-    function AtomicSeller( MakerUserLinkType registry )
+    function AtomicTrade( MakerUserLinkType registry )
              MakerUser( registry )
     {
     }
@@ -42,24 +41,24 @@ contract AtomicSeller is MakerUser, ItemUpdateEvent {
         info.owner = msg.sender;
         info.active = true;
         id = next_id();
-        _offers[id] = info;
+        offers[id] = info;
         ItemUpdate(id);
         return id;
     }
     function buy( uint id )
     {
-        var offer = _offers[id];
+        var offer = offers[id];
         transferFrom( msg.sender, offer.owner, offer.buy_how_much, offer.buy_which_token );
         transfer( msg.sender, offer.sell_how_much, offer.sell_which_token );
-        delete _offers[id];
+        delete offers[id];
         ItemUpdate(id);
     }
     function cancel( uint id )
     {
-        var offer = _offers[id];
+        var offer = offers[id];
         if( msg.sender == offer.owner ) {
             transfer( msg.sender, offer.sell_how_much, offer.sell_which_token );
-            delete _offers[id];
+            delete offers[id];
             ItemUpdate(id);
         } else {
             throw;
@@ -67,5 +66,5 @@ contract AtomicSeller is MakerUser, ItemUpdateEvent {
     }
 }
 
-contract AtomicSellerMainnet is AtomicSeller(MakerUserLinkType(0x0)) {}
-contract AtomicSellerMorden is AtomicSeller(MakerUserLinkType(0x1)) {}
+contract AtomicTradeMainnet is AtomicTrade(MakerUserLinkType(0x0)) {}
+contract AtomicTradeMorden is AtomicTrade(MakerUserLinkType(0x1)) {}
