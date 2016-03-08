@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang=en>
+<meta charset=utf8>
+<link rel=stylesheet href=index.css>
+<h1>
+<img
+alt=Maker
+src=https://makerdao.com/splash/images/logo.svg>
+<span>#otc</span>
+</h1>
+<p>
+
+This is a simple on-chain OTC market for MKR.
+Either pick an order below
+(in which case delivery will happen instantly),
+or <a href=#>submit a new order</a>.
+
+<div class=o>
+<section>
+<h2>Buy orders
+<span>(pick one to sell MKR)</span>
+</h2>
+<table>
+<thead>
+<tr>
+<th>Bid
+<th>
+<th>Value
+<th>Volume
+<tbody>
+<tr>
+<td>0.85<small>0000</small>
+<td>ETH
+<td>~$8.02
+<td>30<small>.00000</small> MKR
+<tr>
+<td>0.79<small>0000</small>
+<td>ETH
+<td>~$7.85
+<td>7<small>.00000</small> MKR
+<tr>
+<td>6.86<small>0000</small>
+<td>DAI
+<td>~$6.82
+<td>150<small>.00000</small> MKR
+<tr>
+<td>6.50<small>0000</small>
+<td>DAI
+<td>~$6.43
+<td>200<small>.00000</small> MKR
+</table>
+</section>
+<section>
+<h2>Sell orders
+<span>(pick one to buy MKR)</span>
+</h2>
+<table>
+<tr>
+<thead>
+<th>Ask
+<th>
+<th>Value
+<th>Volume
+<tbody>
+<tr>
+<td>1.05<small>0000</small>
+<td>ETH
+<td>~$10.85
+<td>120<small>.00000</small> MKR
+<tr>
+<td>1.53<small>0000</small>
+<td>ETH
+<td>~$14.85
+<td>200<small>.00000</small> MKR
+<tr>
+<td>2.00<small>0000</small>
+<td>ETH
+<td>~$19.87
+<td>300<small>.00000</small> MKR
+</table>
+</section>
+</div>
+
+<div>
+<section>
+<form>
+<h2>New order</h2>
+<div>
+<table>
+<tr>
+<th><label>Order type</label>
+<td>
+<div class=radios>
+<label>
+<input name=ordertype type=radio checked>
+Buy MKR</label>
+<label>
+<input name=ordertype type=radio>
+Sell MKR</label>
+</div>
+<tr>
+<th><label>Bid currency</label>
+<td>
+<div class=radios>
+<label>
+<input name=currency type=radio checked>
+ETH</label>
+<label>
+<input name=currency type=radio>
+DAI</label>
+</div>
+<tr>
+<th><label>Bid (in ETH)</label>
+<td>
+<input type=number class=input value=0>
+<tfoot>
+<tr>
+<th>
+<td>
+<button>Submit order</button>
+</table>
+</form>
+</section>
+</div>
