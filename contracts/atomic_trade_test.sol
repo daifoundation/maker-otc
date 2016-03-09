@@ -1,5 +1,5 @@
 import 'makeruser/user_test.sol';
-import 'seller.sol';
+import 'atomic_trade.sol';
 
 contract AtomicTradeTest is Test
                            , MakerUserGeneric(new MakerUserMockRegistry())
