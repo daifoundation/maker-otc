@@ -1,0 +1,8 @@
+{
+  "name": "Maker-OTC",
+  "scripts" : {
+    "deploy": "dapple run deploy.ds",
+    "blockchain" : "./scripts/blockchain/start-blockchain.sh",
+    "attach" : "geth attach ipc://$PWD/scripts/blockchain/tmp/geth.ipc"
+  }
+}

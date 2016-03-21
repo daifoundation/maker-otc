@@ -6,3 +6,9 @@ layout:
 dependencies:
   makeruser: 0.1.0
   dappsys: 1.0.1
+environments:
+  default:
+    objects:
+      otc:
+        class: AtomicTrade
+        address: '0xc5eb57ecd106ba9eb8453774ebe76b1ee44284b4'
