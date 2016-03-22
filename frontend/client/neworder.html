@@ -10,35 +10,67 @@
                 <label>Order type</label>
               </th>
               <td>
-                <div class="radios">
+                <div class="radios ordertype">
                   <label>
-                    <input name="ordertype" type="radio" checked=""> Buy {{baseCurrency}}</label>
+                    <input name="ordertype" type="radio" value="buy" {{checked_eq ordertype "buy"}}> Buy {{baseCurrency}}</label>
                   <label>
-                    <input name="ordertype" type="radio"> Sell {{baseCurrency}}</label>
+                    <input name="ordertype" type="radio" value="sell" {{checked_eq ordertype "sell"}}> Sell {{baseCurrency}}</label>
                 </div>
               </td>
             </tr>
             <tr>
               <th>
-                <label>Bid currency</label>
+                <label>
+                  {{#if equals ordertype "buy"}}
+                  Bid
+                  {{else}}
+                  Ask
+                  {{/if}}
+                  currency
+                </label>
               </th>
               <td>
-                <div class="radios">
+                <div class="radios currency">
                   <label>
-                    <input name="currency" type="radio" checked=""> ETH
+                    <input name="currency" type="radio" value="ETH" {{checked_eq currency "ETH"}}> ETH
                   </label>
                   <label>
-                    <input name="currency" type="radio"> DAI
+                    <input name="currency" type="radio" value="DAI" {{checked_eq currency "DAI"}}> DAI
                   </label>
                 </div>
               </td>
             </tr>
             <tr>
               <th>
-                <label>Bid (in ETH)</label>
+                <label>
+                  {{#if equals ordertype "buy"}}
+                  Bid
+                  {{else}}
+                  Ask
+                  {{/if}}
+                  Price (in {{currency}})</label>
               </th>
               <td>
-                <input type="number" class="input" value="0">
+                <input type="number" class="input price" name="price" value="{{price}}">
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <label>
+                  Amount
+                  (in {{baseCurrency}})</label>
+              </th>
+              <td>
+                <input type="number" class="input amount" name="amount" value="{{amount}}">
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <label>
+                  Total (in {{currency}})</label>
+              </th>
+              <td>
+                <input type="number" class="input total" name="total" value="{{total}}">
               </td>
             </tr>
           </tbody>
@@ -47,7 +79,7 @@
               <th>
               </th>
               <td>
-                <button>Submit order</button>
+                <button id="submitorder">Submit order</button>
               </td>
             </tr>
           </tfoot>
