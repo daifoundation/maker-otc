@@ -16,17 +16,3 @@
     </thead>
   </table>
 </template>
-
-<template name="orderRow">
-  <tr>
-    <td>{{formatPrice order.price}}</td>
-    <td>{{order.currency}}</td>
-    <td>~{{order.value}}</td>
-    <td>{{order.volume}} {{baseCurrency}}</td>
-    <td>
-      {{#if order.editable}}
-      [<a href="#">x</a>]
-      {{/if}}
-    </td>
-  </tr>
-</template>
