@@ -39,9 +39,9 @@ var sellOrders = [{
 
 Template.orderbook.helpers({
   buyOrders: function () {
-    return buyOrders
+    return Offers.find({type: "bid"})
   },
   sellOrders: function () {
-    return sellOrders
+    return Offers.find({type: "ask"})
   }
 })
