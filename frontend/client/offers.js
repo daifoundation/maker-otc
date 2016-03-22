@@ -17,26 +17,27 @@ function updateOffer(id) {
   var active = data[5]
   var editable = (owner === web3.eth.accounts[0])
 
+  var baseOffer = {
+    _id: idx,
+    owner: owner,
+    editable: editable
+  }
   if (sell_which_token === BASE_CURRENCY) {
-    Offers.insert({
-      _id: idx,
+    var sellOffer = _.extend(baseOffer, {
       type: "ask",
       currency: buy_which_token,
       volume: sell_how_much,
-      price: buy_how_much / sell_how_much,
-      owner: owner,
-      editable: editable
+      price: buy_how_much / sell_how_much
     })
+    Offers.insert(sellOffer)
   } else if (buy_which_token === BASE_CURRENCY) {
-    Offers.insert({
-      _id: idx,
+    var buyOffer = _.extend(baseOffer, {
       type: "bid",
       currency: sell_which_token,
       volume: buy_how_much,
-      price: sell_how_much / buy_how_much,
-      owner: owner,
-      editable: editable
+      price: sell_how_much / buy_how_much
     })
+    Offers.insert(buyOffer)
   } else {
     Offers.remove({_id: idx})
   }
