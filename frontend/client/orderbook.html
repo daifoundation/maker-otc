@@ -2,7 +2,7 @@
   <div class=o>
     <section>
       <h2>Buy orders
-        <span>(pick one to sell MKR)</span>
+        <span>(pick one to sell {{baseCurrency}})</span>
       </h2>
       <div id=buy-orders>
         {{> orders orders=buyOrders priceLabel="Bid"}}
@@ -10,7 +10,7 @@
     </section>
     <section>
       <h2>Sell orders
-        <span>(pick one to buy MKR)</span>
+        <span>(pick one to buy {{baseCurrency}})</span>
       </h2>
       <div id=sell-orders>
         {{> orders orders=sellOrders priceLabel="Ask"}}
