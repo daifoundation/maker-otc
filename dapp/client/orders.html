@@ -1,0 +1,26 @@
+<template name="orders">
+  <table>
+    <thead>
+      <tr>
+        <th>{{priceLabel}}</th>
+        <th></th>
+        <th>Value</th>
+        <th>Volume</th>
+      </tr>
+    </thead>
+    <thead>
+      {{#each orders}}
+        {{> orderRow order=this}}
+      {{/each}}
+    </thead>
+  </table>
+</template>
+
+<template name="orderRow">
+  <tr>
+    <td>{{order.price}}</td>
+    <td>{{order.currency}}</td>
+    <td>~{{order.value}}</td>
+    <td>{{order.volume}} MKR</td>
+  </tr>
+</template>

@@ -1,0 +1,58 @@
+<template name="neworder">
+  <section id="neworder">
+    <form>
+      <h2>New order</h2>
+      <div>
+        <table>
+          <tbody>
+            <tr>
+              <th>
+                <label>Order type</label>
+              </th>
+              <td>
+                <div class="radios">
+                  <label>
+                    <input name="ordertype" type="radio" checked=""> Buy MKR</label>
+                  <label>
+                    <input name="ordertype" type="radio"> Sell MKR</label>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <label>Bid currency</label>
+              </th>
+              <td>
+                <div class="radios">
+                  <label>
+                    <input name="currency" type="radio" checked=""> ETH
+                  </label>
+                  <label>
+                    <input name="currency" type="radio"> DAI
+                  </label>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <label>Bid (in ETH)</label>
+              </th>
+              <td>
+                <input type="number" class="input" value="0">
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <th>
+              </th>
+              <td>
+                <button>Submit order</button>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </form>
+  </section>
+</template>
