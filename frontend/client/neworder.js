@@ -33,18 +33,25 @@ Template.neworder.events({
   },
   'change .price, keyup .price, mouseup .price': function () {
     var price = $('input[name="price"]').val()
+    var amount = Session.get("amount")
     Session.set("price", price)
-    Session.set("total", Session.get("amount") * price)
+    Session.set("total", amount * price)
   },
   'change .amount, keyup .amount, mouseup .amount': function () {
     var amount = $('input[name="amount"]').val()
+    var price = Session.get("price")
     Session.set("amount", amount)
-    Session.set("total", amount * Session.get("price"))
+    Session.set("total", amount * price)
   },
   'change .total, keyup .total, mouseup .total': function () {
     var total = $('input[name="total"]').val()
+    var price = Session.get("price")
     Session.set("total", total)
-    Session.set("amount", total / Session.get("price"))
+    if (price > 0) {
+      Session.set("amount", total / price)
+    } else {
+      Session.set("amount", 0);
+    }
   },
   'click #submitorder': function () {
     event.preventDefault()
