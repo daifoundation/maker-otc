@@ -6,6 +6,7 @@
         <th></th>
         <th>Value</th>
         <th>Volume</th>
+        <th></th>
       </tr>
     </thead>
     <thead>
@@ -18,9 +19,14 @@
 
 <template name="orderRow">
   <tr>
-    <td>{{order.price}}</td>
+    <td>{{formatPrice order.price}}</td>
     <td>{{order.currency}}</td>
     <td>~{{order.value}}</td>
     <td>{{order.volume}} MKR</td>
+    <td>
+      {{#if order.editable}}
+      [<a href="#">x</a>]
+      {{/if}}
+    </td>
   </tr>
 </template>
