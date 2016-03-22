@@ -2,7 +2,7 @@ name: maker-otc
 version: 0.1.0
 layout:
   sol_sources: contracts
-  build_dir: dapp/packages/dapple/build
+  build_dir: frontend/packages/dapple/build
 dependencies:
   makeruser: 0.1.0
   dappsys: 1.0.1
