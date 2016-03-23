@@ -45,6 +45,8 @@ small { color: lightgray }
 .o td:nth-child(2) { text-align: left }
 .o tbody tr { cursor: pointer }
 .o tbody tr:hover { background: #eee }
+.o tbody tr.cancelled { background: #ff0 }
+.o tbody tr.pending { background: #0f0 }
 
 form th { text-align: right }
 form th { padding: .2rem 1rem }

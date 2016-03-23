@@ -1,5 +1,5 @@
 <template name="orderRow">
-  <tr>
+  <tr class="{{#if order.cancelled}}cancelled{{/if}}">
     <td>{{formatNumber order.price}}</td>
     <td>{{order.currency}}</td>
     <td>~{{formatNumber order.value}}</td>
