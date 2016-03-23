@@ -1,13 +1,14 @@
 // console.log('package-pre-init start')
 dapple = {}
-web3 = new Web3()
 
-// TODO mist integration
-var providerUrl = 'http://localhost:8545'
-
-// connect to local node
-web3.setProvider(new web3.providers.HttpProvider(providerUrl))
+if(typeof web3 !== 'undefined') {
+  web3 = new Web3(web3.currentProvider)
+} else {
+  web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"))
+}
 
 // TODO select address
-web3.eth.defaultAccount = web3.eth.accounts[0]
+if(typeof web3.eth.defaultAccount === 'undefined') {
+  web3.eth.defaultAccount = web3.eth.accounts[0]
+}
 // console.log('package-pre-init done')
