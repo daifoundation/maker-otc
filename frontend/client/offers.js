@@ -9,9 +9,9 @@ function formattedString(str) {
 function updateOffer(id) {
   var data = MakerOTC.offers(id)
   var idx = id.toString()
-  var sell_how_much = data[0].toNumber()
+  var sell_how_much = data[0]
   var sell_which_token = formattedString(data[1])
-  var buy_how_much = data[2].toNumber()
+  var buy_how_much = data[2]
   var buy_which_token = formattedString(data[3])
   var owner = data[4]
   var active = data[5]
@@ -26,16 +26,16 @@ function updateOffer(id) {
     var sellOffer = _.extend(baseOffer, {
       type: "ask",
       currency: buy_which_token,
-      volume: sell_how_much,
-      price: buy_how_much / sell_how_much
+      volume: sell_how_much.toString(),
+      price: buy_how_much.dividedBy(sell_how_much).toString()
     })
     Offers.insert(sellOffer)
   } else if (buy_which_token === BASE_CURRENCY) {
     var buyOffer = _.extend(baseOffer, {
       type: "bid",
       currency: sell_which_token,
-      volume: buy_how_much,
-      price: sell_how_much / buy_how_much
+      volume: buy_how_much.toString(),
+      price: sell_how_much.dividedBy(buy_how_much).toString()
     })
     Offers.insert(buyOffer)
   } else {

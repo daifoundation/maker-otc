@@ -1,9 +1,9 @@
 <template name="orderRow">
   <tr>
-    <td>{{formatPrice order.price}}</td>
+    <td>{{formatNumber order.price}}</td>
     <td>{{order.currency}}</td>
-    <td>~{{order.value}}</td>
-    <td>{{order.volume}} {{baseCurrency}}</td>
+    <td>~{{formatNumber order.value}}</td>
+    <td>{{formatNumber order.volume}} {{baseCurrency}}</td>
     <td>
       {{#if order.editable}}
       [<a href="#" class="cancel">x</a>]
