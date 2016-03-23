@@ -67,9 +67,7 @@ Template.neworder.events({
       buy_how_much = Session.get("total")
       buy_which_token = Session.get("currency")
     }
-    var offerTx = MakerOTC.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token, {gas: 300000})
-    console.log("offer!", offerTx, sell_how_much, sell_which_token, buy_how_much, buy_which_token)
-    // TODO pending offer
+    Offers.newOffer(sell_how_much, sell_which_token, buy_how_much, buy_which_token)
     return false
   }
 })

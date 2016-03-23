@@ -1,11 +1,11 @@
 <template name="orderRow">
-  <tr class="{{#if order.cancelled}}cancelled{{/if}}">
-    <td>{{formatNumber order.price}}</td>
-    <td>{{order.currency}}</td>
-    <td>~{{formatNumber order.value}}</td>
-    <td>{{formatNumber order.volume}} {{baseCurrency}}</td>
+  <tr class="{{order.status}}">
+    <td class="buy">{{formatNumber order.price}}</td>
+    <td class="buy">{{order.currency}}</td>
+    <td class="buy">~{{formatNumber order.value}}</td>
+    <td class="buy"> {{formatNumber order.volume}} {{baseCurrency}}</td>
     <td>
-      {{#if order.editable}}
+      {{#if order.canCancel}}
       [<a href="#" class="cancel">x</a>]
       {{/if}}
     </td>
