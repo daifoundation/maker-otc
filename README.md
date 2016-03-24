@@ -51,7 +51,7 @@ To run the frontend, start meteor:
 cd frontend && meteor
 ```
 
-You can access the user interface on http://localhost:3000/
+You can access the user interface on [http://localhost:3000/](http://localhost:3000/)
 
 If you find that dapple is deploying to EVM rather than than geth, please modify `~/.dapplerc`:
 
@@ -79,8 +79,6 @@ environments:
 ```
 
 ## Acknowledgements
-```
-- Atomic Trade contract by [Nikolai Mushegian](https://github.com/nmushegian)
-- User interface design by [Daniel Brockman](https://github.com/dbrock)
-- Blockchain Script by [Chris Hitchcott](https://github.com/hitchcott)
-```
+* Atomic Trade contract by [Nikolai Mushegian](https://github.com/nmushegian)
+* User interface design by [Daniel Brockman](https://github.com/dbrock)
+* Blockchain Script by [Chris Hitchcott](https://github.com/hitchcott)
