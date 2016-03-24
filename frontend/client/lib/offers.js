@@ -56,7 +56,7 @@ Offers.updateOffer = function(idx, sell_how_much, sell_which_token, buy_how_much
       type: "ask",
       currency: buy_which_token,
       volume: sell_how_much.toString(),
-      price: buy_how_much.dividedBy(sell_how_much).toString()
+      price: web3.toWei(buy_how_much.dividedBy(sell_how_much)).toString()
     })
     Offers.upsert(idx, {$set: sellOffer})
   } else if (buy_which_token === BASE_CURRENCY) {
@@ -64,7 +64,7 @@ Offers.updateOffer = function(idx, sell_how_much, sell_which_token, buy_how_much
       type: "bid",
       currency: sell_which_token,
       volume: buy_how_much.toString(),
-      price: sell_how_much.dividedBy(buy_how_much).toString()
+      price: web3.toWei(sell_how_much.dividedBy(buy_how_much)).toString()
     })
     Offers.upsert(idx, {$set: buyOffer})
   } else {

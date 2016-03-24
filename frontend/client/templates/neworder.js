@@ -64,14 +64,14 @@ Template.neworder.events({
     event.preventDefault()
     var sell_how_much, sell_which_token, buy_how_much, buy_which_token
     if (Session.get("ordertype") == "buy") {
-      sell_how_much = Session.get("total")
+      sell_how_much = web3.toWei(Session.get("total"))
       sell_which_token = Session.get("currency")
-      buy_how_much = Session.get("amount")
+      buy_how_much = web3.toWei(Session.get("amount"))
       buy_which_token = BASE_CURRENCY
     } else {
-      sell_how_much = Session.get("amount")
+      sell_how_much = web3.toWei(Session.get("amount"))
       sell_which_token = BASE_CURRENCY
-      buy_how_much = Session.get("total")
+      buy_how_much = web3.toWei(Session.get("total"))
       buy_which_token = Session.get("currency")
     }
     Offers.newOffer(sell_how_much, sell_which_token, buy_how_much, buy_which_token)

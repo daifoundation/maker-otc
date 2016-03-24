@@ -68,6 +68,7 @@ environments:
 
 ## TODOs
 ```
+- Use wei (10^18) denominations
 - USD Price estimation
 - MakerUser integration
 ```
