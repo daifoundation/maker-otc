@@ -20,6 +20,13 @@ Template.neworder.helpers({
   total: function () {
     return Session.get("total")
   },
+  buttonState: function () {
+    if (Session.get("price") > 0 && Session.get("amount") > 0 && Session.get("total") > 0) {
+      return ""
+    } else {
+      return "disabled"
+    }
+  }
 })
 
 Template.neworder.events({

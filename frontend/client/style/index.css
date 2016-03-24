@@ -70,8 +70,9 @@ button { text-transform: uppercase }
 button { font-size: .6rem }
 button { border-radius: .2rem }
 button { cursor: pointer }
-button:hover { background: #546979 }
-button:hover { color: white }
+button:hover:enabled  { background: #546979 }
+button:hover:enabled  { color: white }
+button:disabled { color: #eee }
 
 .input { border: none }
 .input { border-bottom: .075rem solid #546979 }
