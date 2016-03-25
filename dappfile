@@ -5,10 +5,10 @@ layout:
   build_dir: frontend/packages/dapple/build
 dependencies:
   makeruser: 0.1.0
-  dappsys: 1.0.1
+  dappsys: 0.1.2
 environments:
   default:
     objects:
       otc:
         class: AtomicTrade
-        address: '0x415217dfab391544d16e20107c5bf7020b63ed88'
+        address: '0x340e5d30401d8cf7b5e670f0b760dd6e4270a11f'
