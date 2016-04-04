@@ -60,7 +60,7 @@ Template.neworder.events({
       Session.set("amount", 0);
     }
   },
-  'click #submitorder': function () {
+  'click #submitorder': function (event) {
     event.preventDefault()
     var sell_how_much, sell_which_token, buy_how_much, buy_which_token
     if (Session.get("ordertype") == "buy") {
