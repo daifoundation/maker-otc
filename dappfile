@@ -4,11 +4,11 @@ layout:
   sol_sources: contracts
   build_dir: frontend/packages/dapple/build
 dependencies:
-  makeruser: 0.1.0
+  makeruser: 0.1.3
   dappsys: 0.1.2
 environments:
   default:
     objects:
       otc:
         class: AtomicTrade
-        address: '0x340e5d30401d8cf7b5e670f0b760dd6e4270a11f'
+        address: '0x8c0b5957b6828bebcdfdb46d2e4e9b945f0ea8b7'
