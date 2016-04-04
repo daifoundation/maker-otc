@@ -71,6 +71,10 @@ environments:
 - Use wei (10^18) denominations
 - USD Price estimation
 - MakerUser integration
+- Check that the contract actually exists
+- UI improvements to show actions as a label instead of with colors
+
+- Deploy to testnet
 ```
 
 ## Icebox
