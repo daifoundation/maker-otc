@@ -45,13 +45,23 @@ small { color: lightgray }
 .o td:nth-child(2) { text-align: left }
 .o tbody tr { cursor: pointer }
 .o tbody tr:hover { background: #eee }
-.o tbody tr.cancelled { background: #ff0 }
-.o tbody tr.pending { background: #0f0 }
-.o tbody tr.bought { background: #00f }
+.o tbody tr.cancelled { color: grey }
+.o tbody tr.cancelled td { position: relative }
+.o tbody tr.cancelled td:before { content: " " }
+.o tbody tr.cancelled td:before { position: absolute }
+.o tbody tr.cancelled td:before { bottom: 50% }
+.o tbody tr.cancelled td:before { left: 0 }
+.o tbody tr.cancelled td:before { border-bottom: 1px solid #333 }
+.o tbody tr.cancelled td:before { width: 100% }
+.o tbody tr.pending { color: grey }
+.o tbody tr.bought { font-weight: 600 }
+.o tbody tr.helper-row { color: grey }
+.o tbody tr.helper-row { font-size: smaller }
 
 form th { text-align: right }
 form th { padding: .2rem 1rem }
 form th { color: gray }
+form th { width: 50% }
 form tfoot td { text-align: right }
 form tfoot td { padding-top: 1rem }
 

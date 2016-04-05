@@ -5,7 +5,7 @@ Template.orderRow.events({
     Offers.cancelOffer(_id)
     return false
   },
-  'click .buy': function (event, template) {
+  'click .confirmed>.buy': function (event, template) {
     event.preventDefault()
     var _id = template.data.order._id
     console.log("BUY", _id)

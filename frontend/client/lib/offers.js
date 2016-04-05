@@ -75,9 +75,7 @@ Offers.updateOffer = function(idx, sell_how_much, sell_which_token, buy_how_much
 Offers.newOffer = function(sell_how_much, sell_which_token, buy_how_much, buy_which_token) {
   var offerTx = MakerOTC.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token, {gas: 300000})
   console.log("offer!", offerTx, sell_how_much, sell_which_token, buy_how_much, buy_which_token)
-  // TODO is this the best way to use idx?
-  var idx = MakerOTC.last_offer_id().toNumber() + 1
-  Offers.updateOffer(idx.toString(), sell_how_much, sell_which_token, buy_how_much, buy_which_token, web3.eth.defaultAccount, Status.PENDING)
+  Offers.updateOffer(offerTx, sell_how_much, sell_which_token, buy_how_much, buy_which_token, web3.eth.defaultAccount, Status.PENDING)
 }
 
 Offers.buyOffer = function(idx) {
@@ -106,6 +104,7 @@ Meteor.startup(function() {
       var id = result.args.id.toNumber();
       console.log("Offer updated", id, result);
       Offers.syncOffer(id)
+      Offers.remove(result.transactionHash)
     }
   });
 })
