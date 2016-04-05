@@ -12,9 +12,9 @@
               <td>
                 <div class="radios ordertype">
                   <label>
-                    <input name="ordertype" type="radio" value="buy" {{checked_eq ordertype "buy"}}> Buy {{baseCurrency}}</label>
+                    <input name="ordertype" type="radio" value="buy" checked={{equals ordertype "buy"}}> Buy {{baseCurrency}}</label>
                   <label>
-                    <input name="ordertype" type="radio" value="sell" {{checked_eq ordertype "sell"}}> Sell {{baseCurrency}}</label>
+                    <input name="ordertype" type="radio" value="sell" checked={{equals ordertype "sell"}}> Sell {{baseCurrency}}</label>
                 </div>
               </td>
             </tr>
@@ -32,10 +32,10 @@
               <td>
                 <div class="radios currency">
                   <label>
-                    <input name="currency" type="radio" value="ETH" {{checked_eq currency "ETH"}}> ETH
+                    <input name="currency" type="radio" value="ETH" checked={{equals currency "ETH"}}> ETH
                   </label>
                   <label>
-                    <input name="currency" type="radio" value="DAI" {{checked_eq currency "DAI"}}> DAI
+                    <input name="currency" type="radio" value="DAI" checked={{equals currency "DAI"}}> DAI
                   </label>
                 </div>
               </td>
