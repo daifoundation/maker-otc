@@ -16,4 +16,4 @@ environments:
     objects:
       otc:
         class: AtomicTrade
-        address: '0x80c2ab485a68a2115e6ac55adc40562cf37541e3'
+        address: '0x0670294fa6899264b37af7709ad1f192084e5309'
