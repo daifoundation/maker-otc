@@ -45,6 +45,7 @@ small { color: lightgray }
 .o td:nth-child(2) { text-align: left }
 .o tbody tr { cursor: pointer }
 .o tbody tr:hover { background: #eee }
+.o tbody tr:hover+tr.helper-row { background: #eee }
 .o tbody tr.cancelled { color: grey }
 .o tbody tr.cancelled td { position: relative }
 .o tbody tr.cancelled td:before { content: " " }

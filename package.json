@@ -5,5 +5,33 @@
     "build": "dapple build --global=dapple",
     "blockchain" : "./scripts/blockchain/start-blockchain.sh",
     "attach" : "geth attach ipc://$PWD/scripts/blockchain/tmp/geth.ipc"
+  },
+  "devDependencies": {
+    "babel-eslint": "5.0.0",
+    "standard": "6.0.7"
+  },
+  "standard": {
+    "parser": "babel-eslint",
+    "globals": [
+      "Meteor",
+      "Session",
+      "Template",
+      "EthTools",
+      "MakerOTC",
+      "BigNumber",
+      "web3",
+      "Spacebars",
+      "Offers",
+      "Status",
+      "BASE_CURRENCY",
+      "$",
+      "_"
+    ],
+    "ignore": [
+      "dapple_packages/**",
+      "frontent/.meteor/**",
+      "frontend/packages/**",
+      "scripts/**"
+    ]
   }
 }

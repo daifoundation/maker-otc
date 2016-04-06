@@ -8,7 +8,7 @@ Template.orderRow.events({
   'click .confirmed>.buy': function (event, template) {
     event.preventDefault()
     var _id = template.data.order._id
-    console.log("BUY", _id)
+    console.log('BUY', _id)
     Offers.buyOffer(_id)
     return false
   }
