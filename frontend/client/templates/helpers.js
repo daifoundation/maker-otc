@@ -1,3 +1,8 @@
+Template.registerHelper('contractExists', function () {
+  var code = web3.eth.getCode(MakerOTC.address)
+  return typeof code === 'string' && code !== '' && code !== '0x'
+})
+
 Template.registerHelper('baseCurrency', function (value) {
   return BASE_CURRENCY
 })
