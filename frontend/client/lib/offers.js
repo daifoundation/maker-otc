@@ -1,7 +1,7 @@
-Offers = new Meteor.Collection(null)
+this.Offers = new Meteor.Collection(null)
 
-BASE_CURRENCY = 'MKR'
-Status = {
+this.BASE_CURRENCY = 'MKR'
+this.Status = {
   PENDING: 'pending',
   CONFIRMED: 'confirmed',
   CANCELLED: 'cancelled',
