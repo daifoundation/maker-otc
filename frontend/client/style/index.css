@@ -30,6 +30,7 @@ h2 span { margin-left: .5rem }
 h2 span { color: gray }
 
 p { max-width: 30rem }
+p { margin: 0 0 10px }
 
 table { border-collapse: collapse }
 table { width: 100% }
@@ -45,10 +46,24 @@ small { color: lightgray }
 .o td:nth-child(2) { text-align: left }
 .o tbody tr { cursor: pointer }
 .o tbody tr:hover { background: #eee }
+.o tbody tr:hover+tr.helper-row { background: #eee }
+.o tbody tr.cancelled { color: grey }
+.o tbody tr.cancelled td { position: relative }
+.o tbody tr.cancelled td:before { content: " " }
+.o tbody tr.cancelled td:before { position: absolute }
+.o tbody tr.cancelled td:before { bottom: 50% }
+.o tbody tr.cancelled td:before { left: 0 }
+.o tbody tr.cancelled td:before { border-bottom: 1px solid #333 }
+.o tbody tr.cancelled td:before { width: 100% }
+.o tbody tr.pending { color: grey }
+.o tbody tr.bought { font-weight: 600 }
+.o tbody tr.helper-row { color: grey }
+.o tbody tr.helper-row { font-size: smaller }
 
 form th { text-align: right }
 form th { padding: .2rem 1rem }
 form th { color: gray }
+form th { width: 50% }
 form tfoot td { text-align: right }
 form tfoot td { padding-top: 1rem }
 
@@ -67,8 +82,9 @@ button { text-transform: uppercase }
 button { font-size: .6rem }
 button { border-radius: .2rem }
 button { cursor: pointer }
-button:hover { background: #546979 }
-button:hover { color: white }
+button:hover:enabled  { background: #546979 }
+button:hover:enabled  { color: white }
+button:disabled { color: #eee }
 
 .input { border: none }
 .input { border-bottom: .075rem solid #546979 }

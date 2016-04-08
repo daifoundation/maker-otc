@@ -1,1 +1,5 @@
+*.sw*
+scripts/blockchain/tmp
 build
+npm-debug.log
+nohup.out

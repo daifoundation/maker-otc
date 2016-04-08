@@ -1,0 +1,28 @@
+<template name="orderRow">
+  <tr class="{{order.status}}">
+    <td class="buy">{{formatBalance order.price}}</td>
+    <td class="buy">{{order.currency}}</td>
+    <td class="buy">~{{formatPrice order}}</td>
+    <td class="buy"> {{formatBalance order.volume}} {{baseCurrency}}</td>
+    <td>
+      {{#if order.canCancel}}
+      [<a href="#" class="cancel">x</a>]
+      {{/if}}
+    </td>
+  </tr>
+  {{#if equals order.status 'pending'}}
+  <tr class="helper-row">
+    <td colspan="5">Your new order is being placed...</td>
+  </tr>
+  {{/if}}
+  {{#if equals order.status 'cancelled'}}
+  <tr class="helper-row">
+    <td colspan="5">Your order is being cancelled...</td>
+  </tr>
+  {{/if}}
+  {{#if equals order.status 'bought'}}
+  <tr class="helper-row">
+    <td colspan="5">Your buy / sell order is being processed...</td>
+  </tr>
+  {{/if}}
+</template>

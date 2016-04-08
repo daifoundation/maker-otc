@@ -1,0 +1,90 @@
+<template name="neworder">
+  <section id="neworder">
+    <form>
+      <h2>New order</h2>
+      <div>
+        <table>
+          <tbody>
+            <tr>
+              <th>
+                <label>Order type</label>
+              </th>
+              <td>
+                <div class="radios ordertype">
+                  <label>
+                    <input name="ordertype" type="radio" value="buy" checked={{equals ordertype "buy"}}> Buy {{baseCurrency}}</label>
+                  <label>
+                    <input name="ordertype" type="radio" value="sell" checked={{equals ordertype "sell"}}> Sell {{baseCurrency}}</label>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <label>
+                  {{#if equals ordertype "buy"}}
+                  Bid
+                  {{else}}
+                  Ask
+                  {{/if}}
+                  currency
+                </label>
+              </th>
+              <td>
+                <div class="radios currency">
+                  <label>
+                    <input name="currency" type="radio" value="ETH" checked={{equals currency "ETH"}}> ETH
+                  </label>
+                  <label>
+                    <input name="currency" type="radio" value="DAI" checked={{equals currency "DAI"}}> DAI
+                  </label>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <label>
+                  {{#if equals ordertype "buy"}}
+                  Bid
+                  {{else}}
+                  Ask
+                  {{/if}}
+                  Price (in {{currency}})</label>
+              </th>
+              <td>
+                <input type="number" class="input price" name="price" value="{{price}}" step="0.01" min="0">
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <label>
+                  Amount
+                  (in {{baseCurrency}})</label>
+              </th>
+              <td>
+                <input type="number" class="input amount" name="amount" value="{{amount}}" step="0.01" min="0">
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <label>
+                  Total (in {{currency}})</label>
+              </th>
+              <td>
+                <input type="number" class="input total" name="total" value="{{total}}" step="0.01" min="0">
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <th>
+              </th>
+              <td>
+                <button id="submitorder" {{buttonState}}>Submit order</button>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </form>
+  </section>
+</template>
