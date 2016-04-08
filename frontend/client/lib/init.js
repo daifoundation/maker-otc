@@ -25,7 +25,7 @@ Session.setDefault('syncing', false)
 
 web3.eth.isSyncing(function (error, sync) {
   if (!error) {
-    Session.set('syncing', sync === true)
+    Session.set('syncing', sync !== false)
 
     // Stop all app activity
     if (sync === true) {

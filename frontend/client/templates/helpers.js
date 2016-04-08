@@ -7,6 +7,11 @@ Template.registerHelper('network', function () {
   return Session.get('network')
 })
 
+Template.registerHelper('contractHref', function () {
+  var network = Session.get('network')
+  return 'https://' + (network === 'test' ? 'testnet.' : '') + 'etherscan.io/address/' + MakerOTC.address
+})
+
 Template.registerHelper('ready', function () {
   return web3.isConnected() && !Session.get('syncing')
 })

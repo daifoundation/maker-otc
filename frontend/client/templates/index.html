@@ -8,10 +8,15 @@
     This is a simple on-chain OTC market for {{baseCurrency}}. Either pick an order below (in which case delivery will happen instantly), or <a href="#neworder">submit a new order</a>.
   </p>
 
-  <p>Network: {{network}}</p>
-  <p>Status: {{#if syncing}}syncing ({{syncingPercentage}}%){{else}}{{#if ready}}ready{{else}}not connected{{/if}}{{/if}}</p>
+  <p>
+      Network: {{network}}
+      ({{#if syncing}}syncing {{syncingPercentage}}%{{else}}{{#if ready}}ready{{else}}not connected, please connect to a chain and reload this page{{/if}}{{/if}})
+  </p>
 
   {{#if ready}}
+    {{#unless equals network 'private'}}
+      <p>Contract: <a href={{contractHref}}>Etherscan.io</a></p>
+    {{/unless}}
     <p>Account: {{address}}</p>
     <p>Balance: {{ethBalance address}} ETH</p>
 
