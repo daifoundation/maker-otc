@@ -30,6 +30,7 @@ h2 span { margin-left: .5rem }
 h2 span { color: gray }
 
 p { max-width: 30rem }
+p { margin: 0 0 10px }
 
 table { border-collapse: collapse }
 table { width: 100% }

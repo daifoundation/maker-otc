@@ -1,3 +1,44 @@
+Template.registerHelper('contractExists', function () {
+  var code = web3.eth.getCode(MakerOTC.address)
+  return typeof code === 'string' && code !== '' && code !== '0x'
+})
+
+Template.registerHelper('network', function () {
+  return Session.get('network')
+})
+
+Template.registerHelper('contractHref', function () {
+  var network = Session.get('network')
+  return 'https://' + (network === 'test' ? 'testnet.' : '') + 'etherscan.io/address/' + MakerOTC.address
+})
+
+Template.registerHelper('ready', function () {
+  return web3.isConnected() && !Session.get('syncing')
+})
+
+Template.registerHelper('syncing', function () {
+  return Session.get('syncing')
+})
+
+Template.registerHelper('isConnected', function () {
+  return web3.isConnected()
+})
+
+Template.registerHelper('syncingPercentage', function () {
+  var startingBlock = Session.get('startingBlock')
+  var currentBlock = Session.get('currentBlock')
+  var highestBlock = Session.get('highestBlock')
+  return Math.round((currentBlock - startingBlock) / (highestBlock - startingBlock))
+})
+
+Template.registerHelper('address', function () {
+  return Session.get('address')
+})
+
+Template.registerHelper('ethBalance', function (address) {
+  return web3.isAddress(address) ? web3.fromWei(web3.eth.getBalance(address)) : '-'
+})
+
 Template.registerHelper('baseCurrency', function (value) {
   return BASE_CURRENCY
 })
