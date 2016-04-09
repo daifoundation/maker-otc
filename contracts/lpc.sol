@@ -1,6 +1,9 @@
 import 'dappsys/auth.sol';
+import 'feedbase/feedbase.sol'; // for link type TODO refactor
 import 'feedbase/user.sol';
 import 'maker-user/user.sol';
+
+import 'type.sol';
 
 // Notes:
 // * Deploy via the factory
@@ -14,7 +17,7 @@ contract BasicLiquidityProvider is
     DSAuth,
     FeedBaseUser // is MakerUser
 {
-    function BasicLiquidityProvider(FeedBaseUserLinkType fb, MakerUserLinkType maker)
+    function BasicLiquidityProvider(FeedBase fb, MakerUserLinkType maker)
              FeedBaseUser(fb, maker)
     {}
 
@@ -59,12 +62,12 @@ contract BasicLiquidityProvider is
         var config = _configs[buy_what][buy_with];
         transferFrom(msg.sender, this, spend_how_much, buy_with);
         approve(_feedbase, config.max_feed_price, "DAI");
-        var feed_price = uint(_feedbase.getValue(config.feed_id));
+        var feed_price = uint(_feedbase.get(config.feed_id));
         if( config.invert_feed ) {
             feed_price = invert(feed_price);
         }
         bought_amount = buyReward(feed_price, buy_what, buy_with, spend_how_much);
-        transfer(msg.sender, bought_amouht);
+        transfer(msg.sender, bought_amount, buy_what);
     }
     // Specifies inverse cost function
     function buyReward( uint feed_price
@@ -75,7 +78,7 @@ contract BasicLiquidityProvider is
              returns (uint reward_amount)
     {
         var config = _configs[buy_what][buy_with];
-        return (feed_price + config.error) + (config.slope * spend_how_much/toWei(1))
+        return (feed_price + config.error) + (config.slope * spend_how_much/toWei(1));
     }
 
     // == Protected functions. == //

@@ -1,6 +1,6 @@
+import 'dapple/test.sol';
+
 contract LPCtest is Test {
-    LPCType lpc;
     function setUp() {
-        lpc = new L;
     }
 }

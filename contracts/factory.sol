@@ -1,7 +1,12 @@
+import 'feedbase/feedbase.sol';
+import 'feedbase/user.sol';
+
+import 'lpc.sol';
+
 // Factory + creation event.
 contract BasicLiquidityProviderFactory is FeedBaseUser, DSAuthUser
 {
-    function BasicLiquidityProviderFactory( FeedBaseUserLinkType _feedbase
+    function BasicLiquidityProviderFactory( FeedBase _feedbase
                                           , MakerUserLinkType _M )
              FeedBaseUser(_feedbase, _M)
     {}
@@ -10,7 +15,7 @@ contract BasicLiquidityProviderFactory is FeedBaseUser, DSAuthUser
 
     function create() returns (BasicLiquidityProvider) {
         var lpc = new BasicLiquidityProvider(_feedbase, _M);
-        transferFrom(msg.sender, lpc, approval(lpc, this, "DAI"), "DAI");
+        transferFrom(msg.sender, lpc, allowance(lpc, this, "DAI"), "DAI");
         NewBasicLPC(lpc);
         setOwner( lpc, msg.sender );
     }
