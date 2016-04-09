@@ -56,29 +56,31 @@ contract BasicLiquidityProvider is
     //  * not enough dai to pay for feed (see feedbase dapp)
     //  * not enough approval to transfer `spend_how_much` of `buy_with` from sender (see maker dapp)
     //  * not enough of the asset to transfer `bought_amount` of `buy_what` to sender (see maker dapp)
-    function buy(bytes32 buy_what, bytes32 buy_with, uint spend_how_much)
-             returns (uint bought_amount)
+    function buy(bytes32 buy_what, uint buy_how_much, bytes32 buy_with)
+             returns (uint buy_cost)
     {
         var config = _configs[buy_what][buy_with];
-        transferFrom(msg.sender, this, spend_how_much, buy_with);
         approve(_feedbase, config.max_feed_price, "DAI");
         var feed_price = uint(_feedbase.get(config.feed_id));
         if( config.invert_feed ) {
             feed_price = invert(feed_price);
         }
-        bought_amount = buyReward(feed_price, buy_what, buy_with, spend_how_much);
-        transfer(msg.sender, bought_amount, buy_what);
+        buy_cost = buyCost(feed_price, buy_what, buy_how_much, buy_with);
+        transferFrom(msg.sender, this, buy_cost, buy_with);
+        transfer(msg.sender, buy_how_much, buy_what);
     }
-    // Specifies inverse cost function
-    function buyReward( uint feed_price
-                      , bytes32 buy_what
-                      , bytes32 buy_with
-                      , uint spend_how_much)
+    function buyCost( uint feed_price
+                    , bytes32 buy_what
+                    , uint buy_how_much
+                    , bytes32 buy_with )
              constant
-             returns (uint reward_amount)
+             returns (uint buy_cost)
     {
         var config = _configs[buy_what][buy_with];
-        return (feed_price + config.error) + (config.slope * spend_how_much/toWei(1));
+        var use_price = feed_price + config.error;
+        var price = buy_how_much * feed_price / toWei(1);
+        var penalty = config.slope * (buy_how_much**2) / (toWei(1)**2);
+        return price + penalty;
     }
 
     // == Protected functions. == //

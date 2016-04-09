@@ -18,5 +18,6 @@ contract BasicLiquidityProviderFactory is FeedBaseUser, DSAuthUser
         transferFrom(msg.sender, lpc, allowance(lpc, this, "DAI"), "DAI");
         NewBasicLPC(lpc);
         setOwner( lpc, msg.sender );
+        return lpc;
     }
 }
