@@ -4,5 +4,6 @@ layout:
   sol_sources: contracts
   build_dir: build
 dependencies:
-  makeruser: 0.1.0
+  makeruser: 0.1.4
   dappsys: 1.0.1
+  feedbase: 0.1.0
