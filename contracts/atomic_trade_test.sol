@@ -37,6 +37,32 @@ contract AtomicTradeTest is Test
         ItemUpdate(id);
         ItemUpdate(id);
     }
+    function testPartiallyFilledOrder() {
+        user1.doApprove(otc, 20, "DAI");
+        var my_mkr_balance_before = balanceOf(this, "MKR");
+        var my_dai_balance_before = balanceOf(this, "DAI");
+        var user1_mkr_balance_before = balanceOf(user1, "MKR");
+        var user1_dai_balance_before = balanceOf(user1, "DAI");
+
+        var id = otc.offer( 20, "MKR", 40, "DAI" );
+        AtomicTrade(user1).buy(id, 10);
+        var my_mkr_balance_after = balanceOf(this, "MKR");
+        var my_dai_balance_after = balanceOf(this, "DAI");
+        var user1_mkr_balance_after = balanceOf(user1, "MKR");
+        var user1_dai_balance_after = balanceOf(user1, "DAI");
+        var (sell_val, sell_token, buy_val, buy_token ) = otc.getOffer(id);
+
+        assertEq( 20, my_mkr_balance_before - my_mkr_balance_after );
+        assertEq( 20, my_dai_balance_after - my_dai_balance_before );
+        assertEq( 10, user1_mkr_balance_after - user1_mkr_balance_before );
+        assertEq( 20, user1_dai_balance_before - user1_dai_balance_after );
+        assertEq( 10, sell_val );
+        assertEq( 20, buy_val );
+
+        expectEventsExact(otc);
+        ItemUpdate(id);
+        ItemUpdate(id);
+    }
     function testCancel() {
         approve(otc, 30, "MKR");
         var id = otc.offer( 30, "MKR", 100, "DAI" );
