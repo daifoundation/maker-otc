@@ -32,7 +32,7 @@ contract AtomicTrade is MakerUser, ItemUpdateEvent {
                   , uint buy_how_much,  bytes32 buy_which_token )
         returns (uint id)
     {
-        //transferFrom( msg.sender, this, sell_how_much, sell_which_token );
+        transferFrom( msg.sender, this, sell_how_much, sell_which_token );
         OfferInfo memory info;
         info.sell_how_much = sell_how_much;
         info.sell_which_token = sell_which_token;
@@ -48,8 +48,8 @@ contract AtomicTrade is MakerUser, ItemUpdateEvent {
     function buy( uint id )
     {
         var offer = offers[id];
-        //transferFrom( msg.sender, offer.owner, offer.buy_how_much, offer.buy_which_token );
-        //transfer( msg.sender, offer.sell_how_much, offer.sell_which_token );
+        transferFrom( msg.sender, offer.owner, offer.buy_how_much, offer.buy_which_token );
+        transfer( msg.sender, offer.sell_how_much, offer.sell_which_token );
         delete offers[id];
         ItemUpdate(id);
     }
@@ -57,7 +57,7 @@ contract AtomicTrade is MakerUser, ItemUpdateEvent {
     {
         var offer = offers[id];
         if( msg.sender == offer.owner ) {
-            //transfer( msg.sender, offer.sell_how_much, offer.sell_which_token );
+            transfer( msg.sender, offer.sell_how_much, offer.sell_which_token );
             delete offers[id];
             ItemUpdate(id);
         } else {
