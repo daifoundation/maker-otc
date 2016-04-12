@@ -9,8 +9,8 @@
   </p>
 
   <p>
-      Network: {{network}}
-      ({{#if syncing}}syncing {{syncingPercentage}}%{{else}}{{#if ready}}ready{{else}}not connected, please connect to a chain and reload this page{{/if}}{{/if}})
+    Network: {{network}}
+    ({{#if syncing}}syncing {{syncingPercentage}}%{{else}}{{#if ready}}ready{{else}}not connected{{/if}}{{/if}})
   </p>
 
   {{#if ready}}
@@ -18,7 +18,7 @@
       <p>Contract: <a href={{contractHref}}>Etherscan.io</a></p>
     {{/unless}}
     <p>Account: {{address}}</p>
-    <p>Balance: {{ethBalance address}} ETH</p>
+    <p>Balance: {{ethBalance}} ETH | {{mkrBalance}} MKR</p>
 
     {{#if contractExists}}
       {{> orderbook}}
