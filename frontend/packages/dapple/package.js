@@ -16,5 +16,5 @@ Package.onUse(function (api) {
   api.addFiles(['package-post-init.js'], 'client')
 
   api.export('web3', 'client')
-  api.export('MakerOTC', 'client')
+  api.export('Dapple', 'client')
 })
