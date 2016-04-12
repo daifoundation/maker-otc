@@ -45,6 +45,7 @@ contract BasicLiquidityProvider is
         // like logarithmic market makers or sourcing liquidity from
         // other contracts
         uint error;
+        uint backoff_rate;
         uint slope;
     }
 

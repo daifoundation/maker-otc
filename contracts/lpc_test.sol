@@ -23,9 +23,6 @@ contract LPCtest is Test, MakerUser(MakerUserLinkType(0x2))
         dai_mkr = fb.claim();
         lpc = lpc_factory.create();
     }
-    function toWei(uint what) internal returns (uint) {
-        return what * (10**18);
-    }
     function testBasics() {
         var price = toWei(10);
         fb.setFeed(dai_mkr, bytes32(price), block.timestamp + 100);
