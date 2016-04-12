@@ -13,7 +13,7 @@ function formattedString (str) {
 }
 
 Offers.helpers({
-  canBuy: function() {
+  canBuy: function () {
     if (this.status !== Status.CONFIRMED) { return false }
     return true
   },

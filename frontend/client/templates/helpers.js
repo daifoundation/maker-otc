@@ -1,6 +1,9 @@
 Template.registerHelper('contractExists', function () {
   var network = Session.get('network')
   var isConnected = Session.get('isConnected')
+  if (network === false || isConnected === false) {
+    return false
+  }
   var code = web3.eth.getCode(Dapple['maker-otc'].objects.otc.address)
   return typeof code === 'string' && code !== '' && code !== '0x'
 })
