@@ -12,7 +12,7 @@ Package.onUse(function (api) {
   api.use('ethereum:web3', 'client')
 
   api.addFiles(['package-pre-init.js'], 'client')
-  api.addFiles(['build/js_module.js'], 'client')
+  api.addFiles(['build/meteor.js'], 'client')
   api.addFiles(['package-post-init.js'], 'client')
 
   api.export('web3', 'client')
