@@ -1,7 +1,7 @@
 Template.registerHelper('contractExists', function () {
   var network = Session.get('network')
   var isConnected = Session.get('isConnected')
-  var code = web3.eth.getCode(Dapple.objects.otc.address)
+  var code = web3.eth.getCode(Dapple['maker-otc'].objects.otc.address)
   return typeof code === 'string' && code !== '' && code !== '0x'
 })
 
@@ -11,7 +11,7 @@ Template.registerHelper('network', function () {
 
 Template.registerHelper('contractHref', function () {
   var network = Session.get('network')
-  return 'https://' + (network === 'test' ? 'testnet.' : '') + 'etherscan.io/address/' + Dapple.objects.otc.address
+  return 'https://' + (network === 'test' ? 'testnet.' : '') + 'etherscan.io/address/' + Dapple['maker-otc'].objects.otc.address
 })
 
 Template.registerHelper('ready', function () {

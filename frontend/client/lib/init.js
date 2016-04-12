@@ -6,7 +6,7 @@
 Session.setDefault('network', false)
 
 // CHECK FOR NETWORK
-function checkNetwork() {
+function checkNetwork () {
   if (web3.isConnected()) {
     web3.eth.getBlock(0, function (e, res) {
       var before = Session.get('network')
@@ -33,7 +33,7 @@ function checkNetwork() {
             environment = 'main'
             break
         }
-        Dapple.class(web3, Dapple.environments[environment])
+        Dapple['maker-otc'].class(web3, Dapple['maker-otc'].environments[environment])
         if (!_.contains(web3.eth.accounts, web3.eth.defaultAccount)) {
           if (web3.eth.accounts.length > 0) {
             web3.eth.defaultAccount = web3.eth.accounts[0]
@@ -52,9 +52,9 @@ function checkNetwork() {
   }
 }
 
-function syncOffers() {
+function syncOffers () {
   Offers.remove({})
-  var last_offer_id = Dapple.objects.otc.last_offer_id().toNumber()
+  var last_offer_id = Dapple['maker-otc'].objects.otc.last_offer_id().toNumber()
   console.log('last_offer_id', last_offer_id)
   for (var id = 1; id <= last_offer_id; id++) {
     Offers.syncOffer(id)
@@ -95,7 +95,7 @@ Meteor.startup(function () {
           environment = 'main'
           break
       }
-      Dapple.class(web3, Dapple.environments[environment])
+      Dapple['maker-otc'].class(web3, Dapple['maker-otc'].environments[environment])
       if (!_.contains(web3.eth.accounts, web3.eth.defaultAccount)) {
         if (web3.eth.accounts.length > 0) {
           web3.eth.defaultAccount = web3.eth.accounts[0]
@@ -144,7 +144,7 @@ Meteor.startup(function () {
     }
   }, 2000)
 
-  Dapple.objects.otc.ItemUpdate(function (error, result) {
+  Dapple['maker-otc'].objects.otc.ItemUpdate(function (error, result) {
     if (!error) {
       var id = result.args.id.toNumber()
       console.log('Offer updated', id, result)
@@ -153,7 +153,6 @@ Meteor.startup(function () {
     }
   })
 })
-
 
 /**
  * Token Interface
