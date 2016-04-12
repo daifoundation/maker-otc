@@ -37,27 +37,58 @@ contract AtomicTradeTest is Test
         ItemUpdate(id);
         ItemUpdate(id);
     }
-    function testPartiallyFilledOrder() {
-        user1.doApprove(otc, 20, "DAI");
+    function testPartiallyFilledOrderMkr() {
+        user1.doApprove(otc, 30, "DAI");
+        approve(otc, 200, "MKR");
+
         var my_mkr_balance_before = balanceOf(this, "MKR");
         var my_dai_balance_before = balanceOf(this, "DAI");
         var user1_mkr_balance_before = balanceOf(user1, "MKR");
         var user1_dai_balance_before = balanceOf(user1, "DAI");
 
-        var id = otc.offer( 20, "MKR", 40, "DAI" );
+        var id = otc.offer( 200, "MKR", 500, "DAI" );
         AtomicTrade(user1).buy(id, 10);
         var my_mkr_balance_after = balanceOf(this, "MKR");
         var my_dai_balance_after = balanceOf(this, "DAI");
         var user1_mkr_balance_after = balanceOf(user1, "MKR");
         var user1_dai_balance_after = balanceOf(user1, "DAI");
-        var (sell_val, sell_token, buy_val, buy_token ) = otc.getOffer(id);
+        var ( sell_val, sell_token, buy_val, buy_token ) = otc.getOffer(id);
 
-        assertEq( 20, my_mkr_balance_before - my_mkr_balance_after );
-        assertEq( 20, my_dai_balance_after - my_dai_balance_before );
+        assertEq( 200, my_mkr_balance_before - my_mkr_balance_after );
+        assertEq( 25, my_dai_balance_after - my_dai_balance_before );
         assertEq( 10, user1_mkr_balance_after - user1_mkr_balance_before );
-        assertEq( 20, user1_dai_balance_before - user1_dai_balance_after );
-        assertEq( 10, sell_val );
-        assertEq( 20, buy_val );
+        assertEq( 25, user1_dai_balance_before - user1_dai_balance_after );
+        assertEq( 190, sell_val );
+        assertEq( 475, buy_val );
+
+        expectEventsExact(otc);
+        ItemUpdate(id);
+        ItemUpdate(id);
+    }
+    function testPartiallyFilledOrderDai() {
+        transfer(user1, 10, "MKR");
+        user1.doApprove(otc, 10, "MKR");
+        approve(otc, 500, "DAI");
+
+        var my_mkr_balance_before = balanceOf(this, "MKR");
+        var my_dai_balance_before = balanceOf(this, "DAI");
+        var user1_mkr_balance_before = balanceOf(user1, "MKR");
+        var user1_dai_balance_before = balanceOf(user1, "DAI");
+
+        var id = otc.offer( 500, "DAI", 200, "MKR" );
+        AtomicTrade(user1).buy(id, 10);
+        var my_mkr_balance_after = balanceOf(this, "MKR");
+        var my_dai_balance_after = balanceOf(this, "DAI");
+        var user1_mkr_balance_after = balanceOf(user1, "MKR");
+        var user1_dai_balance_after = balanceOf(user1, "DAI");
+        var ( sell_val, sell_token, buy_val, buy_token ) = otc.getOffer(id);
+        
+        assertEq( 500, my_dai_balance_before - my_dai_balance_after );
+        assertEq( 4, my_mkr_balance_after - my_mkr_balance_before );
+        assertEq( 10, user1_dai_balance_after - user1_dai_balance_before );
+        assertEq( 4, user1_mkr_balance_before - user1_mkr_balance_after );
+        assertEq( 490, sell_val );
+        assertEq( 196, buy_val );
 
         expectEventsExact(otc);
         ItemUpdate(id);

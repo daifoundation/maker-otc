@@ -60,13 +60,14 @@ contract AtomicTrade is MakerUser, ItemUpdateEvent {
             transfer( msg.sender, offer.sell_how_much, offer.sell_which_token );
             delete offers[id];
         } else {
-            uint price = offers[id].buy_how_much / offers[id].sell_how_much;
-            uint buy_quantity = quantity * price;
-            transferFrom( msg.sender, offer.owner, buy_quantity, offer.buy_which_token );
-            transfer( msg.sender, quantity, offer.sell_which_token );
+            uint buy_quantity = quantity * offers[id].buy_how_much / offers[id].sell_how_much;
+            if ( buy_quantity > 0 ) {
+                transferFrom( msg.sender, offer.owner, buy_quantity, offer.buy_which_token );
+                transfer( msg.sender, quantity, offer.sell_which_token );
 
-            offer.sell_how_much -= quantity;
-            offer.buy_how_much -= buy_quantity;
+                offer.sell_how_much -= quantity;
+                offer.buy_how_much -= buy_quantity;
+            }
         }
         ItemUpdate(id);
     }
