@@ -33,7 +33,7 @@ function checkNetwork () {
             environment = 'main'
             break
         }
-        Dapple['maker-otc'].class(web3, Dapple['maker-otc'].environments[environment])
+        Dapple.init(environment)
         if (!_.contains(web3.eth.accounts, web3.eth.defaultAccount)) {
           if (web3.eth.accounts.length > 0) {
             web3.eth.defaultAccount = web3.eth.accounts[0]
@@ -73,13 +73,12 @@ function syncBalance () {
     Session.set('ETHBalance', newETHBalance)
   }
   if (network !== 'private') {
-    var maker = new Dapple.Maker(web3, network === 'test' ? 'morden' : 'live')
-    var newMKRBalance = maker.getToken('MKR').balanceOf(address).toString(10)
-    if (!Session.equals('MKRBalance'), newMKRBalance) {
+    var newMKRBalance = Dapple['makerjs'].getToken('MKR').balanceOf(address).toString(10)
+    if (!Session.equals('MKRBalance', newMKRBalance)) {
       Session.set('MKRBalance', newMKRBalance)
     }
-    var newDAIBalance = maker.getToken('DAI').balanceOf(address).toString(10)
-    if (!Session.equals('DAIBalance'), newDAIBalance) {
+    var newDAIBalance = Dapple['makerjs'].getToken('DAI').balanceOf(address).toString(10)
+    if (!Session.equals('DAIBalance', newDAIBalance)) {
       Session.set('DAIBalance', newDAIBalance)
     }
   }
@@ -119,7 +118,7 @@ Meteor.startup(function () {
           environment = 'main'
           break
       }
-      Dapple['maker-otc'].class(web3, Dapple['maker-otc'].environments[environment])
+      Dapple.init(environment)
       if (!_.contains(web3.eth.accounts, web3.eth.defaultAccount)) {
         if (web3.eth.accounts.length > 0) {
           web3.eth.defaultAccount = web3.eth.accounts[0]

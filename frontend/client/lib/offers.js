@@ -18,8 +18,8 @@ Offers.helpers({
       return false
     }
     if (this.type === 'bid') {
-      var balance = new BigNumber(Session.get('MKRBalance'))
-      return balance.gte(new BigNumber(this.volume))
+      var MKRBalance = new BigNumber(Session.get('MKRBalance'))
+      return MKRBalance.gte(new BigNumber(this.volume))
     } else {
       var balance = new BigNumber(Session.get(this.currency + 'Balance'))
       var volume = new BigNumber(this.volume)
