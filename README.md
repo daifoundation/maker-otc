@@ -1,10 +1,14 @@
+##### MakerOTC
+
+[![MKROTC Header](https://ipfs.pics/ipfs/QmSf9qocg51spsrgMB5G6HS33ydwtLvHjv51tyW9Z3Y4uu)]()
+---
+[![Slack Status](http://slack.makerdao.com/badge.svg)](https:/slack.makerdao.com)
 [![Stories in Ready](https://badge.waffle.io/MakerDAO/maker-otc.png?label=ready&title=Ready)](https://waffle.io/MakerDAO/maker-otc)
-# Maker OTC
+
+
 
 This is a simple on-chain OTC market for MKR. You can either pick an order from the order book (in which case delivery will happen instantly), or submit a new order yourself. Accepted offers are always completely executed, there are no partial trades.
 
-
-![MakerOTC Screenshot](http://i.imgur.com/cafGluu.png)
 
 ## Overview
 
