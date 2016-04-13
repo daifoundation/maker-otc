@@ -13,13 +13,17 @@ function formattedString (str) {
 }
 
 Offers.helpers({
+  canBuy: function () {
+    if (this.status !== Status.CONFIRMED) { return false }
+    return true
+  },
   canCancel: function () {
     return (this.status === Status.CONFIRMED) && (this.owner === web3.eth.defaultAccount)
   }
 })
 
 Offers.syncOffer = function (id) {
-  var data = MakerOTC.offers(id)
+  var data = Dapple['maker-otc'].objects.otc.offers(id)
   var idx = id.toString()
   var sell_how_much = data[0]
   var sell_which_token = formattedString(data[1])
@@ -70,38 +74,21 @@ Offers.updateOffer = function (idx, sell_how_much, sell_which_token, buy_how_muc
 }
 
 Offers.newOffer = function (sell_how_much, sell_which_token, buy_how_much, buy_which_token) {
-  var offerTx = MakerOTC.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token, { gas: 300000 })
+  var offerTx = Dapple['maker-otc'].objects.otc.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token, { gas: 300000 })
   console.log('offer!', offerTx, sell_how_much, sell_which_token, buy_how_much, buy_which_token)
   Offers.updateOffer(offerTx, sell_how_much, sell_which_token, buy_how_much, buy_which_token, web3.eth.defaultAccount, Status.PENDING)
 }
 
 Offers.buyOffer = function (idx) {
   var id = parseInt(idx, 10)
-  var tx = MakerOTC.buy(id, { gas: 100000 })
+  var tx = Dapple['maker-otc'].objects.otc.buy(id, { gas: 100000 })
   console.log('buy!', id, tx)
   Offers.update(idx, { $set: { status: Status.BOUGHT } })
 }
 
 Offers.cancelOffer = function (idx) {
   var id = parseInt(idx, 10)
-  var tx = MakerOTC.cancel(id, { gas: 100000 })
+  var tx = Dapple['maker-otc'].objects.otc.cancel(id, { gas: 100000 })
   console.log('cancel!', id, tx)
   Offers.update(idx, { $set: { status: Status.CANCELLED } })
 }
-
-Meteor.startup(function () {
-  var last_offer_id = MakerOTC.last_offer_id().toNumber()
-  console.log('last_offer_id', last_offer_id)
-  for (var id = 1; id <= last_offer_id; id++) {
-    Offers.syncOffer(id)
-  }
-
-  MakerOTC.ItemUpdate(function (error, result) {
-    if (!error) {
-      var id = result.args.id.toNumber()
-      console.log('Offer updated', id, result)
-      Offers.syncOffer(id)
-      Offers.remove(result.transactionHash)
-    }
-  })
-})

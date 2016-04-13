@@ -5,6 +5,9 @@ Session.setDefault('amount', 0)
 Session.setDefault('total', 0)
 
 Template.neworder.helpers({
+  myOrders: function () {
+    return Offers.find({ owner: web3.eth.defaultAccount })
+  },
   ordertype: function () {
     return Session.get('ordertype')
   },
