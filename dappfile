@@ -6,6 +6,7 @@ layout:
 dependencies:
   makeruser: 0.1.4
   dappsys: 0.1.2
+  feedbase: 0.1.0
 environments:
   default:
     objects:
