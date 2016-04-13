@@ -11,9 +11,9 @@ environments:
     objects:
       otc:
         class: AtomicTrade
-        address: '0x0670294fa6899264b37af7709ad1f192084e5309'
+        address: '0x5497bdd22fb2fe8c9bbd69a9812b83180e85981a'
   morden:
     objects:
       otc:
-        class: AtomicTrade
-        address: '0x0670294fa6899264b37af7709ad1f192084e5309'
+        class: AtomicTradeMorden
+        address: '0x566bced2e7dd50064c94012e1c008ffb9bf24ba6'
