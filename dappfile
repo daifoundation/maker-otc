@@ -4,7 +4,7 @@ layout:
   sol_sources: contracts
   build_dir: frontend/packages/dapple/build
 dependencies:
-  makeruser: 0.1.3
+  makeruser: 0.1.4
   dappsys: 0.1.2
 environments:
   default:
