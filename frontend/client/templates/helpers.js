@@ -42,15 +42,18 @@ Template.registerHelper('address', function () {
 
 Template.registerHelper('ethBalance', function () {
   var address = Session.get('address')
-  return web3.isAddress(address) ? web3.fromWei(web3.eth.getBalance(address)) : '-'
+  return web3.isAddress(address) ? web3.eth.getBalance(address) : 0
 })
 
-Template.registerHelper('mkrBalance', function () {
+Template.registerHelper('tokenBalance', function (token) {
   var address = Session.get('address')
   var network = Session.get('network')
-  var tokenAddress = network === 'test' ? '0xffb1c99b389ba527a9194b1606b3565a07da3eef' : ''
-  var tokenInstance = TokenContract.at(tokenAddress)
-  return web3.isAddress(address) ? web3.fromWei(tokenInstance.balanceOf(address)) : '-'
+  if (network === 'private') {
+    return 0
+  } else {
+    var maker = new Dapple.Maker(web3, network === 'test' ? 'morden' : 'live')
+    return maker.getToken(token).balanceOf(address)
+  }
 })
 
 Template.registerHelper('baseCurrency', function (value) {
