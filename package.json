@@ -16,6 +16,7 @@
       "Meteor",
       "Session",
       "Template",
+      "Tracker",
       "EthTools",
       "Dapple",
       "BigNumber",

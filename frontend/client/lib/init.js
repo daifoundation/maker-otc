@@ -3,7 +3,7 @@
  * https://github.com/ethereum/meteor-dapp-wallet/blob/90ad8148d042ef7c28610115e97acfa6449442e3/app/client/lib/ethereum/walletInterface.js#L32-L46
  */
 
-Session.setDefault('network', false)
+Session.set('network', false)
 
 // CHECK FOR NETWORK
 function checkNetwork () {
@@ -55,14 +55,25 @@ function checkNetwork () {
 function syncOffers () {
   Offers.remove({})
   var last_offer_id = Dapple['maker-otc'].objects.otc.last_offer_id().toNumber()
-  console.log('last_offer_id', last_offer_id)
-  for (var id = 1; id <= last_offer_id; id++) {
-    Offers.syncOffer(id)
-  }
+  console.log('loading offers:', last_offer_id)
+  Session.set('loadOfferId', last_offer_id)
 }
 
-Session.setDefault('syncing', false)
-Session.setDefault('isConnected', false)
+Session.set('syncing', false)
+Session.set('isConnected', false)
+
+/**
+ * Asynchronous loading of the orderbook
+ */
+Tracker.autorun(function () {
+  var loadOfferId = Session.get('loadOfferId')
+  if (loadOfferId > 0) {
+    Offers.syncOffer(loadOfferId)
+    Session.set('loadOfferId', loadOfferId - 1)
+  } else if (loadOfferId === 0) {
+    console.log('loading offers: done')
+  }
+})
 
 /**
  * Startup code
