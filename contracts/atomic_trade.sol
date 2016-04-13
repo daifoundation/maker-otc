@@ -1,5 +1,5 @@
 import 'dappsys/auth.sol';
-import 'makeruser/user.sol';
+import 'maker-user/user.sol';
 
 // A simple direct exchange order manager.
 // Orders cannot be partially filled.
