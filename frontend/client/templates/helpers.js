@@ -40,20 +40,16 @@ Template.registerHelper('address', function () {
   return Session.get('address')
 })
 
-Template.registerHelper('ethBalance', function () {
-  var address = Session.get('address')
-  return web3.isAddress(address) ? web3.eth.getBalance(address) : 0
+Template.registerHelper('ETHBalance', function () {
+  return Session.get('ETHBalance')
 })
 
-Template.registerHelper('tokenBalance', function (token) {
-  var address = Session.get('address')
-  var network = Session.get('network')
-  if (network === 'private') {
-    return 0
-  } else {
-    var maker = new Dapple.Maker(web3, network === 'test' ? 'morden' : 'live')
-    return maker.getToken(token).balanceOf(address)
-  }
+Template.registerHelper('MKRBalance', function () {
+  return Session.get('MKRBalance')
+})
+
+Template.registerHelper('DAIBalance', function () {
+  return Session.get('DAIBalance')
 })
 
 Template.registerHelper('baseCurrency', function (value) {

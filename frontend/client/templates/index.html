@@ -18,7 +18,7 @@
       <p>Contract: <a href={{contractHref}}>Etherscan.io</a></p>
     {{/unless}}
     <p>Account: {{address}}</p>
-    <p>Balance: {{formatBalance ethBalance}} ETH | {{formatBalance (tokenBalance 'MKR')}} MKR | {{formatBalance (tokenBalance 'DAI')}} DAI</p>
+    <p>Balance: {{formatBalance ETHBalance}} ETH | {{formatBalance MKRBalance}} MKR | {{formatBalance DAIBalance}} DAI</p>
 
     {{#if contractExists}}
       {{> orderbook}}

@@ -4,6 +4,17 @@ Session.setDefault('price', 0)
 Session.setDefault('amount', 0)
 Session.setDefault('total', 0)
 
+var totalMax = function () {
+  var ordertype = Session.get('ordertype')
+  var currency = Session.get('currency')
+  return ordertype === 'buy' ? parseFloat(Session.get(currency + 'Balance')) : Infinity
+}
+
+var amountMax = function () {
+  var ordertype = Session.get('ordertype')
+  return ordertype === 'sell' ? parseFloat(Session.get('MKRBalance')) : Infinity
+}
+
 Template.neworder.helpers({
   myOrders: function () {
     return Offers.find({ owner: web3.eth.defaultAccount })
@@ -23,8 +34,14 @@ Template.neworder.helpers({
   total: function () {
     return Session.get('total')
   },
+  totalMax: totalMax,
+  amountMax: amountMax,
   buttonState: function () {
-    if (Session.get('price') > 0 && Session.get('amount') > 0 && Session.get('total') > 0) {
+    var ordertype = Session.get('ordertype')
+    var price = Session.get('price')
+    var amount = Session.get('amount')
+    var total = Session.get('total')
+    if (price > 0 && amount > 0 && total > 0 && (ordertype !== 'buy' || total < totalMax()) && (ordertype !== 'sell' || amount <= amountMax())) {
       return ''
     } else {
       return 'disabled'

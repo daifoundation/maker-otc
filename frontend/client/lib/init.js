@@ -61,6 +61,30 @@ function syncOffers () {
   }
 }
 
+/**
+ * Syncs the ETH, MKR and DAI balances of Session.get('address')
+ * usually called for each new block
+ */
+function syncBalance () {
+  var network = Session.get('network')
+  var address = Session.get('address')
+  var newETHBalance = web3.eth.getBalance(address).toString(10)
+  if (!Session.equals('ETHBalance', newETHBalance)) {
+    Session.set('ETHBalance', newETHBalance)
+  }
+  if (network !== 'private') {
+    var maker = new Dapple.Maker(web3, network === 'test' ? 'morden' : 'live')
+    var newMKRBalance = maker.getToken('MKR').balanceOf(address).toString(10)
+    if (!Session.equals('MKRBalance'), newMKRBalance) {
+      Session.set('MKRBalance', newMKRBalance)
+    }
+    var newDAIBalance = maker.getToken('DAI').balanceOf(address).toString(10)
+    if (!Session.equals('DAIBalance'), newDAIBalance) {
+      Session.set('DAIBalance', newDAIBalance)
+    }
+  }
+}
+
 Session.setDefault('syncing', false)
 Session.setDefault('isConnected', false)
 
@@ -106,9 +130,12 @@ Meteor.startup(function () {
       Session.set('isConnected', true)
       Session.set('network', after)
       Session.set('address', web3.eth.defaultAccount)
+      syncBalance()
       syncOffers()
     }
   }
+
+  web3.eth.filter('latest', syncBalance)
 
   web3.eth.isSyncing(function (error, sync) {
     if (!error) {
@@ -127,6 +154,7 @@ Meteor.startup(function () {
         Session.set('highestBlock', sync.highestBlock)
       } else {
         checkNetwork()
+        web3.eth.filter('latest', syncBalance)
       }
     }
   })

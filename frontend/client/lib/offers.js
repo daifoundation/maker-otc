@@ -14,8 +14,18 @@ function formattedString (str) {
 
 Offers.helpers({
   canBuy: function () {
-    if (this.status !== Status.CONFIRMED) { return false }
-    return true
+    if (this.status !== Status.CONFIRMED) {
+      return false
+    }
+    if (this.type === 'bid') {
+      var balance = new BigNumber(Session.get('MKRBalance'))
+      return balance.gte(new BigNumber(this.volume))
+    } else {
+      var balance = new BigNumber(Session.get(this.currency + 'Balance'))
+      var volume = new BigNumber(this.volume)
+      var price = new BigNumber(this.price)
+      return balance.gte(volume.times(web3.fromWei(price)))
+    }
   },
   canCancel: function () {
     return (this.status === Status.CONFIRMED) && (this.owner === web3.eth.defaultAccount)
@@ -56,7 +66,7 @@ Offers.updateOffer = function (idx, sell_how_much, sell_which_token, buy_how_muc
     var sellOffer = _.extend(baseOffer, {
       type: 'ask',
       currency: buy_which_token,
-      volume: sell_how_much.toString(),
+      volume: sell_how_much.toString(10),
       price: web3.toWei(buy_how_much.dividedBy(sell_how_much)).toString()
     })
     Offers.upsert(idx, { $set: sellOffer })
@@ -64,7 +74,7 @@ Offers.updateOffer = function (idx, sell_how_much, sell_which_token, buy_how_muc
     var buyOffer = _.extend(baseOffer, {
       type: 'bid',
       currency: sell_which_token,
-      volume: buy_how_much.toString(),
+      volume: buy_how_much.toString(10),
       price: web3.toWei(sell_how_much.dividedBy(buy_how_much)).toString()
     })
     Offers.upsert(idx, { $set: buyOffer })
