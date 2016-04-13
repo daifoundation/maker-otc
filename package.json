@@ -1,0 +1,39 @@
+{
+  "name": "Maker-OTC",
+  "scripts" : {
+    "deploy": "dapple run deploy.ds",
+    "build": "dapple build --template meteor --no-deploy-data",
+    "build-morden": "dapple build --template meteor --no-deploy-data -e morden",
+    "blockchain" : "./scripts/blockchain/start-blockchain.sh",
+    "attach" : "geth attach ipc://$PWD/scripts/blockchain/tmp/geth.ipc"
+  },
+  "devDependencies": {
+    "babel-eslint": "5.0.0",
+    "standard": "6.0.7"
+  },
+  "standard": {
+    "parser": "babel-eslint",
+    "globals": [
+      "Meteor",
+      "Session",
+      "Template",
+      "EthTools",
+      "Dapple",
+      "BigNumber",
+      "web3",
+      "Spacebars",
+      "TokenContract",
+      "Offers",
+      "Status",
+      "BASE_CURRENCY",
+      "$",
+      "_"
+    ],
+    "ignore": [
+      "dapple_packages/**",
+      "frontent/.meteor/**",
+      "frontend/packages/**",
+      "scripts/**"
+    ]
+  }
+}

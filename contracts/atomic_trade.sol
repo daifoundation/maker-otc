@@ -1,5 +1,5 @@
 import 'dappsys/auth.sol';
-import 'makeruser/user.sol';
+import 'maker-user/user.sol';
 
 // A simple direct exchange order manager.
 // Orders cannot be partially filled.
@@ -23,7 +23,7 @@ contract AtomicTrade is MakerUser, ItemUpdateEvent {
              MakerUser( registry )
     {
     }
-    
+
     function next_id() internal returns (uint) {
         last_offer_id++; return last_offer_id;
     }

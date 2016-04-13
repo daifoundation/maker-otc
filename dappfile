@@ -2,7 +2,18 @@ name: maker-otc
 version: 0.1.0
 layout:
   sol_sources: contracts
-  build_dir: build
+  build_dir: frontend/packages/dapple/build
 dependencies:
   makeruser: 0.1.4
   dappsys: 0.1.2
+environments:
+  default:
+    objects:
+      otc:
+        class: AtomicTrade
+        address: '0x0670294fa6899264b37af7709ad1f192084e5309'
+  morden:
+    objects:
+      otc:
+        class: AtomicTrade
+        address: '0x0670294fa6899264b37af7709ad1f192084e5309'

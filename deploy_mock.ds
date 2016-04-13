@@ -1,0 +1,4 @@
+var mock_registry = new MakerUserMockRegistry()
+var otc = new AtomicTrade(mock_registry)
+export mock_registry
+export otc
