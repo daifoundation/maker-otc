@@ -9,31 +9,21 @@ Session.setDefault('network', false)
 function checkNetwork () {
   if (web3.isConnected()) {
     web3.eth.getBlock(0, function (e, res) {
-      var before = Session.get('network')
-      var after = false
+      var network = false
       if (!e) {
         switch (res.hash) {
           case '0x0cd786a2425d16f152c658316c423e6ce1181e15c3295826d7c9904cba9ce303':
-            after = 'test'
+            network = 'test'
             break
           case '0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3':
-            after = 'main'
+            network = 'main'
             break
           default:
-            after = 'private'
+            network = 'private'
         }
       }
-      if (before !== after) {
-        var environment = 'default'
-        switch (after) {
-          case 'test':
-            environment = 'morden'
-            break
-          case 'main':
-            environment = 'main'
-            break
-        }
-        Dapple.init(environment)
+      if (!Session.equals('network', network)) {
+        Dapple.init(network)
         if (!_.contains(web3.eth.accounts, web3.eth.defaultAccount)) {
           if (web3.eth.accounts.length > 0) {
             web3.eth.defaultAccount = web3.eth.accounts[0]
@@ -42,8 +32,9 @@ function checkNetwork () {
           }
         }
         Session.set('isConnected', true)
-        Session.set('network', after)
+        Session.set('network', network)
         Session.set('address', web3.eth.defaultAccount)
+        syncBalance()
         syncOffers()
       }
     })
@@ -81,6 +72,9 @@ function syncBalance () {
     if (!Session.equals('DAIBalance', newDAIBalance)) {
       Session.set('DAIBalance', newDAIBalance)
     }
+  } else {
+    Session.set('MKRBalance', '0')
+    Session.set('DAIBalance', '0')
   }
 }
 
@@ -93,32 +87,22 @@ Session.setDefault('isConnected', false)
 Meteor.startup(function () {
   if (web3.isConnected()) {
     // Initial synchronous network check
-    // Asynchronous check often causes Meteor errors 'cannot flush during autorun'
-    var before = Session.get('network')
-    var after = false
+    // Asynchronous check often causes Meteor 'cannot flush during autorun' error
+    var network = false
     try {
       switch (web3.eth.getBlock(0).hash) {
         case '0x0cd786a2425d16f152c658316c423e6ce1181e15c3295826d7c9904cba9ce303':
-          after = 'test'
+          network = 'test'
           break
         case '0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3':
-          after = 'main'
+          network = 'main'
           break
         default:
-          after = 'private'
+          network = 'private'
       }
     } catch (e) { }
-    if (before !== after) {
-      var environment = 'default'
-      switch (after) {
-        case 'test':
-          environment = 'morden'
-          break
-        case 'main':
-          environment = 'main'
-          break
-      }
-      Dapple.init(environment)
+    if (!Session.equals('network', network)) {
+      Dapple.init(network)
       if (!_.contains(web3.eth.accounts, web3.eth.defaultAccount)) {
         if (web3.eth.accounts.length > 0) {
           web3.eth.defaultAccount = web3.eth.accounts[0]
@@ -127,7 +111,7 @@ Meteor.startup(function () {
         }
       }
       Session.set('isConnected', true)
-      Session.set('network', after)
+      Session.set('network', network)
       Session.set('address', web3.eth.defaultAccount)
       syncBalance()
       syncOffers()

@@ -14,6 +14,7 @@ function formattedString (str) {
 
 Offers.helpers({
   canBuy: function () {
+    // Check if order is confirmed and user has enough funds
     if (this.status !== Status.CONFIRMED) {
       return false
     }
