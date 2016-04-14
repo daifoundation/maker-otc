@@ -7,12 +7,12 @@ Session.setDefault('total', 0)
 var totalMax = function () {
   var ordertype = Session.get('ordertype')
   var currency = Session.get('currency')
-  return ordertype === 'buy' ? parseFloat(Session.get(currency + 'Balance')) : Infinity
+  return ordertype === 'buy' ? web3.fromWei(Session.get(currency + 'Balance')) : Infinity
 }
 
 var amountMax = function () {
   var ordertype = Session.get('ordertype')
-  return ordertype === 'sell' ? parseFloat(Session.get('MKRBalance')) : Infinity
+  return ordertype === 'sell' ? web3.fromWei(Session.get('MKRBalance')) : Infinity
 }
 
 Template.neworder.helpers({
