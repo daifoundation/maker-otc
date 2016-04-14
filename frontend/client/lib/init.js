@@ -3,7 +3,7 @@
  * https://github.com/ethereum/meteor-dapp-wallet/blob/90ad8148d042ef7c28610115e97acfa6449442e3/app/client/lib/ethereum/walletInterface.js#L32-L46
  */
 
-Session.setDefault('network', false)
+Session.set('network', false)
 
 // CHECK FOR NETWORK
 function checkNetwork () {
@@ -78,8 +78,8 @@ function syncBalance () {
   }
 }
 
-Session.setDefault('syncing', false)
-Session.setDefault('isConnected', false)
+Session.set('syncing', false)
+Session.set('isConnected', false)
 
 /**
  * Startup code
