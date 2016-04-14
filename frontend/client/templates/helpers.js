@@ -21,12 +21,12 @@ Template.registerHelper('ready', function () {
   return Session.get('isConnected') && !Session.get('syncing')
 })
 
-Template.registerHelper('syncing', function () {
-  return Session.get('syncing')
-})
-
 Template.registerHelper('isConnected', function () {
   return Session.get('isConnected')
+})
+
+Template.registerHelper('syncing', function () {
+  return Session.get('syncing')
 })
 
 Template.registerHelper('syncingPercentage', function () {
@@ -34,6 +34,14 @@ Template.registerHelper('syncingPercentage', function () {
   var currentBlock = Session.get('currentBlock')
   var highestBlock = Session.get('highestBlock')
   return Math.round(100 * (currentBlock - startingBlock) / (highestBlock - startingBlock))
+})
+
+Template.registerHelper('loading', function () {
+  return Session.get('loading')
+})
+
+Template.registerHelper('loadingProgress', function () {
+  return Session.get('loadingProgress')
 })
 
 Template.registerHelper('address', function () {

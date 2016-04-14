@@ -10,7 +10,21 @@
 
   <p>
     Network: {{network}}
-    ({{#if syncing}}syncing {{syncingPercentage}}%{{else}}{{#if ready}}ready{{else}}not connected{{/if}}{{/if}})
+    {{#unless isConnected}}
+      (not connected)
+    {{else}}
+      {{#if syncing}}
+        (syncing {{syncingPercentage}}%)
+      {{else}}
+        {{#if loading}}
+          (loading offers {{loadingProgress}}%)
+        {{else}}
+          {{#if ready}}
+            (ready)
+          {{/if}}
+        {{/if}}
+      {{/if}}
+    {{/unless}}
   </p>
 
   {{#if ready}}
