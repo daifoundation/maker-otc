@@ -7,39 +7,36 @@ Session.set('network', false)
 
 // CHECK FOR NETWORK
 function checkNetwork () {
-  if (web3.isConnected()) {
-    web3.eth.getBlock(0, function (e, res) {
-      var network = false
-      if (!e) {
-        switch (res.hash) {
-          case '0x0cd786a2425d16f152c658316c423e6ce1181e15c3295826d7c9904cba9ce303':
-            network = 'test'
-            break
-          case '0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3':
-            network = 'main'
-            break
-          default:
-            network = 'private'
-        }
-      }
-      if (!Session.equals('network', network)) {
-        Dapple.init(network)
-        if (!_.contains(web3.eth.accounts, web3.eth.defaultAccount)) {
-          if (web3.eth.accounts.length > 0) {
-            web3.eth.defaultAccount = web3.eth.accounts[0]
-          } else {
-            web3.eth.defaultAccount = undefined
+  var isConnected = web3.isConnected()
+  if (!Session.equals('isConnected', isConnected)) {
+    if (isConnected === true) {
+      web3.eth.getBlock(0, function (e, res) {
+        var network = false
+        if (!e) {
+          switch (res.hash) {
+            case '0x0cd786a2425d16f152c658316c423e6ce1181e15c3295826d7c9904cba9ce303':
+              network = 'test'
+              break
+            case '0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3':
+              network = 'main'
+              break
+            default:
+              network = 'private'
           }
         }
-        Session.set('isConnected', true)
-        Session.set('network', network)
-        Session.set('address', web3.eth.defaultAccount)
-        syncBalance()
-        syncOffers()
-      }
-    })
-  } else {
-    Session.set('network', false)
+        if (!Session.equals('network', network)) {
+          Dapple.init(network)
+          Session.set('network', network)
+          Session.set('address', web3.eth.defaultAccount)
+          syncBalance()
+          Session.set('isConnected', isConnected)
+          syncOffers()
+        }
+      })
+    } else {
+      Session.set('isConnected', isConnected)
+      Session.set('network', false)
+    }
   }
 }
 
@@ -112,17 +109,10 @@ Meteor.startup(function () {
     } catch (e) { }
     if (!Session.equals('network', network)) {
       Dapple.init(network)
-      if (!_.contains(web3.eth.accounts, web3.eth.defaultAccount)) {
-        if (web3.eth.accounts.length > 0) {
-          web3.eth.defaultAccount = web3.eth.accounts[0]
-        } else {
-          web3.eth.defaultAccount = undefined
-        }
-      }
-      Session.set('isConnected', true)
       Session.set('network', network)
       Session.set('address', web3.eth.defaultAccount)
       syncBalance()
+      Session.set('isConnected', true)
       syncOffers()
     }
   }
@@ -151,14 +141,7 @@ Meteor.startup(function () {
     }
   })
 
-  Meteor.setInterval(function () {
-    var before = Session.get('isConnected')
-    var after = web3.isConnected()
-    if (before !== after) {
-      Session.set('isConnected', after)
-      checkNetwork()
-    }
-  }, 2000)
+  Meteor.setInterval(checkNetwork, 2000)
 
   Dapple['maker-otc'].objects.otc.ItemUpdate(function (error, result) {
     if (!error) {
