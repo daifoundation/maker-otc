@@ -8,13 +8,8 @@ dependencies:
   dappsys: 0.1.2
   feedbase: 0.1.1
 environments:
-  default:
-    objects:
-      otc:
-        class: AtomicTrade
-        address: '0x5497bdd22fb2fe8c9bbd69a9812b83180e85981a'
   morden:
     objects:
       otc:
         class: AtomicTradeMorden
-        address: '0x566bced2e7dd50064c94012e1c008ffb9bf24ba6'
+        address: '0x7d87b13f8cc1ad5edd0390fe482d8767a109f11e'
