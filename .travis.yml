@@ -12,3 +12,17 @@ addons:
       - ubuntu-toolchain-r-test
     packages:
       - g++-4.8
+
+# take manual control of submodules
+git:
+  submodules: false
+
+before_install:
+  - git submodule update --init --recursive
+  - cp .travis.dapplerc $HOME/.dapplerc
+  - npm install --global dapple
+  - type dapple
+  - dapple --version
+
+script:
+  - dapple test
