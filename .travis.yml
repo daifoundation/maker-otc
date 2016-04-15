@@ -1,0 +1,32 @@
+language: node_js
+
+node_js:
+  - "5.1"
+
+env:
+  - CXX=g++-4.8
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - g++-4.8
+
+# take manual control of submodules
+git:
+  submodules: false
+
+before_install:
+  - git submodule update --init --recursive
+  - cp .travis.dapplerc $HOME/.dapplerc
+  - npm install --global dapple
+  - type dapple
+  - dapple --version
+
+script:
+  - dapple test
+
+caching:
+  directories:
+    - $HOME/.nvm
