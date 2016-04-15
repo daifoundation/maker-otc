@@ -26,3 +26,7 @@ before_install:
 
 script:
   - dapple test
+
+caching:
+  directories:
+    - $HOME/.nvm
