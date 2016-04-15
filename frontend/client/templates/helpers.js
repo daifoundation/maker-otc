@@ -21,12 +21,12 @@ Template.registerHelper('ready', function () {
   return Session.get('isConnected') && !Session.get('syncing')
 })
 
-Template.registerHelper('syncing', function () {
-  return Session.get('syncing')
-})
-
 Template.registerHelper('isConnected', function () {
   return Session.get('isConnected')
+})
+
+Template.registerHelper('syncing', function () {
+  return Session.get('syncing')
 })
 
 Template.registerHelper('syncingPercentage', function () {
@@ -36,21 +36,28 @@ Template.registerHelper('syncingPercentage', function () {
   return Math.round(100 * (currentBlock - startingBlock) / (highestBlock - startingBlock))
 })
 
+Template.registerHelper('loading', function () {
+  return Session.get('loading')
+})
+
+Template.registerHelper('loadingProgress', function () {
+  return Session.get('loadingProgress')
+})
+
 Template.registerHelper('address', function () {
   return Session.get('address')
 })
 
-Template.registerHelper('ethBalance', function () {
-  var address = Session.get('address')
-  return web3.isAddress(address) ? web3.fromWei(web3.eth.getBalance(address)) : '-'
+Template.registerHelper('ETHBalance', function () {
+  return Session.get('ETHBalance')
 })
 
-Template.registerHelper('mkrBalance', function () {
-  var address = Session.get('address')
-  var network = Session.get('network')
-  var tokenAddress = network === 'test' ? '0xffb1c99b389ba527a9194b1606b3565a07da3eef' : ''
-  var tokenInstance = TokenContract.at(tokenAddress)
-  return web3.isAddress(address) ? web3.fromWei(tokenInstance.balanceOf(address)) : '-'
+Template.registerHelper('MKRBalance', function () {
+  return Session.get('MKRBalance')
+})
+
+Template.registerHelper('DAIBalance', function () {
+  return Session.get('DAIBalance')
 })
 
 Template.registerHelper('baseCurrency', function (value) {

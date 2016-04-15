@@ -1,9 +1,9 @@
 <template name="orderRow">
   <tr class="{{order.status}}">
-    <td class={{#if order.canBuy}}"buy"{{else}}""{{/if}}>{{formatBalance order.price}}</td>
-    <td class={{#if order.canBuy}}"buy"{{else}}""{{/if}}>{{order.currency}}</td>
-    <td class={{#if order.canBuy}}"buy"{{else}}""{{/if}}>~{{formatPrice order}}</td>
-    <td class={{#if order.canBuy}}"buy"{{else}}""{{/if}}>{{formatBalance order.volume}} {{baseCurrency}}</td>
+    <td class={{#if order.canBuy}}buy{{else}}cant-buy{{/if}}>{{formatBalance order.price}}</td>
+    <td class={{#if order.canBuy}}buy{{else}}cant-buy{{/if}}>{{order.currency}}</td>
+    <td class={{#if order.canBuy}}buy{{else}}cant-buy{{/if}}>~{{formatPrice order}}</td>
+    <td class={{#if order.canBuy}}buy{{else}}cant-buy{{/if}}>{{formatBalance order.volume}} {{baseCurrency}}</td>
     <td>
       {{#if order.canCancel}}
       [<a href="#" class="cancel">x</a>]

@@ -61,7 +61,7 @@
                   (in {{baseCurrency}})</label>
               </th>
               <td>
-                <input type="number" class="input amount" name="amount" value="{{amount}}" step="0.01" min="0">
+                <input type="number" class="input amount" name="amount" value="{{amount}}" step="0.01" min="0" max={{amountMax}}>
               </td>
             </tr>
             <tr>
@@ -70,7 +70,7 @@
                   Total (in {{currency}})</label>
               </th>
               <td>
-                <input type="number" class="input total" name="total" value="{{total}}" step="0.01" min="0">
+                <input type="number" class="input total" name="total" value="{{total}}" step="0.01" min="0" max={{totalMax}}>
               </td>
             </tr>
           </tbody>

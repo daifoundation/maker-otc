@@ -44,7 +44,8 @@ small { color: lightgray }
 .o th { color: gray }
 .o th:first-child { text-align: left }
 .o td:nth-child(2) { text-align: left }
-.o tbody tr { cursor: pointer }
+.o tbody tr.confirmed td.buy { cursor: pointer }
+.o tbody tr.confirmed td.cant-buy { cursor: not-allowed }
 .o tbody tr:hover { background: #eee }
 .o tbody tr:hover+tr.helper-row { background: #eee }
 .o tbody tr.cancelled { color: grey }
