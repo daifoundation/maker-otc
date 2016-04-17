@@ -3,11 +3,12 @@ import 'feedbase/feedbase.sol'; // for link type TODO refactor
 import 'feedbase/user.sol';
 import 'maker-user/user.sol';
 
+import 'fallback_failer.sol';
 import 'type.sol';
 
 // Notes:
 // * Deploy via the factory
-// * needs a dai balance to pay for feeds. Consume feeds for free by 
+// * needs a dai balance to pay for feeds. Consume feeds for free by
 //   setting `max_feed_price` to 0 and waiting for someone else to read it first.
 // * each configuration entry specifies details for a one-way exchange.
 //   The price function is linear function with an error offset. So the
@@ -15,6 +16,7 @@ import 'type.sol';
 contract BasicLiquidityProvider is
     LPCType,
     DSAuth,
+    FallbackFailer,
     FeedBaseUser // is MakerUser
 {
     function BasicLiquidityProvider(FeedBase fb, MakerUserLinkType maker)
@@ -124,7 +126,7 @@ contract BasicLiquidityProvider is
         _configs[sell_what][accept_what].enabled = enabled;
         MarketToggled(sell_what, accept_what, enabled);
     }
-    
+
     // == helpers == //
     function invert(uint a) internal constant returns (uint b) {
         b = toWei(10**18)/a;

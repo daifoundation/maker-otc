@@ -1,5 +1,6 @@
 import 'dappsys/auth.sol';
 import 'maker-user/user.sol';
+import 'fallback_failer.sol';
 
 // A simple direct exchange order manager.
 // Orders cannot be partially filled.
@@ -7,7 +8,7 @@ import 'maker-user/user.sol';
 contract ItemUpdateEvent {
     event ItemUpdate( uint id );
 }
-contract AtomicTrade is MakerUser, ItemUpdateEvent {
+contract AtomicTrade is MakerUser, ItemUpdateEvent, FallbackFailer {
     struct OfferInfo {
         uint sell_how_much;
         bytes32 sell_which_token;

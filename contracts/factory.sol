@@ -1,10 +1,11 @@
 import 'feedbase/feedbase.sol';
 import 'feedbase/user.sol';
 
+import 'fallback_failer.sol';
 import 'lpc.sol';
 
 // Factory + creation event.
-contract BasicLiquidityProviderFactory is FeedBaseUser, DSAuthUser
+contract BasicLiquidityProviderFactory is FallbackFailer, FeedBaseUser, DSAuthUser
 {
     function BasicLiquidityProviderFactory( FeedBase _feedbase
                                           , MakerUserLinkType _M )

@@ -1,0 +1,5 @@
+contract FallbackFailer {
+  function () {
+    throw;
+  }
+}
