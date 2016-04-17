@@ -3,6 +3,7 @@ import 'feedbase/feedbase.sol'; // for link type TODO refactor
 import 'feedbase/user.sol';
 import 'maker-user/user.sol';
 
+import 'assertive.sol';
 import 'fallback_failer.sol';
 import 'type.sol';
 
@@ -15,6 +16,7 @@ import 'type.sol';
 //   cost function is quadratic, and buyReward grows like sqrt(n)
 contract BasicLiquidityProvider is
     LPCType,
+    Assertive,
     DSAuth,
     FallbackFailer,
     FeedBaseUser // is MakerUser
@@ -62,6 +64,10 @@ contract BasicLiquidityProvider is
     function buy(bytes32 buy_what, uint buy_how_much, bytes32 buy_with)
              returns (uint buy_cost)
     {
+        assert(buy_how_much > 0);
+        assert(buy_what != 0x0);
+        assert(buy_with != 0x0);
+
         var config = _configs[buy_what][buy_with];
         approve(_feedbase, config.max_feed_price, "DAI");
         var feed_price = uint(_feedbase.get(config.feed_id));
@@ -109,6 +115,9 @@ contract BasicLiquidityProvider is
                       , uint slope )
         auth()
     {
+        assert(sell_what != 0x0);
+        assert(accept_what != 0x0);
+
         MarketConfig memory config;
         config.enabled = enabled;
         config.feed_id = feed_id;
@@ -123,6 +132,9 @@ contract BasicLiquidityProvider is
     function setEnabled(bytes32 sell_what, bytes32 accept_what, bool enabled)
         auth()
     {
+        assert(sell_what != 0x0);
+        assert(accept_what != 0x0);
+
         _configs[sell_what][accept_what].enabled = enabled;
         MarketToggled(sell_what, accept_what, enabled);
     }

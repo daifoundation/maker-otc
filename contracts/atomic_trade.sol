@@ -1,5 +1,6 @@
 import 'dappsys/auth.sol';
 import 'maker-user/user.sol';
+import 'assertive.sol';
 import 'fallback_failer.sol';
 
 // A simple direct exchange order manager.
@@ -8,7 +9,7 @@ import 'fallback_failer.sol';
 contract ItemUpdateEvent {
     event ItemUpdate( uint id );
 }
-contract AtomicTrade is MakerUser, ItemUpdateEvent, FallbackFailer {
+contract AtomicTrade is MakerUser, ItemUpdateEvent, FallbackFailer, Assertive {
     struct OfferInfo {
         uint sell_how_much;
         bytes32 sell_which_token;
@@ -32,6 +33,11 @@ contract AtomicTrade is MakerUser, ItemUpdateEvent, FallbackFailer {
                   , uint buy_how_much,  bytes32 buy_which_token )
         returns (uint id)
     {
+        assert(sell_how_much > 0);
+        assert(sell_which_token != 0x0);
+        assert(buy_how_much > 0);
+        assert(buy_which_token > 0);
+
         transferFrom( msg.sender, this, sell_how_much, sell_which_token );
         OfferInfo memory info;
         info.sell_how_much = sell_how_much;
@@ -48,6 +54,8 @@ contract AtomicTrade is MakerUser, ItemUpdateEvent, FallbackFailer {
     function buy( uint id )
     {
         var offer = offers[id];
+        assert(offer.active);
+
         transferFrom( msg.sender, offer.owner, offer.buy_how_much, offer.buy_which_token );
         transfer( msg.sender, offer.sell_how_much, offer.sell_which_token );
         delete offers[id];
@@ -56,6 +64,8 @@ contract AtomicTrade is MakerUser, ItemUpdateEvent, FallbackFailer {
     function buy( uint id, uint quantity )
     {
         var offer = offers[id];
+        assert(offer.active);
+
         if ( offers[id].sell_how_much <= quantity ) {
             transferFrom( msg.sender, offer.owner, offer.buy_how_much, offer.buy_which_token );
             transfer( msg.sender, offer.sell_how_much, offer.sell_which_token );
@@ -75,13 +85,12 @@ contract AtomicTrade is MakerUser, ItemUpdateEvent, FallbackFailer {
     function cancel( uint id )
     {
         var offer = offers[id];
-        if( msg.sender == offer.owner ) {
-            transfer( msg.sender, offer.sell_how_much, offer.sell_which_token );
-            delete offers[id];
-            ItemUpdate(id);
-        } else {
-            throw;
-        }
+        assert(offer.active);
+        assert(msg.sender == offer.owner);
+
+        transfer( msg.sender, offer.sell_how_much, offer.sell_which_token );
+        delete offers[id];
+        ItemUpdate(id);
     }
     function getOffer( uint id ) constant
         returns (uint, bytes32, uint, bytes32) {
