@@ -46,6 +46,21 @@ Template.neworder.helpers({
     } else {
       return 'disabled'
     }
+  },
+  allowanceButtonState: function () {
+    var ETHAllowance = Session.get('ETHAllowance')
+    var MKRAllowance = Session.get('MKRAllowance')
+    var DAIAllowance = Session.get('DAIAllowance')
+
+    var newETHAllowance = Session.get('newETHAllowance')
+    var newMKRAllowance = Session.get('newMKRAllowance')
+    var newDAIAllowance = Session.get('newDAIAllowance')
+
+    if (ETHAllowance !== newETHAllowance || MKRAllowance !== newMKRAllowance || DAIAllowance !== newDAIAllowance) {
+      return ''
+    } else {
+      return 'disabled'
+    }
   }
 })
 
@@ -96,5 +111,32 @@ Template.neworder.events({
     }
     Offers.newOffer(sell_how_much, sell_which_token, buy_how_much, buy_which_token)
     return false
+  },
+  'change #newETHAllowance,#newMKRAllowance,#newDAIAllowance': function () {
+    Session.set('newETHAllowance', web3.toWei($('#newETHAllowance').val()))
+    Session.set('newMKRAllowance', web3.toWei($('#newMKRAllowance').val()))
+    Session.set('newDAIAllowance', web3.toWei($('#newDAIAllowance').val()))
+  },
+  'click #changeAllowance': function (event) {
+    event.preventDefault()
+
+    var contract_address = Dapple['maker-otc'].objects.otc.address
+    var options = { from: web3.eth.coinbase, gas: 3141592 }
+
+    // Get new allowances
+    var newETHAllowance = Session.get('newETHAllowance')
+    var newMKRAllowance = Session.get('newMKRAllowance')
+    var newDAIAllowance = Session.get('newDAIAllowance')
+
+    // Do only what is necessary
+    if (!Session.equals('ETHAllowance', newETHAllowance)) {
+      Dapple['makerjs'].getToken('ETH').approve(contract_address, newETHAllowance, options)
+    }
+    if (!Session.equals('MKRAllowance', newMKRAllowance)) {
+      Dapple['makerjs'].getToken('MKR').approve(contract_address, newMKRAllowance, options)
+    }
+    if (!Session.equals('DAIAllowance', newDAIAllowance)) {
+      Dapple['makerjs'].getToken('DAI').approve(contract_address, newDAIAllowance, options)
+    }
   }
 })

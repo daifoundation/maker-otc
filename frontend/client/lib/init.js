@@ -69,7 +69,9 @@ function syncBalance () {
   if (!Session.equals('ETHBalance', newETHBalance)) {
     Session.set('ETHBalance', newETHBalance)
   }
+
   if (network !== 'private') {
+    /** Balances */
     var newMKRBalance = Dapple['makerjs'].getToken('MKR').balanceOf(address).toString(10)
     if (!Session.equals('MKRBalance', newMKRBalance)) {
       Session.set('MKRBalance', newMKRBalance)
@@ -78,9 +80,29 @@ function syncBalance () {
     if (!Session.equals('DAIBalance', newDAIBalance)) {
       Session.set('DAIBalance', newDAIBalance)
     }
+
+    /** Allowances */
+    var contract_address = Dapple['maker-otc'].objects.otc.address
+
+    var newETHAllowance = Dapple['makerjs'].getToken('ETH').allowance(web3.eth.defaultAccount, contract_address).toString(10)
+    if (!Session.equals('ETHAllowance', newETHAllowance)) {
+      Session.set('ETHAllowance', newETHAllowance)
+    }
+    var newMKRAllowance = Dapple['makerjs'].getToken('MKR').allowance(web3.eth.defaultAccount, contract_address).toString(10)
+    if (!Session.equals('MKRAllowance', newMKRAllowance)) {
+      Session.set('MKRAllowance', newMKRAllowance)
+    }
+    var newDAIAllowance = Dapple['makerjs'].getToken('DAI').allowance(web3.eth.defaultAccount, contract_address).toString(10)
+    if (!Session.equals('DAIAllowance', newDAIAllowance)) {
+      Session.set('DAIAllowance', newDAIAllowance)
+    }
   } else {
     Session.set('MKRBalance', '0')
     Session.set('DAIBalance', '0')
+
+    Session.set('ETHAllowance', '0')
+    Session.set('MKRAllowance', '0')
+    Session.set('DAIAllowance', '0')
   }
 }
 
@@ -114,6 +136,16 @@ Meteor.startup(function () {
       syncBalance()
       Session.set('isConnected', true)
       syncOffers()
+
+      /** Allowances */
+      var contract_address = Dapple['maker-otc'].objects.otc.address
+
+      var newETHAllowance = Dapple['makerjs'].getToken('ETH').allowance(web3.eth.defaultAccount, contract_address).toString(10)
+      Session.set('newETHAllowance', newETHAllowance)
+      var newMKRAllowance = Dapple['makerjs'].getToken('MKR').allowance(web3.eth.defaultAccount, contract_address).toString(10)
+      Session.set('newMKRAllowance', newMKRAllowance)
+      var newDAIAllowance = Dapple['makerjs'].getToken('DAI').allowance(web3.eth.defaultAccount, contract_address).toString(10)
+      Session.set('newDAIAllowance', newDAIAllowance)
     }
   }
 
@@ -126,9 +158,8 @@ Meteor.startup(function () {
       // Stop all app activity
       if (sync === true) {
         // We use `true`, so it stops all filters, but not the web3.eth.syncing polling
-        checkNetwork()
         web3.reset(true)
-
+        checkNetwork()
       // show sync info
       } else if (sync) {
         Session.set('startingBlock', sync.startingBlock)

@@ -60,12 +60,28 @@ Template.registerHelper('DAIBalance', function () {
   return Session.get('DAIBalance')
 })
 
+Template.registerHelper('ETHAllowance', function () {
+  return Session.get('ETHAllowance')
+})
+
+Template.registerHelper('MKRAllowance', function () {
+  return Session.get('MKRAllowance')
+})
+
+Template.registerHelper('DAIAllowance', function () {
+  return Session.get('DAIAllowance')
+})
+
 Template.registerHelper('baseCurrency', function (value) {
   return BASE_CURRENCY
 })
 
 Template.registerHelper('equals', function (a, b) {
   return a === b
+})
+
+Template.registerHelper('fromWei', function (s) {
+  return web3.fromWei(s)
 })
 
 Template.registerHelper('formatBalance', function (wei, format) {

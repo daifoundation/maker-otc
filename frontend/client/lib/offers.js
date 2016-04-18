@@ -19,13 +19,21 @@ Offers.helpers({
       return false
     }
     if (this.type === 'bid') {
+      // Since allowance can be larger than the balance,
+      // check if both the MKR balance and allowance are greater than or equal to the offer's volume
+      // TODO: add support for partial orders
       var MKRBalance = new BigNumber(Session.get('MKRBalance'))
-      return MKRBalance.gte(new BigNumber(this.volume))
+      var MKRAllowance = new BigNumber(Session.get('MKRAllowance'))
+      return BigNumber.min(MKRBalance, MKRAllowance).gte(new BigNumber(this.volume))
     } else {
+      // Since allowance can be larger than the balance,
+      // check if both the balance and allowance are greater than or equal to the offer's volume times its price
+      // TODO: add support for partial orders, take transaction gas cost into account
       var balance = new BigNumber(Session.get(this.currency + 'Balance'))
+      var allowance = new BigNumber(Session.get(this.currency + 'Allowance'))
       var volume = new BigNumber(this.volume)
       var price = new BigNumber(this.price)
-      return balance.gte(volume.times(web3.fromWei(price)))
+      return BigNumber.min(balance, allowance).gte(volume.times(web3.fromWei(price)))
     }
   },
   canCancel: function () {

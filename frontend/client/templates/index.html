@@ -33,6 +33,7 @@
     {{/unless}}
     <p>Account: {{address}}</p>
     <p>Balance: {{formatBalance ETHBalance}} ETH | {{formatBalance MKRBalance}} MKR | {{formatBalance DAIBalance}} DAI</p>
+    <p><a href="#allowance">Allowance</a>: {{formatBalance ETHAllowance}} ETH | {{formatBalance MKRAllowance}} MKR | {{formatBalance DAIAllowance}} DAI</p>
 
     {{#if contractExists}}
       {{> orderbook}}
