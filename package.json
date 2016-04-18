@@ -1,13 +1,16 @@
 {
   "name": "Maker-OTC",
-  "scripts" : {
+  "scripts": {
     "deploy": "dapple run scripts/deploy_private.ds",
     "build": "dapple build --template meteor --no-deploy-data",
-    "blockchain" : "./scripts/blockchain/start-blockchain.sh",
-    "attach" : "geth attach ipc://$PWD/scripts/blockchain/tmp/geth.ipc"
+    "blockchain": "./scripts/blockchain/start-blockchain.sh",
+    "attach": "geth attach ipc://$PWD/scripts/blockchain/tmp/geth.ipc"
   },
   "devDependencies": {
     "babel-eslint": "5.0.0",
+    "gulp": "^3.9.1",
+    "gulp-gh-pages": "^0.5.4",
+    "gulp-sync": "^0.1.4",
     "standard": "6.0.7"
   },
   "standard": {

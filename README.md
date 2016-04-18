@@ -30,6 +30,7 @@ Clone and install:
 git clone https://github.com/MakerDAO/maker-otc
 cd maker-otc
 git submodule update --init --recursive
+npm install
 ```
 
 ## Usage (for Developers)
@@ -68,22 +69,14 @@ environments:
       port: '8545'
 ```
 
+To deploy the frontend to Github Pages:
+
+```bash
+gulp deploy
+```
+
 ## TODOs
-```
-- Use wei (10^18) denominations
-- USD Price estimation
-- MakerUser integration
-- Check that the contract actually exists
-- UI improvements to show actions as a label instead of with colors
-
-- Deploy to testnet
-```
-
-## Icebox
-```
-- Mist integration
-- Estimate gas properly
-```
+See https://waffle.io/MakerDAO/maker-otc
 
 ## Acknowledgements
 * Atomic Trade contract by [Nikolai Mushegian](https://github.com/nmushegian)

@@ -1,5 +1,8 @@
 *.sw*
+.publish/
 scripts/blockchain/tmp
-build
+frontend/packages/dapple/build/
+dist/
+node_modules/
 npm-debug.log
 nohup.out
