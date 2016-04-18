@@ -1,0 +1,18 @@
+sudo: required
+dist: trusty
+
+services:
+  docker
+
+git:
+  submodules: false
+
+before_install:
+  - id
+  - docker pull rainbeam/dapple
+  - docker images
+  - cp .travis.dapplerc $HOME/.dapplerc
+  - git submodule update --init --recursive
+
+script:
+  - ./.travis.dapple-docker-entry test
