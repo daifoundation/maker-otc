@@ -43,21 +43,30 @@ Offers.helpers({
   }
 })
 
-Offers.syncOffer = function (id) {
-  var data = Dapple['maker-otc'].objects.otc.offers(id)
-  var idx = id.toString()
-  var sell_how_much = data[0]
-  var sell_which_token = formattedString(data[1])
-  var buy_how_much = data[2]
-  var buy_which_token = formattedString(data[3])
-  var owner = data[4]
-  var active = data[5] // TODO unused
+Offers.syncOffer = function (id, max) {
+  Dapple['maker-otc'].objects.otc.offers(id, function (error, data) {
+    if (!error) {
+      var idx = id.toString()
+      var sell_how_much = data[0]
+      var sell_which_token = formattedString(data[1])
+      var buy_how_much = data[2]
+      var buy_which_token = formattedString(data[3])
+      var owner = data[4]
+      var active = data[5] // TODO unused
 
-  if (active) {
-    Offers.updateOffer(idx, sell_how_much, sell_which_token, buy_how_much, buy_which_token, owner, Status.CONFIRMED)
-  } else {
-    Offers.remove(idx)
-  }
+      if (active) {
+        Offers.updateOffer(idx, sell_how_much, sell_which_token, buy_how_much, buy_which_token, owner, Status.CONFIRMED)
+      } else {
+        Offers.remove(idx)
+      }
+      if (max > 0 && id > 1) {
+        Session.set('loadingProgress', Math.round(100 * (max - id) / max))
+        Offers.syncOffer(id - 1, max)
+      } else if (max > 0) {
+        Session.set('loading', false)
+      }
+    }
+  })
 }
 
 Offers.updateOffer = function (idx, sell_how_much, sell_which_token, buy_how_much, buy_which_token, owner, status) {

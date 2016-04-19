@@ -51,11 +51,7 @@ function syncOffers () {
   console.log('last_offer_id', last_offer_id)
   Session.set('loading', true)
   Session.set('loadingProgress', 0)
-  for (var id = 1; id <= last_offer_id; id++) {
-    Offers.syncOffer(id)
-    Session.set('loadingProgress', Math.round(100 * (id / last_offer_id)))
-  }
-  Session.set('loading', false)
+  Offers.syncOffer(last_offer_id, last_offer_id)
 }
 
 Session.set('syncing', false)
