@@ -45,7 +45,7 @@ Template.makereth.events({
     if (depositType === 'deposit') {
       Dapple['makerjs'].getToken('ETH').deposit(options)
     } else {
-      Dapple['makerjs'].getToken('ETH').withdraw(options)
+      Dapple['makerjs'].getToken('ETH').withdraw(web3.toWei(depositAmount), options)
     }
   }
 })
