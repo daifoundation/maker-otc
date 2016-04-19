@@ -61,7 +61,7 @@ contract AtomicTrade is MakerUser, ItemUpdateEvent, FallbackFailer, Assertive {
         delete offers[id];
         ItemUpdate(id);
     }
-    function buy( uint id, uint quantity )
+    function buyPartial( uint id, uint quantity )
     {
         var offer = offers[id];
         assert(offer.active);
