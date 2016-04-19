@@ -75,6 +75,12 @@ To deploy the frontend to Github Pages:
 gulp deploy
 ```
 
+## Gas Costs
+
+```
+909958 for "new AtomicTradeMorden"
+```
+
 ## TODOs
 See https://waffle.io/MakerDAO/maker-otc
 
