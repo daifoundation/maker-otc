@@ -11,7 +11,7 @@ Template.newallowance.helpers({
 })
 
 Template.newallowance.events({
-  'change input[type="number"]': function (event) {
+  'change input[type="number"], keyup input[type="number"], mouseup input[type="number"]': function (event) {
     var target = $(event.target)
     Tokens.update(target.data('token'), { $set: { newAllowance: web3.toWei(target.val()) } })
   },

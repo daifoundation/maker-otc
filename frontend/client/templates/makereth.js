@@ -31,7 +31,7 @@ Template.makereth.events({
     var depositType = $('input:radio[name="depositType"]:checked').val()
     Session.set('depositType', depositType)
   },
-  'change input[name="depositAmount"]': function () {
+  'change input[name="depositAmount"], keyup input[name="depositAmount"], mouseup input[name="depositAmount"]': function () {
     var depositAmount = $('input[name="depositAmount"]').val()
     Session.set('depositAmount', depositAmount)
   },
@@ -43,7 +43,7 @@ Template.makereth.events({
     var options = { from: Session.get('address'), gas: 3141592 }
 
     if (depositType === 'deposit') {
-      options['value'] = web3.toWei(depositAmount) 
+      options['value'] = web3.toWei(depositAmount)
       Dapple['makerjs'].getToken('ETH').deposit(options)
     } else {
       Dapple['makerjs'].getToken('ETH').withdraw(web3.toWei(depositAmount), options)
