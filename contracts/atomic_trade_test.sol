@@ -47,7 +47,7 @@ contract AtomicTradeTest is Test
         var user1_dai_balance_before = balanceOf(user1, "DAI");
 
         var id = otc.offer( 200, "MKR", 500, "DAI" );
-        AtomicTrade(user1).buy(id, 10);
+        AtomicTrade(user1).buyPartial(id, 10);
         var my_mkr_balance_after = balanceOf(this, "MKR");
         var my_dai_balance_after = balanceOf(this, "DAI");
         var user1_mkr_balance_after = balanceOf(user1, "MKR");
@@ -76,7 +76,7 @@ contract AtomicTradeTest is Test
         var user1_dai_balance_before = balanceOf(user1, "DAI");
 
         var id = otc.offer( 500, "DAI", 200, "MKR" );
-        AtomicTrade(user1).buy(id, 10);
+        AtomicTrade(user1).buyPartial(id, 10);
         var my_mkr_balance_after = balanceOf(this, "MKR");
         var my_dai_balance_after = balanceOf(this, "DAI");
         var user1_mkr_balance_after = balanceOf(user1, "MKR");
