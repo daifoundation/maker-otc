@@ -104,21 +104,21 @@ Offers.updateOffer = function (idx, sell_how_much, sell_which_token, buy_how_muc
 }
 
 Offers.newOffer = function (sell_how_much, sell_which_token, buy_how_much, buy_which_token) {
-  var offerTx = Dapple['maker-otc'].objects.otc.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token, { gas: 300000 })
+  var offerTx = Dapple['maker-otc'].objects.otc.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token, { gas: 3141592 })
   console.log('offer!', offerTx, sell_how_much, sell_which_token, buy_how_much, buy_which_token)
   Offers.updateOffer(offerTx, sell_how_much, sell_which_token, buy_how_much, buy_which_token, web3.eth.defaultAccount, Status.PENDING)
 }
 
 Offers.buyOffer = function (idx) {
   var id = parseInt(idx, 10)
-  var tx = Dapple['maker-otc'].objects.otc.buy(id)
+  var tx = Dapple['maker-otc'].objects.otc.buy['uint256'](id, { gas: 3141592 })
   console.log('buy!', id, tx)
   Offers.update(idx, { $set: { status: Status.BOUGHT } })
 }
 
 Offers.cancelOffer = function (idx) {
   var id = parseInt(idx, 10)
-  var tx = Dapple['maker-otc'].objects.otc.cancel(id, { gas: 100000 })
+  var tx = Dapple['maker-otc'].objects.otc.cancel(id, { gas: 3141592 })
   console.log('cancel!', id, tx)
   Offers.update(idx, { $set: { status: Status.CANCELLED } })
 }
