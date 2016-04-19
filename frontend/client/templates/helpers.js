@@ -17,6 +17,10 @@ Template.registerHelper('contractHref', function () {
   return 'https://' + (network === 'test' ? 'testnet.' : '') + 'etherscan.io/address/' + Dapple['maker-otc'].objects.otc.address
 })
 
+Template.registerHelper('rpccorsdomain', function () {
+  return window.location.origin
+})
+
 Template.registerHelper('ready', function () {
   return Session.get('isConnected') && !Session.get('syncing')
 })

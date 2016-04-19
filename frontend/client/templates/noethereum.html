@@ -1,0 +1,8 @@
+<template name="noEthereum">
+    <h2>Ethereum not found</h2>
+    <p>Maker-OTC requires an Ethereum client to be running and current. Maker-OTC could not detect a client running which probably means it's not installed,
+        running or is misconfigured.</p>
+    <p>Start geth with:</p>
+    <pre>geth --testnet --rpc --rpccorsdomain {{rpccorsdomain}}</pre>
+    <p>Optionally add <code>--unlock 0xYourAddress</code> to unlock an account.</p>
+</template>

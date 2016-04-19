@@ -67,4 +67,7 @@
       </p>
     {{/if}}
   {{/if}}
+  {{#unless isConnected}}
+    {{> noEthereum}}
+  {{/unless}}
 </body>
