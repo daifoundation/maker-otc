@@ -40,9 +40,10 @@ Template.makereth.events({
 
     var depositType = Session.get('depositType')
     var depositAmount = Session.get('depositAmount')
-    var options = { value: web3.toWei(depositAmount), from: Session.get('address'), gas: 3141592 }
+    var options = { from: Session.get('address'), gas: 3141592 }
 
     if (depositType === 'deposit') {
+      options['value'] = web3.toWei(depositAmount) 
       Dapple['makerjs'].getToken('ETH').deposit(options)
     } else {
       Dapple['makerjs'].getToken('ETH').withdraw(web3.toWei(depositAmount), options)
