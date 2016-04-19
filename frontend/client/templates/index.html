@@ -32,11 +32,35 @@
       <p>Contract: <a href={{contractHref}}>Etherscan.io</a></p>
     {{/unless}}
     <p>Account: {{address}}</p>
-    <p>Balance: {{formatBalance ETHBalance}} ETH | {{formatBalance MKRBalance}} MKR | {{formatBalance DAIBalance}} DAI</p>
+    <p>Balance: {{formatBalance ETHBalance}} ETH</p>
+    <p>Tokens: {{#each token in allTokens}}{{formatBalance token.balance}} {{#if equals token._id 'ETH'}}<a href="#makereth">{{token._id}}</a>{{else}}{{token._id}}{{/if}} | {{/each}}</p>
+    <p><a href="#allowance">Allowance</a>: {{#each token in allTokens}}{{formatBalance token.allowance}} {{token._id}} | {{/each}}</p>
 
     {{#if contractExists}}
-      {{> orderbook}}
-      {{> neworder}}
+      <div class=row>
+        <section>
+          {{> orderbook title='Buy orders' subtitle=(concat '(pick on to sell ' baseCurrency ')') priceLabel='Bid' orders=(findOffers 'type' 'bid')}}
+        </section>
+        <section>
+          {{> orderbook title='Sell orders' subtitle=(concat '(pick on to buy ' baseCurrency ')') priceLabel='Ask' orders=(findOffers 'type' 'ask')}}
+        </section>
+      </div>
+      <div class=row>
+        <section>
+          {{> neworder}}
+        </section>
+        <section>
+          {{> orderbook title='My orders' subtitle='' priceLabel='Price' orders=(findOffers 'owner' address)}}
+        </section>
+      </div>
+      <div class=row>
+        <section>
+          {{> newallowance}}
+        </section>
+        <section>
+          {{> makereth}}
+        </section>
+      </div>
     {{else}}
       <p>
         Could not find the contract on your current blockchain environment.

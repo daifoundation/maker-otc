@@ -28,7 +28,7 @@ function checkNetwork () {
           Dapple.init(network)
           Session.set('network', network)
           Session.set('address', web3.eth.defaultAccount)
-          syncBalance()
+          Tokens.sync()
           Session.set('isConnected', isConnected)
           syncOffers()
         }
@@ -51,37 +51,7 @@ function syncOffers () {
   console.log('last_offer_id', last_offer_id)
   Session.set('loading', true)
   Session.set('loadingProgress', 0)
-  for (var id = 1; id <= last_offer_id; id++) {
-    Offers.syncOffer(id)
-    Session.set('loadingProgress', Math.round(100 * (id / last_offer_id)))
-  }
-  Session.set('loading', false)
-}
-
-/**
- * Syncs the ETH, MKR and DAI balances of Session.get('address')
- * usually called for each new block
- */
-function syncBalance () {
-  var network = Session.get('network')
-  var address = Session.get('address')
-  var newETHBalance = web3.eth.getBalance(address).toString(10)
-  if (!Session.equals('ETHBalance', newETHBalance)) {
-    Session.set('ETHBalance', newETHBalance)
-  }
-  if (network !== 'private') {
-    var newMKRBalance = Dapple['makerjs'].getToken('MKR').balanceOf(address).toString(10)
-    if (!Session.equals('MKRBalance', newMKRBalance)) {
-      Session.set('MKRBalance', newMKRBalance)
-    }
-    var newDAIBalance = Dapple['makerjs'].getToken('DAI').balanceOf(address).toString(10)
-    if (!Session.equals('DAIBalance', newDAIBalance)) {
-      Session.set('DAIBalance', newDAIBalance)
-    }
-  } else {
-    Session.set('MKRBalance', '0')
-    Session.set('DAIBalance', '0')
-  }
+  Offers.syncOffer(last_offer_id, last_offer_id)
 }
 
 Session.set('syncing', false)
@@ -111,13 +81,13 @@ Meteor.startup(function () {
       Dapple.init(network)
       Session.set('network', network)
       Session.set('address', web3.eth.defaultAccount)
-      syncBalance()
+      Tokens.sync()
       Session.set('isConnected', true)
       syncOffers()
     }
   }
 
-  web3.eth.filter('latest', syncBalance)
+  web3.eth.filter('latest', Tokens.sync)
 
   web3.eth.isSyncing(function (error, sync) {
     if (!error) {
@@ -126,9 +96,8 @@ Meteor.startup(function () {
       // Stop all app activity
       if (sync === true) {
         // We use `true`, so it stops all filters, but not the web3.eth.syncing polling
-        checkNetwork()
         web3.reset(true)
-
+        checkNetwork()
       // show sync info
       } else if (sync) {
         Session.set('startingBlock', sync.startingBlock)
@@ -136,7 +105,7 @@ Meteor.startup(function () {
         Session.set('highestBlock', sync.highestBlock)
       } else {
         checkNetwork()
-        web3.eth.filter('latest', syncBalance)
+        web3.eth.filter('latest', Tokens.sync)
       }
     }
   })

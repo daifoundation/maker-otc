@@ -19,35 +19,54 @@ Offers.helpers({
       return false
     }
     if (this.type === 'bid') {
-      var MKRBalance = new BigNumber(Session.get('MKRBalance'))
-      return MKRBalance.gte(new BigNumber(this.volume))
+      // Since allowance can be larger than the balance,
+      // check if both the MKR balance and allowance are greater than or equal to the offer's volume
+      // TODO: add support for partial orders
+      var MKRToken = Tokens.findOne('MKR')
+      var MKRBalance = new BigNumber(MKRToken.balance)
+      var MKRAllowance = new BigNumber(MKRToken.allowance)
+      return BigNumber.min(MKRBalance, MKRAllowance).gte(new BigNumber(this.volume))
     } else {
-      var balance = new BigNumber(Session.get(this.currency + 'Balance'))
+      // Since allowance can be larger than the balance,
+      // check if both the balance and allowance are greater than or equal to the offer's volume times its price
+      // TODO: add support for partial orders, take transaction gas cost into account
+      var token = Tokens.findOne(this.currency)
+      var balance = new BigNumber(token.balance)
+      var allowance = new BigNumber(token.allowance)
       var volume = new BigNumber(this.volume)
       var price = new BigNumber(this.price)
-      return balance.gte(volume.times(web3.fromWei(price)))
+      return BigNumber.min(balance, allowance).gte(volume.times(web3.fromWei(price)))
     }
   },
   canCancel: function () {
-    return (this.status === Status.CONFIRMED) && (this.owner === web3.eth.defaultAccount)
+    return (this.status === Status.CONFIRMED) && Session.equals('address', this.owner)
   }
 })
 
-Offers.syncOffer = function (id) {
-  var data = Dapple['maker-otc'].objects.otc.offers(id)
-  var idx = id.toString()
-  var sell_how_much = data[0]
-  var sell_which_token = formattedString(data[1])
-  var buy_how_much = data[2]
-  var buy_which_token = formattedString(data[3])
-  var owner = data[4]
-  var active = data[5] // TODO unused
+Offers.syncOffer = function (id, max) {
+  Dapple['maker-otc'].objects.otc.offers(id, function (error, data) {
+    if (!error) {
+      var idx = id.toString()
+      var sell_how_much = data[0]
+      var sell_which_token = formattedString(data[1])
+      var buy_how_much = data[2]
+      var buy_which_token = formattedString(data[3])
+      var owner = data[4]
+      var active = data[5] // TODO unused
 
-  if (active) {
-    Offers.updateOffer(idx, sell_how_much, sell_which_token, buy_how_much, buy_which_token, owner, Status.CONFIRMED)
-  } else {
-    Offers.remove(idx)
-  }
+      if (active) {
+        Offers.updateOffer(idx, sell_how_much, sell_which_token, buy_how_much, buy_which_token, owner, Status.CONFIRMED)
+      } else {
+        Offers.remove(idx)
+      }
+      if (max > 0 && id > 1) {
+        Session.set('loadingProgress', Math.round(100 * (max - id) / max))
+        Offers.syncOffer(id - 1, max)
+      } else if (max > 0) {
+        Session.set('loading', false)
+      }
+    }
+  })
 }
 
 Offers.updateOffer = function (idx, sell_how_much, sell_which_token, buy_how_much, buy_which_token, owner, status) {
@@ -85,21 +104,21 @@ Offers.updateOffer = function (idx, sell_how_much, sell_which_token, buy_how_muc
 }
 
 Offers.newOffer = function (sell_how_much, sell_which_token, buy_how_much, buy_which_token) {
-  var offerTx = Dapple['maker-otc'].objects.otc.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token, { gas: 300000 })
+  var offerTx = Dapple['maker-otc'].objects.otc.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token, { gas: 3141592 })
   console.log('offer!', offerTx, sell_how_much, sell_which_token, buy_how_much, buy_which_token)
   Offers.updateOffer(offerTx, sell_how_much, sell_which_token, buy_how_much, buy_which_token, web3.eth.defaultAccount, Status.PENDING)
 }
 
 Offers.buyOffer = function (idx) {
   var id = parseInt(idx, 10)
-  var tx = Dapple['maker-otc'].objects.otc.buy(id, { gas: 100000 })
+  var tx = Dapple['maker-otc'].objects.otc.buy['uint256'](id, { gas: 3141592 })
   console.log('buy!', id, tx)
   Offers.update(idx, { $set: { status: Status.BOUGHT } })
 }
 
 Offers.cancelOffer = function (idx) {
   var id = parseInt(idx, 10)
-  var tx = Dapple['maker-otc'].objects.otc.cancel(id, { gas: 100000 })
+  var tx = Dapple['maker-otc'].objects.otc.cancel(id, { gas: 3141592 })
   console.log('cancel!', id, tx)
   Offers.update(idx, { $set: { status: Status.CANCELLED } })
 }

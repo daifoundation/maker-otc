@@ -7,18 +7,21 @@ Session.setDefault('total', 0)
 var totalMax = function () {
   var ordertype = Session.get('ordertype')
   var currency = Session.get('currency')
-  return ordertype === 'buy' ? web3.fromWei(Session.get(currency + 'Balance')) : Infinity
+  var token = Tokens.findOne(currency)
+  var balance = new BigNumber(token.balance)
+  var allowance = new BigNumber(token.allowance)
+  return ordertype === 'buy' ? web3.fromWei(BigNumber.min(balance, allowance).toString(10)) : Infinity
 }
 
 var amountMax = function () {
   var ordertype = Session.get('ordertype')
-  return ordertype === 'sell' ? web3.fromWei(Session.get('MKRBalance')) : Infinity
+  var token = Tokens.findOne('MKR')
+  var balance = new BigNumber(token.balance)
+  var allowance = new BigNumber(token.allowance)
+  return ordertype === 'sell' ? web3.fromWei(BigNumber.min(balance, allowance).toString(10)) : Infinity
 }
 
 Template.neworder.helpers({
-  myOrders: function () {
-    return Offers.find({ owner: web3.eth.defaultAccount })
-  },
   ordertype: function () {
     return Session.get('ordertype')
   },
@@ -38,10 +41,10 @@ Template.neworder.helpers({
   amountMax: amountMax,
   buttonState: function () {
     var ordertype = Session.get('ordertype')
-    var price = Session.get('price')
-    var amount = Session.get('amount')
-    var total = Session.get('total')
-    if (price > 0 && amount > 0 && total > 0 && (ordertype !== 'buy' || total < totalMax()) && (ordertype !== 'sell' || amount <= amountMax())) {
+    var price = new BigNumber(Session.get('price'))
+    var amount = new BigNumber(Session.get('amount'))
+    var total = new BigNumber(Session.get('total'))
+    if (price.gt(0) && amount.gt(0) && total.gt(0) && (ordertype !== 'buy' || total.lte(new BigNumber(totalMax()))) && (ordertype !== 'sell' || amount.lte(new BigNumber(amountMax())))) {
       return ''
     } else {
       return 'disabled'
@@ -82,6 +85,7 @@ Template.neworder.events({
   },
   'click #submitorder': function (event) {
     event.preventDefault()
+
     var sell_how_much, sell_which_token, buy_how_much, buy_which_token
     if (Session.get('ordertype') === 'buy') {
       sell_how_much = web3.toWei(Session.get('total'))
@@ -95,6 +99,5 @@ Template.neworder.events({
       buy_which_token = Session.get('currency')
     }
     Offers.newOffer(sell_how_much, sell_which_token, buy_how_much, buy_which_token)
-    return false
   }
 })
