@@ -102,7 +102,7 @@ Offers.newOffer = function (sell_how_much, sell_which_token, buy_how_much, buy_w
 
 Offers.buyOffer = function (idx) {
   var id = parseInt(idx, 10)
-  var tx = Dapple['maker-otc'].objects.otc.buy(id, { gas: 100000 })
+  var tx = Dapple['maker-otc'].objects.otc.buy(id)
   console.log('buy!', id, tx)
   Offers.update(idx, { $set: { status: Status.BOUGHT } })
 }
