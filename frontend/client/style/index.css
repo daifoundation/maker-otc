@@ -101,6 +101,7 @@ body { max-width: 40rem }
 h1 { text-align: left }
 h1 img { margin-left: -1.2rem }
 .o { overflow: hidden }
+.row { overflow: hidden }
 section { float: right; width: 48% }
 section:first-of-type { float: left }
 }

@@ -1,0 +1,32 @@
+<template name="newallowance">
+  <form id="allowance">
+    <h2>Allowance</h2>
+    <div>
+      <table>
+        <tbody>
+          {{#each _token in allTokens}}
+            {{#let token=(findToken _token)}}
+              <tr>
+                <th>
+                  {{_token._id}}
+                </th>
+                <td>
+                  <input data-token={{token._id}} class="input" type="number" min="0" step="any" placeholder={{fromWei token.allowance}} value={{fromWei token.allowance}}>
+                </td>
+              </tr>
+            {{/let}}
+          {{/each}}
+        </tbody>
+        <tfoot>
+          <tr>
+            <th>
+            </th>
+            <td>
+              <button id="changeAllowance" {{buttonState}}>Change allowance</button>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </form>
+</template>

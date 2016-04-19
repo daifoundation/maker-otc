@@ -1,0 +1,57 @@
+<template name="makereth">
+  <form id="makereth">
+    <h2>Maker ETH Wrapper</h2>
+    <div>
+      <table>
+        <tbody>
+          <tr>
+            <th>
+              ETH
+            </th>
+            <td>
+              {{formatBalance ETHBalance}}
+            </td>
+          </tr>
+          <tr>
+            <th>
+              Maker ETH
+            </th>
+            <td>
+              {{#let token=(findToken 'ETH')}}
+                {{formatBalance token.balance}}
+              {{/let}}
+            </td>
+          </tr>
+          <tr>
+            <th>
+              Type
+            </th>
+            <td>
+              <div class="radios">
+                <label><input name="depositType" type="radio" value="deposit" checked={{equals depositType 'deposit'}}>Deposit</label>
+                <label><input name="depositType" type="radio" value="withdraw" checked={{equals depositType 'withdraw'}}>Withdraw</label>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <th>
+              Amount
+            </th>
+            <td>
+              <input type="number" class="input" name="depositAmount" step="any" min="0" max={{amountMax}}>
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <th>
+            </th>
+            <td>
+              <button id="deposit" {{buttonState}}>{{depositType}}</button>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </form>
+</template>

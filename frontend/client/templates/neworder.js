@@ -7,22 +7,21 @@ Session.setDefault('total', 0)
 var totalMax = function () {
   var ordertype = Session.get('ordertype')
   var currency = Session.get('currency')
-  var balance = new BigNumber(Session.get(currency + 'Balance'))
-  var allowance = new BigNumber(Session.get(currency + 'Allowance'))
+  var token = Tokens.findOne(currency)
+  var balance = new BigNumber(token.balance)
+  var allowance = new BigNumber(token.allowance)
   return ordertype === 'buy' ? web3.fromWei(BigNumber.min(balance, allowance).toString(10)) : Infinity
 }
 
 var amountMax = function () {
   var ordertype = Session.get('ordertype')
-  var balance = new BigNumber(Session.get('MKRBalance'))
-  var allowance = new BigNumber(Session.get('MKRAllowance'))
+  var token = Tokens.findOne('MKR')
+  var balance = new BigNumber(token.balance)
+  var allowance = new BigNumber(token.allowance)
   return ordertype === 'sell' ? web3.fromWei(BigNumber.min(balance, allowance).toString(10)) : Infinity
 }
 
 Template.neworder.helpers({
-  myOrders: function () {
-    return Offers.find({ owner: web3.eth.defaultAccount })
-  },
   ordertype: function () {
     return Session.get('ordertype')
   },
@@ -42,25 +41,10 @@ Template.neworder.helpers({
   amountMax: amountMax,
   buttonState: function () {
     var ordertype = Session.get('ordertype')
-    var price = Session.get('price')
-    var amount = Session.get('amount')
-    var total = Session.get('total')
-    if (price > 0 && amount > 0 && total > 0 && (ordertype !== 'buy' || total < totalMax()) && (ordertype !== 'sell' || amount <= amountMax())) {
-      return ''
-    } else {
-      return 'disabled'
-    }
-  },
-  allowanceButtonState: function () {
-    var ETHAllowance = Session.get('ETHAllowance')
-    var MKRAllowance = Session.get('MKRAllowance')
-    var DAIAllowance = Session.get('DAIAllowance')
-
-    var newETHAllowance = Session.get('newETHAllowance')
-    var newMKRAllowance = Session.get('newMKRAllowance')
-    var newDAIAllowance = Session.get('newDAIAllowance')
-
-    if (ETHAllowance !== newETHAllowance || MKRAllowance !== newMKRAllowance || DAIAllowance !== newDAIAllowance) {
+    var price = new BigNumber(Session.get('price'))
+    var amount = new BigNumber(Session.get('amount'))
+    var total = new BigNumber(Session.get('total'))
+    if (price.gt(0) && amount.gt(0) && total.gt(0) && (ordertype !== 'buy' || total.lte(new BigNumber(totalMax()))) && (ordertype !== 'sell' || amount.lte(new BigNumber(amountMax())))) {
       return ''
     } else {
       return 'disabled'
@@ -101,6 +85,7 @@ Template.neworder.events({
   },
   'click #submitorder': function (event) {
     event.preventDefault()
+
     var sell_how_much, sell_which_token, buy_how_much, buy_which_token
     if (Session.get('ordertype') === 'buy') {
       sell_how_much = web3.toWei(Session.get('total'))
@@ -114,33 +99,5 @@ Template.neworder.events({
       buy_which_token = Session.get('currency')
     }
     Offers.newOffer(sell_how_much, sell_which_token, buy_how_much, buy_which_token)
-    return false
-  },
-  'change #newETHAllowance,#newMKRAllowance,#newDAIAllowance': function () {
-    Session.set('newETHAllowance', web3.toWei($('#newETHAllowance').val()))
-    Session.set('newMKRAllowance', web3.toWei($('#newMKRAllowance').val()))
-    Session.set('newDAIAllowance', web3.toWei($('#newDAIAllowance').val()))
-  },
-  'click #changeAllowance': function (event) {
-    event.preventDefault()
-
-    var contract_address = Dapple['maker-otc'].objects.otc.address
-    var options = { from: web3.eth.coinbase, gas: 3141592 }
-
-    // Get new allowances
-    var newETHAllowance = Session.get('newETHAllowance')
-    var newMKRAllowance = Session.get('newMKRAllowance')
-    var newDAIAllowance = Session.get('newDAIAllowance')
-
-    // Do only what is necessary
-    if (!Session.equals('ETHAllowance', newETHAllowance)) {
-      Dapple['makerjs'].getToken('ETH').approve(contract_address, newETHAllowance, options)
-    }
-    if (!Session.equals('MKRAllowance', newMKRAllowance)) {
-      Dapple['makerjs'].getToken('MKR').approve(contract_address, newMKRAllowance, options)
-    }
-    if (!Session.equals('DAIAllowance', newDAIAllowance)) {
-      Dapple['makerjs'].getToken('DAI').approve(contract_address, newDAIAllowance, options)
-    }
   }
 })

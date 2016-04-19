@@ -28,7 +28,7 @@ function checkNetwork () {
           Dapple.init(network)
           Session.set('network', network)
           Session.set('address', web3.eth.defaultAccount)
-          syncBalance()
+          Tokens.sync()
           Session.set('isConnected', isConnected)
           syncOffers()
         }
@@ -58,54 +58,6 @@ function syncOffers () {
   Session.set('loading', false)
 }
 
-/**
- * Syncs the ETH, MKR and DAI balances of Session.get('address')
- * usually called for each new block
- */
-function syncBalance () {
-  var network = Session.get('network')
-  var address = Session.get('address')
-  var newETHBalance = web3.eth.getBalance(address).toString(10)
-  if (!Session.equals('ETHBalance', newETHBalance)) {
-    Session.set('ETHBalance', newETHBalance)
-  }
-
-  if (network !== 'private') {
-    /** Balances */
-    var newMKRBalance = Dapple['makerjs'].getToken('MKR').balanceOf(address).toString(10)
-    if (!Session.equals('MKRBalance', newMKRBalance)) {
-      Session.set('MKRBalance', newMKRBalance)
-    }
-    var newDAIBalance = Dapple['makerjs'].getToken('DAI').balanceOf(address).toString(10)
-    if (!Session.equals('DAIBalance', newDAIBalance)) {
-      Session.set('DAIBalance', newDAIBalance)
-    }
-
-    /** Allowances */
-    var contract_address = Dapple['maker-otc'].objects.otc.address
-
-    var newETHAllowance = Dapple['makerjs'].getToken('ETH').allowance(web3.eth.defaultAccount, contract_address).toString(10)
-    if (!Session.equals('ETHAllowance', newETHAllowance)) {
-      Session.set('ETHAllowance', newETHAllowance)
-    }
-    var newMKRAllowance = Dapple['makerjs'].getToken('MKR').allowance(web3.eth.defaultAccount, contract_address).toString(10)
-    if (!Session.equals('MKRAllowance', newMKRAllowance)) {
-      Session.set('MKRAllowance', newMKRAllowance)
-    }
-    var newDAIAllowance = Dapple['makerjs'].getToken('DAI').allowance(web3.eth.defaultAccount, contract_address).toString(10)
-    if (!Session.equals('DAIAllowance', newDAIAllowance)) {
-      Session.set('DAIAllowance', newDAIAllowance)
-    }
-  } else {
-    Session.set('MKRBalance', '0')
-    Session.set('DAIBalance', '0')
-
-    Session.set('ETHAllowance', '0')
-    Session.set('MKRAllowance', '0')
-    Session.set('DAIAllowance', '0')
-  }
-}
-
 Session.set('syncing', false)
 Session.set('isConnected', false)
 
@@ -133,23 +85,13 @@ Meteor.startup(function () {
       Dapple.init(network)
       Session.set('network', network)
       Session.set('address', web3.eth.defaultAccount)
-      syncBalance()
+      Tokens.sync()
       Session.set('isConnected', true)
       syncOffers()
-
-      /** Allowances */
-      var contract_address = Dapple['maker-otc'].objects.otc.address
-
-      var newETHAllowance = Dapple['makerjs'].getToken('ETH').allowance(web3.eth.defaultAccount, contract_address).toString(10)
-      Session.set('newETHAllowance', newETHAllowance)
-      var newMKRAllowance = Dapple['makerjs'].getToken('MKR').allowance(web3.eth.defaultAccount, contract_address).toString(10)
-      Session.set('newMKRAllowance', newMKRAllowance)
-      var newDAIAllowance = Dapple['makerjs'].getToken('DAI').allowance(web3.eth.defaultAccount, contract_address).toString(10)
-      Session.set('newDAIAllowance', newDAIAllowance)
     }
   }
 
-  web3.eth.filter('latest', syncBalance)
+  web3.eth.filter('latest', Tokens.sync)
 
   web3.eth.isSyncing(function (error, sync) {
     if (!error) {
@@ -167,7 +109,7 @@ Meteor.startup(function () {
         Session.set('highestBlock', sync.highestBlock)
       } else {
         checkNetwork()
-        web3.eth.filter('latest', syncBalance)
+        web3.eth.filter('latest', Tokens.sync)
       }
     }
   })

@@ -52,24 +52,18 @@ Template.registerHelper('ETHBalance', function () {
   return Session.get('ETHBalance')
 })
 
-Template.registerHelper('MKRBalance', function () {
-  return Session.get('MKRBalance')
+Template.registerHelper('allTokens', function () {
+  return Tokens.find()
 })
 
-Template.registerHelper('DAIBalance', function () {
-  return Session.get('DAIBalance')
+Template.registerHelper('findToken', function (token) {
+  return Tokens.findOne(token)
 })
 
-Template.registerHelper('ETHAllowance', function () {
-  return Session.get('ETHAllowance')
-})
-
-Template.registerHelper('MKRAllowance', function () {
-  return Session.get('MKRAllowance')
-})
-
-Template.registerHelper('DAIAllowance', function () {
-  return Session.get('DAIAllowance')
+Template.registerHelper('findOffers', function (key, value) {
+  var obj = {}
+  obj[key] = value
+  return Offers.find(obj)
 })
 
 Template.registerHelper('baseCurrency', function (value) {
@@ -78,6 +72,10 @@ Template.registerHelper('baseCurrency', function (value) {
 
 Template.registerHelper('equals', function (a, b) {
   return a === b
+})
+
+Template.registerHelper('concat', function () {
+  return Array.prototype.slice.call(arguments, 0, -1).join('')
 })
 
 Template.registerHelper('fromWei', function (s) {
