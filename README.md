@@ -78,7 +78,10 @@ gulp deploy
 ## Gas Costs
 
 ```
-909958 for "new AtomicTradeMorden"
+new AtomicTradeMorden:   909958 gas
+AtomicTradeMorden.offer: 140395-186235 gas
+AtomicTradeMorden.cancel: 33882 gas
+AtomicTradeMorden.buy:    49306-51707 gas
 ```
 
 ## TODOs
