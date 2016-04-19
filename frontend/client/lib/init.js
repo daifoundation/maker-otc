@@ -49,9 +49,11 @@ function syncOffers () {
   Offers.remove({})
   var last_offer_id = Dapple['maker-otc'].objects.otc.last_offer_id().toNumber()
   console.log('last_offer_id', last_offer_id)
-  Session.set('loading', true)
-  Session.set('loadingProgress', 0)
-  Offers.syncOffer(last_offer_id, last_offer_id)
+  if (last_offer_id > 0) {
+    Session.set('loading', true)
+    Session.set('loadingProgress', 0)
+    Offers.syncOffer(last_offer_id, last_offer_id)
+  }
 }
 
 Session.set('syncing', false)
