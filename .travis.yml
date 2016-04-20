@@ -1,6 +1,14 @@
 sudo: required
 dist: trusty
 
+# trusty is used to let us use docker. This isn't possible in the container
+# based infrastructure. Docker is used to speed up the dapple installation,
+# which can run to ~4m using npm install.
+#
+# The trusty infrastructure does not allow caching, unlike the container based
+# default. This means waiting for npm install on each run. This may change in
+# the near™ future https://github.com/travis-ci/travis-ci/issues/4997
+
 language: node_js
 node_js: "5.1"
 
