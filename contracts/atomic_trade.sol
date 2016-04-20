@@ -5,10 +5,12 @@ import 'fallback_failer.sol';
 
 // A simple direct exchange order manager.
 
-contract ItemUpdateEvent {
+contract EventfulMarket {
     event ItemUpdate( uint id );
+    event Trade( uint sell_how_much, bytes32 indexed sell_which_token,
+                 uint buy_how_much, bytes32 indexed buy_which_token );
 }
-contract AtomicTrade is MakerUser, ItemUpdateEvent, FallbackFailer, Assertive {
+contract AtomicTrade is MakerUser, EventfulMarket, FallbackFailer, Assertive {
     struct OfferInfo {
         uint sell_how_much;
         bytes32 sell_which_token;
@@ -57,6 +59,8 @@ contract AtomicTrade is MakerUser, ItemUpdateEvent, FallbackFailer, Assertive {
 
         transferFrom( msg.sender, offer.owner, offer.buy_how_much, offer.buy_which_token );
         transfer( msg.sender, offer.sell_how_much, offer.sell_which_token );
+        Trade( offer.sell_how_much, offer.sell_which_token, offer.buy_how_much, offer.buy_which_token );
+
         delete offers[id];
         ItemUpdate(id);
     }
@@ -69,6 +73,8 @@ contract AtomicTrade is MakerUser, ItemUpdateEvent, FallbackFailer, Assertive {
             transferFrom( msg.sender, offer.owner, offer.buy_how_much, offer.buy_which_token );
             transfer( msg.sender, offer.sell_how_much, offer.sell_which_token );
             delete offers[id];
+
+            Trade( offer.sell_how_much, offer.sell_which_token, offer.buy_how_much, offer.buy_which_token );
         } else {
             uint buy_quantity = quantity * offers[id].buy_how_much / offers[id].sell_how_much;
             if ( buy_quantity > 0 ) {
@@ -77,6 +83,8 @@ contract AtomicTrade is MakerUser, ItemUpdateEvent, FallbackFailer, Assertive {
 
                 offer.sell_how_much -= quantity;
                 offer.buy_how_much -= buy_quantity;
+
+                Trade( quantity, offer.sell_which_token, buy_quantity, offer.buy_which_token );
             }
         }
         ItemUpdate(id);

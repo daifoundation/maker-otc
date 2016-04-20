@@ -3,7 +3,7 @@ import 'atomic_trade.sol';
 
 contract AtomicTradeTest is Test
                            , MakerUserGeneric(new MakerUserMockRegistry())
-                           , ItemUpdateEvent
+                           , EventfulMarket
 {
     MakerUserTester user1;
     AtomicTrade otc;
@@ -35,6 +35,7 @@ contract AtomicTradeTest is Test
 
         expectEventsExact(otc);
         ItemUpdate(id);
+        Trade( 30, "MKR", 100, "DAI" );
         ItemUpdate(id);
     }
     function testPartiallyFilledOrderMkr() {
@@ -63,6 +64,7 @@ contract AtomicTradeTest is Test
 
         expectEventsExact(otc);
         ItemUpdate(id);
+        Trade( 10, "MKR", 25, "DAI" );
         ItemUpdate(id);
     }
     function testPartiallyFilledOrderDai() {
@@ -92,6 +94,7 @@ contract AtomicTradeTest is Test
 
         expectEventsExact(otc);
         ItemUpdate(id);
+        Trade( 10, "DAI", 4, "MKR" );
         ItemUpdate(id);
     }
     function testCancel() {
