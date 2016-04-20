@@ -1,6 +1,9 @@
 sudo: required
 dist: trusty
 
+language: node_js
+node_js: "5.1"
+
 services:
   docker
 
@@ -13,6 +16,8 @@ before_install:
   - docker images
   - cp .travis.dapplerc $HOME/.dapplerc
   - git submodule update --init --recursive
+  - npm install
 
 script:
   - ./.travis.dapple-docker-entry test
+  - npm test
