@@ -52,14 +52,18 @@ contract AtomicTrade is MakerUser, EventfulMarket, FallbackFailer, Assertive {
         ItemUpdate(id);
         return id;
     }
+    function trade( address maker, address taker, uint make_how_much, bytes32 make_which_token, uint take_how_much, bytes32 take_which_token ) internal
+    {
+        transferFrom( taker, maker, take_how_much, take_which_token );
+        transfer( taker, make_how_much, make_which_token );
+        Trade( make_how_much, make_which_token, take_how_much, take_which_token );
+    }
     function buy( uint id )
     {
         var offer = offers[id];
         assert(offer.active);
 
-        transferFrom( msg.sender, offer.owner, offer.buy_how_much, offer.buy_which_token );
-        transfer( msg.sender, offer.sell_how_much, offer.sell_which_token );
-        Trade( offer.sell_how_much, offer.sell_which_token, offer.buy_how_much, offer.buy_which_token );
+        trade( offer.owner, msg.sender, offer.sell_how_much, offer.sell_which_token, offer.buy_how_much, offer.buy_which_token );
 
         delete offers[id];
         ItemUpdate(id);
@@ -70,21 +74,17 @@ contract AtomicTrade is MakerUser, EventfulMarket, FallbackFailer, Assertive {
         assert(offer.active);
 
         if ( offers[id].sell_how_much <= quantity ) {
-            transferFrom( msg.sender, offer.owner, offer.buy_how_much, offer.buy_which_token );
-            transfer( msg.sender, offer.sell_how_much, offer.sell_which_token );
+            trade( offer.owner, msg.sender, offer.sell_how_much, offer.sell_which_token, offer.buy_how_much, offer.buy_which_token );
             delete offers[id];
 
-            Trade( offer.sell_how_much, offer.sell_which_token, offer.buy_how_much, offer.buy_which_token );
         } else {
             uint buy_quantity = quantity * offers[id].buy_how_much / offers[id].sell_how_much;
             if ( buy_quantity > 0 ) {
-                transferFrom( msg.sender, offer.owner, buy_quantity, offer.buy_which_token );
-                transfer( msg.sender, quantity, offer.sell_which_token );
+                trade( offer.owner, msg.sender, quantity, offer.sell_which_token, buy_quantity, offer.buy_which_token );
 
                 offer.sell_how_much -= quantity;
                 offer.buy_how_much -= buy_quantity;
 
-                Trade( quantity, offer.sell_which_token, buy_quantity, offer.buy_which_token );
             }
         }
         ItemUpdate(id);
