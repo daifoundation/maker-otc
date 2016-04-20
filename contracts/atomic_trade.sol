@@ -5,10 +5,12 @@ import 'fallback_failer.sol';
 
 // A simple direct exchange order manager.
 
-contract ItemUpdateEvent {
+contract EventfulMarket {
     event ItemUpdate( uint id );
+    event Trade( uint sell_how_much, bytes32 indexed sell_which_token,
+                 uint buy_how_much, bytes32 indexed buy_which_token );
 }
-contract AtomicTrade is MakerUser, ItemUpdateEvent, FallbackFailer, Assertive {
+contract AtomicTrade is MakerUser, EventfulMarket, FallbackFailer, Assertive {
     struct OfferInfo {
         uint sell_how_much;
         bytes32 sell_which_token;
@@ -50,13 +52,20 @@ contract AtomicTrade is MakerUser, ItemUpdateEvent, FallbackFailer, Assertive {
         ItemUpdate(id);
         return id;
     }
+    function trade( address seller, uint sell_how_much, bytes32 sell_which_token, address buyer, uint buy_how_much, bytes32 buy_which_token ) internal
+    {
+        transferFrom( buyer, seller, buy_how_much, buy_which_token );
+        transfer( buyer, sell_how_much, sell_which_token );
+        Trade( sell_how_much, sell_which_token, buy_how_much, buy_which_token );
+    }
     function buy( uint id )
     {
         var offer = offers[id];
         assert(offer.active);
 
-        transferFrom( msg.sender, offer.owner, offer.buy_how_much, offer.buy_which_token );
-        transfer( msg.sender, offer.sell_how_much, offer.sell_which_token );
+        trade( offer.owner, offer.sell_how_much, offer.sell_which_token,
+               msg.sender, offer.buy_how_much, offer.buy_which_token );
+
         delete offers[id];
         ItemUpdate(id);
     }
@@ -66,17 +75,19 @@ contract AtomicTrade is MakerUser, ItemUpdateEvent, FallbackFailer, Assertive {
         assert(offer.active);
 
         if ( offers[id].sell_how_much <= quantity ) {
-            transferFrom( msg.sender, offer.owner, offer.buy_how_much, offer.buy_which_token );
-            transfer( msg.sender, offer.sell_how_much, offer.sell_which_token );
+            trade( offer.owner, offer.sell_how_much, offer.sell_which_token,
+                   msg.sender, offer.buy_how_much, offer.buy_which_token );
             delete offers[id];
+
         } else {
             uint buy_quantity = quantity * offers[id].buy_how_much / offers[id].sell_how_much;
             if ( buy_quantity > 0 ) {
-                transferFrom( msg.sender, offer.owner, buy_quantity, offer.buy_which_token );
-                transfer( msg.sender, quantity, offer.sell_which_token );
+                trade( offer.owner, quantity, offer.sell_which_token,
+                       msg.sender, buy_quantity, offer.buy_which_token );
 
                 offer.sell_how_much -= quantity;
                 offer.buy_how_much -= buy_quantity;
+
             }
         }
         ItemUpdate(id);
