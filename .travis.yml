@@ -18,16 +18,19 @@ services:
 git:
   submodules: false
 
+env:
+  - TEST=dapple
+  - TEST=npm
+
 before_install:
   - id
-  - docker pull rainbeam/dapple
-  - docker images
+  - if [ $TEST = "dapple" ]; then docker pull rainbeam/dapple && docker images; fi
   - cp .travis.dapplerc $HOME/.dapplerc
 
 install:
-  - git submodule update --init --recursive
-  - npm set progress=false && npm install
+  - if [ $TEST = "dapple" ]; then git submodule update --init --recursive; fi
+  - if [ $TEST = "npm"  ]; then npm set progress=false && npm install; fi
 
 script:
-  - ./.travis.dapple-docker-entry test
-  - npm test
+  - if [ $TEST = "dapple" ]; then ./.travis.dapple-docker-entry test; fi
+  - if [ $TEST = "npm" ]; then npm test; fi
