@@ -55,7 +55,7 @@ cd frontend && meteor
 
 You can access the user interface on [http://localhost:3000/](http://localhost:3000/)
 
-If you find that dapple is deploying to EVM rather than than geth, please modify `~/.dapplerc`:
+If you find that dapple is deploying to EVM rather than geth, please modify `~/.dapplerc`:
 
 ```yaml
 environments:
