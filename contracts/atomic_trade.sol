@@ -4,7 +4,6 @@ import 'assertive.sol';
 import 'fallback_failer.sol';
 
 // A simple direct exchange order manager.
-// Orders cannot be partially filled.
 
 contract ItemUpdateEvent {
     event ItemUpdate( uint id );
