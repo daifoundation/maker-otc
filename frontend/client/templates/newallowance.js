@@ -1,30 +1,35 @@
-Template.newallowance.helpers({
-  buttonState: function () {
-    var state = 'disabled'
-    Tokens.find().forEach(function (token) {
-      if (state === 'disabled' && token.allowance !== token.newAllowance) {
-        state = ''
+Template.newallowance.viewmodel({
+  value: '',
+  allowance: '',
+  autorun: function () {
+    // Initialize value and allowance
+    var _id = this.templateInstance.data.token._id
+    this.value(web3.fromWei(this.templateInstance.data.token.allowance))
+    this.allowance(this.templateInstance.data.token.allowance)
+
+    // Update allowance manually on change, because the form is not automatically reactive to Collection changes
+    var _this = this
+    Tokens.find().observeChanges({
+      changed: function (id, fields) {
+        if (id === _id && fields.hasOwnProperty('allowance')) {
+          _this.allowance(fields.allowance)
+        }
       }
     })
-    return state
-  }
-})
-
-Template.newallowance.events({
-  'change input[type="number"], keyup input[type="number"], mouseup input[type="number"]': function (event) {
-    var target = $(event.target)
-    Tokens.update(target.data('token'), { $set: { newAllowance: web3.toWei(target.val()) } })
   },
-  'click #changeAllowance': function (event) {
+  canChange: function () {
+    try {
+      return this.value() !== '' && this.value() !== web3.fromWei(this.allowance())
+    } catch (e) {
+      return false
+    }
+  },
+  change: function (event) {
     event.preventDefault()
 
     var contract_address = Dapple['maker-otc'].objects.otc.address
     var options = { from: Session.get('address'), gas: 3141592 }
 
-    Tokens.find().forEach(function (token) {
-      if (token.allowance !== token.newAllowance) {
-        Dapple['makerjs'].getToken(token._id).approve(contract_address, token.newAllowance, options)
-      }
-    })
+    Dapple['makerjs'].getToken(this.templateInstance.data.token._id).approve(contract_address, web3.toWei(this.value()), options)
   }
 })
