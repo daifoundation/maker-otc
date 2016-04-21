@@ -36,7 +36,7 @@ Template.neworder.viewmodel({
     var token = Tokens.findOne('MKR')
     var balance = new BigNumber(token.balance)
     var allowance = new BigNumber(token.allowance)
-    return this.type() === 'sell' ? web3.fromWei(BigNumber.min(balance, allowance).toString(10)) : Infinity
+    return this.type() === 'sell' ? web3.fromWei(BigNumber.min(balance, allowance).toString(10)) : '9e999'
   },
   maxTotal: function () {
     // Only allow change of total if price is well-defined
@@ -52,7 +52,7 @@ Template.neworder.viewmodel({
     var token = Tokens.findOne(this.currency())
     var balance = new BigNumber(token.balance)
     var allowance = new BigNumber(token.allowance)
-    return this.type() === 'buy' ? web3.fromWei(BigNumber.min(balance, allowance).toString(10)) : Infinity
+    return this.type() === 'buy' ? web3.fromWei(BigNumber.min(balance, allowance).toString(10)) : '9e999'
   },
   canSubmit: function () {
     try {
