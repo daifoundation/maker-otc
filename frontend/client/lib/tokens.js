@@ -20,11 +20,11 @@ Tokens.sync = function () {
     ALL_TOKENS.forEach(function (token) {
       var balance = Dapple['makerjs'].getToken(token).balanceOf(address).toString(10)
       var allowance = Dapple['makerjs'].getToken(token).allowance(address, contract_address).toString(10)
-      Tokens.upsert(token, { $set: { balance: balance, allowance: allowance }, $setOnInsert: { newAllowance: allowance } })
+      Tokens.upsert(token, { $set: { balance: balance, allowance: allowance } })
     })
   } else {
     ALL_TOKENS.forEach(function (token) {
-      Tokens.upsert(token, { $set: { balance: '0', allowance: '0' }, $setOnInsert: { newAllowance: '0' } })
+      Tokens.upsert(token, { $set: { balance: '0', allowance: '0' } })
     })
   }
 }
