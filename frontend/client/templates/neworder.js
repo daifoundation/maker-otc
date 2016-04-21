@@ -26,7 +26,6 @@ Template.neworder.viewmodel({
         this.amount('0')
       } else if (!total.isZero() || !price.isZero()) {
         amount = total.div(price)
-        console.debug(price.toString(), total.toString(), amount.toString())
         amount.isNaN() ? this.amount('0') : this.amount(amount.toString(10))
       }
     } catch (e) {

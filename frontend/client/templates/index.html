@@ -55,7 +55,10 @@
       </div>
       <div class=row>
         <section>
-          {{> newallowance}}
+          <h2 id="allowance">Allowance</h2>
+          {{#each token in allTokens}}
+            {{> newallowance token=token}}
+          {{/each}}
         </section>
         <section>
           {{> makereth}}
