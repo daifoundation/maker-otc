@@ -31,7 +31,7 @@
     {{#unless equals network 'private'}}
       <p>Contract: <a href={{contractHref}}>Etherscan.io</a></p>
     {{/unless}}
-    <p>Account: {{address}}</p>
+    {{> accountSelector }}
     <p>Balance: {{formatBalance ETHBalance}} ETH</p>
     <p>Tokens: {{#each token in allTokens}}{{formatBalance token.balance}} {{#if equals token._id 'ETH'}}<a href="#makereth">{{token._id}}</a>{{else}}{{token._id}}{{/if}} | {{/each}}</p>
     <p><a href="#allowance">Allowance</a>: {{#each token in allTokens}}{{formatBalance token.allowance}} {{token._id}} | {{/each}}</p>
