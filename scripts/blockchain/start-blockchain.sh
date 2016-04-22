@@ -7,7 +7,6 @@ NOHUP_LOCATION="${DIR}/nohup.out"
 baseCommand="geth \
 --dev \
 --datadir=${DIR}/tmp/ \
---logfile=${DIR}/tmp/blockchain.log \
 --rpc \
 --rpcaddr localhost \
 --rpccorsdomain \"*\" \
