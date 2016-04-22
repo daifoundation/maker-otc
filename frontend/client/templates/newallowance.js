@@ -1,6 +1,8 @@
 Template.newallowance.viewmodel({
   value: '',
   allowance: '',
+  lastMsg: '',
+  lastTx: '',
   autorun: function () {
     // Initialize value and allowance
     var _id = this.templateInstance.data.token._id
@@ -16,10 +18,23 @@ Template.newallowance.viewmodel({
         }
       }
     })
+    web3.eth.filter('latest', function (error, result) {
+      if (!error) {
+        var lastTx = _this.lastTx()
+        if (lastTx !== '') {
+          web3.eth.getTransactionReceipt(lastTx, function (error, result) {
+            if (!error && result != null) {
+              _this.lastTx('')
+              _this.lastMsg('')
+            }
+          })
+        }
+      }
+    })
   },
   canChange: function () {
     try {
-      return this.value() !== '' && this.value() !== web3.fromWei(this.allowance())
+      return this.lastTx() === '' && this.value() !== '' && this.value() !== web3.fromWei(this.allowance())
     } catch (e) {
       return false
     }
@@ -27,9 +42,18 @@ Template.newallowance.viewmodel({
   change: function (event) {
     event.preventDefault()
 
+    var _this = this
+    _this.lastMsg('')
     var contract_address = Dapple['maker-otc'].objects.otc.address
     var options = { from: Session.get('address'), gas: 3141592 }
 
-    Dapple['makerjs'].getToken(this.templateInstance.data.token._id).approve(contract_address, web3.toWei(this.value()), options)
+    Dapple['makerjs'].getToken(this.templateInstance.data.token._id).approve(contract_address, web3.toWei(this.value()), options, function (error, tx) {
+      if (!error) {
+        _this.lastTx(tx)
+        _this.lastMsg('Pending: ' + _this.value() + ' ' + _this.templateInstance.data.token._id) 
+      } else {
+        _this.lastMsg(error.toString())
+      }
+    })
   }
 })

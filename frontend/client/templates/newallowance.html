@@ -13,9 +13,18 @@
           </tr>
         </tbody>
         <tfoot>
+          {{#unless equals lastMsg ''}}
+            <tr>
+              <td colspan="2">
+                {{lastMsg}}
+              </td>
+            </tr>
+          {{/unless}}
           <tr>
             <td colspan="2">
-              <button {{b "enable: canChange, click: change"}}>Change {{token._id}} allowance</button>
+              <button {{b "enable: canChange, click: change"}}>
+                Change {{token._id}} allowance
+              </button>
             </td>
           </tr>
         </tfoot>
