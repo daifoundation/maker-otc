@@ -52,7 +52,7 @@ Template.makereth.viewmodel({
 
     var _this = this
     _this.lastError('')
-    var options = { from: Session.get('address'), gas: 3141592 }
+    var options = { gas: 3141592 }
     if (_this.type() === 'deposit') {
       options['value'] = web3.toWei(_this.amount())
       Dapple['makerjs'].getToken('ETH').deposit(options, function (error, tx) {

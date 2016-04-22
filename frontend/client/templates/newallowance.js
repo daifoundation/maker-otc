@@ -45,12 +45,12 @@ Template.newallowance.viewmodel({
     var _this = this
     _this.lastMsg('')
     var contract_address = Dapple['maker-otc'].objects.otc.address
-    var options = { from: Session.get('address'), gas: 3141592 }
+    var options = { gas: 3141592 }
 
     Dapple['makerjs'].getToken(this.templateInstance.data.token._id).approve(contract_address, web3.toWei(this.value()), options, function (error, tx) {
       if (!error) {
         _this.lastTx(tx)
-        _this.lastMsg('Pending: ' + _this.value() + ' ' + _this.templateInstance.data.token._id) 
+        _this.lastMsg('Pending: ' + _this.value() + ' ' + _this.templateInstance.data.token._id)
       } else {
         _this.lastMsg(error.toString())
       }
