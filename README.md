@@ -47,11 +47,20 @@ In a new terminal window, you can then build and deploy the dapp:
 ```bash
 npm run deploy
 ```
+
+Now that the contracts are deployed to the blockchain, you need to build the JS wrappers:
+
+```bash
+npm run build
+```
+
 To run the frontend, start meteor:
 
 ```bash
 cd frontend && meteor
 ```
+
+If you got the error message `File not found: build/meteor.js`, then you forgot to run the build step from above.
 
 You can access the user interface on [http://localhost:3000/](http://localhost:3000/)
 
