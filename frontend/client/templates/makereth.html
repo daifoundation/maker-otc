@@ -50,8 +50,36 @@
               <button {{b "text: type, enable: canDeposit, click: deposit"}}></button>
             </td>
           </tr>
+          {{#unless equals lastError ''}}
+            <tr>
+              <td colspan="2">
+                {{lastError}}
+              </td>
+            </tr>
+          {{/unless}}
         </tfoot>
       </table>
+      {{#if isPending}}
+        <table>
+          <tbody>
+            <tr>
+              <th colspan="2" style="text-align: center">
+                Pending Deposits
+              </th>
+            </tr>
+            {{#each pendingList}}
+              <tr>
+                <th>
+                  {{this.type}}
+                </th>
+                <td>
+                  {{this.amount}}
+                </td>
+              </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      {{/if}}
     </div>
   </form>
 </template>
