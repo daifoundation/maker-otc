@@ -17,8 +17,7 @@ Offers.helpers({
     // Check if order is confirmed and user has enough funds
     if (this.status !== Status.CONFIRMED) {
       return false
-    }
-    if (this.type === 'bid') {
+    } else if (this.type === 'bid') {
       // Since allowance can be larger than the balance,
       // check if both the MKR balance and allowance are greater than or equal to the offer's volume
       // TODO: add support for partial orders
@@ -52,7 +51,7 @@ Offers.syncOffer = function (id, max) {
       var buy_how_much = data[2]
       var buy_which_token = formattedString(data[3])
       var owner = data[4]
-      var active = data[5] // TODO unused
+      var active = data[5]
 
       if (active) {
         Offers.updateOffer(idx, sell_how_much, sell_which_token, buy_how_much, buy_which_token, owner, Status.CONFIRMED)
@@ -73,6 +72,11 @@ Offers.updateOffer = function (idx, sell_how_much, sell_which_token, buy_how_muc
   var baseOffer = {
     owner: owner,
     status: status
+  }
+
+  if (status === Status.PENDING) {
+    baseOffer.helper = 'Your new order is being placed...'
+    Transactions.add('offer', idx, { id: idx, status: status })
   }
 
   if (!(sell_how_much instanceof BigNumber)) {
@@ -103,22 +107,55 @@ Offers.updateOffer = function (idx, sell_how_much, sell_which_token, buy_how_muc
   }
 }
 
-Offers.newOffer = function (sell_how_much, sell_which_token, buy_how_much, buy_which_token) {
-  var offerTx = Dapple['maker-otc'].objects.otc.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token, { gas: 3141592 })
-  console.log('offer!', offerTx, sell_how_much, sell_which_token, buy_how_much, buy_which_token)
-  Offers.updateOffer(offerTx, sell_how_much, sell_which_token, buy_how_much, buy_which_token, web3.eth.defaultAccount, Status.PENDING)
+Offers.newOffer = function (sell_how_much, sell_which_token, buy_how_much, buy_which_token, callback) {
+  Dapple['maker-otc'].objects.otc.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token, { gas: 3141592 }, function (error, tx) {
+    callback(error, tx)
+    if (!error) {
+      Offers.updateOffer(tx, sell_how_much, sell_which_token, buy_how_much, buy_which_token, web3.eth.defaultAccount, Status.PENDING)
+    }
+  })
 }
 
 Offers.buyOffer = function (idx) {
   var id = parseInt(idx, 10)
-  var tx = Dapple['maker-otc'].objects.otc.buy(id, { gas: 3141592 })
-  console.log('buy!', id, tx)
-  Offers.update(idx, { $set: { status: Status.BOUGHT } })
+  Offers.update(idx, { $unset: { helper: '' } })
+  Dapple['maker-otc'].objects.otc.buy(id, { gas: 3141592 }, function (error, tx) {
+    if (!error) {
+      Transactions.add('offer', tx, { id: idx, status: Status.BOUGHT })
+      Offers.update(idx, { $set: { tx: tx, status: Status.BOUGHT, helper: 'Your buy / sell order is being processed...' } })
+    } else {
+      Offers.update(idx, { $set: { helper: error.toString() } })
+    }
+  })
 }
 
 Offers.cancelOffer = function (idx) {
   var id = parseInt(idx, 10)
-  var tx = Dapple['maker-otc'].objects.otc.cancel(id, { gas: 3141592 })
-  console.log('cancel!', id, tx)
-  Offers.update(idx, { $set: { status: Status.CANCELLED } })
+  Offers.update(idx, { $unset: { helper: '' } })
+  Dapple['maker-otc'].objects.otc.cancel(id, { gas: 3141592 }, function (error, tx) {
+    if (!error) {
+      Transactions.add('offer', tx, { id: idx, status: Status.CANCELLED })
+      Offers.update(idx, { $set: { tx: tx, status: Status.CANCELLED, helper: 'Your order is being cancelled...' } })
+    } else {
+      Offers.update(idx, { $set: { helper: error.toString() } })
+    }
+  })
 }
+
+Transactions.observeRemoved('offer', function (document) {
+  switch (document.object.status) {
+    case Status.CANCELLED:
+    case Status.BOUGHT:
+      Offers.syncOffer(document.object.id)
+      // If it worked and it was successfully bought / cancelled, the following will do nothing since the object got removed
+      Offers.update(document.object.id, { $set: { helper: document.object.status + ': Error during Contract Execution' } })
+      break
+    case Status.PENDING:
+      // The ItemUpdate event will be triggered on successful generation, which will delete the object; otherwise set helper
+      Offers.update(document.object.id, { $set: { helper: 'Error during Contract Execution' } })
+      Meteor.setTimeout(function () {
+        Offers.remove(document.object.id)
+      }, 5000)
+      break
+  }
+})

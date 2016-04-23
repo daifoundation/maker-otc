@@ -1,25 +1,22 @@
 Template.newallowance.viewmodel({
+  TRANSACTION_TYPE: function () {
+    return 'allowance_' + this.templateInstance.data.token._id
+  },
   value: '',
-  allowance: '',
+  allowance: function () {
+    return Template.currentData().token.allowance
+  },
+  pending: function () {
+    return Transactions.findType(this.TRANSACTION_TYPE())
+  },
+  lastError: '',
   autorun: function () {
-    // Initialize value and allowance
-    var _id = this.templateInstance.data.token._id
+    // Initialize value
     this.value(web3.fromWei(this.templateInstance.data.token.allowance))
-    this.allowance(this.templateInstance.data.token.allowance)
-
-    // Update allowance manually on change, because the form is not automatically reactive to Collection changes
-    var _this = this
-    Tokens.find().observeChanges({
-      changed: function (id, fields) {
-        if (id === _id && fields.hasOwnProperty('allowance')) {
-          _this.allowance(fields.allowance)
-        }
-      }
-    })
   },
   canChange: function () {
     try {
-      return this.value() !== '' && this.value() !== web3.fromWei(this.allowance())
+      return this.pending().length === 0 && this.value() !== '' && this.value() !== web3.fromWei(this.allowance())
     } catch (e) {
       return false
     }
@@ -27,9 +24,18 @@ Template.newallowance.viewmodel({
   change: function (event) {
     event.preventDefault()
 
-    var contract_address = Dapple['maker-otc'].objects.otc.address
-    var options = { from: Session.get('address'), gas: 3141592 }
+    var _this = this
+    _this.lastError('')
 
-    Dapple['makerjs'].getToken(this.templateInstance.data.token._id).approve(contract_address, web3.toWei(this.value()), options)
+    var contract_address = Dapple['maker-otc'].objects.otc.address
+    var options = { gas: 3141592 }
+
+    Dapple['makerjs'].getToken(_this.templateInstance.data.token._id).approve(contract_address, web3.toWei(_this.value()), options, function (error, tx) {
+      if (!error) {
+        Transactions.add(_this.TRANSACTION_TYPE(), tx, { value: _this.value(), token: _this.templateInstance.data.token._id })
+      } else {
+        _this.lastError(error.toString())
+      }
+    })
   }
 })

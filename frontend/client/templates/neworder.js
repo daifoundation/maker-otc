@@ -1,4 +1,10 @@
 Template.neworder.viewmodel({
+  autorun: function () {
+    Transactions.observeRemoved('newoffer', function (document) {
+      Offers.remove(document.tx)
+    })
+  },
+  lastError: '',
   type: 'buy',
   fancyType: function () {
     return this.type() === 'buy' ? 'Bid' : 'Ask'
@@ -70,6 +76,8 @@ Template.neworder.viewmodel({
   submit: function (event) {
     event.preventDefault()
 
+    var _this = this
+    _this.lastError('')
     var sell_how_much, sell_which_token, buy_how_much, buy_which_token
     if (this.type() === 'buy') {
       sell_how_much = web3.toWei(this.total())
@@ -82,6 +90,10 @@ Template.neworder.viewmodel({
       buy_how_much = web3.toWei(this.total())
       buy_which_token = this.currency()
     }
-    Offers.newOffer(sell_how_much, sell_which_token, buy_how_much, buy_which_token)
+    Offers.newOffer(sell_how_much, sell_which_token, buy_how_much, buy_which_token, function (error, tx) {
+      if (error != null) {
+        _this.lastError(error.toString())
+      }
+    })
   }
 })

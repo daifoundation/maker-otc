@@ -89,7 +89,10 @@ Meteor.startup(function () {
     }
   }
 
-  web3.eth.filter('latest', Tokens.sync)
+  web3.eth.filter('latest', function () {
+    Tokens.sync()
+    Transactions.sync()
+  })
 
   web3.eth.isSyncing(function (error, sync) {
     if (!error) {
@@ -107,7 +110,10 @@ Meteor.startup(function () {
         Session.set('highestBlock', sync.highestBlock)
       } else {
         checkNetwork()
-        web3.eth.filter('latest', Tokens.sync)
+        web3.eth.filter('latest', function () {
+          Tokens.sync()
+          Transactions.sync()
+        })
       }
     }
   })

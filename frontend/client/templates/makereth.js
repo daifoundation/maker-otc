@@ -1,6 +1,12 @@
+var TRANSACTION_TYPE = 'makereth'
+
 Template.makereth.viewmodel({
   type: 'deposit',
   amount: '',
+  lastError: '',
+  pending: function () {
+    return Transactions.findType(TRANSACTION_TYPE)
+  },
   maxAmount: function () {
     if (this.type() === 'deposit') {
       return web3.fromWei(Session.get('ETHBalance'))
@@ -20,12 +26,27 @@ Template.makereth.viewmodel({
   deposit: function (event) {
     event.preventDefault()
 
-    var options = { from: Session.get('address'), gas: 3141592 }
-    if (this.type() === 'deposit') {
-      options['value'] = web3.toWei(this.amount())
-      Dapple['makerjs'].getToken('ETH').deposit(options)
+    var _this = this
+    _this.lastError('')
+    var options = { gas: 3141592 }
+
+    if (_this.type() === 'deposit') {
+      options['value'] = web3.toWei(_this.amount())
+      Dapple['makerjs'].getToken('ETH').deposit(options, function (error, tx) {
+        if (!error) {
+          Transactions.add(TRANSACTION_TYPE, tx, { type: 'deposit', amount: _this.amount() })
+        } else {
+          _this.lastError(error.toString())
+        }
+      })
     } else {
-      Dapple['makerjs'].getToken('ETH').withdraw(web3.toWei(this.amount()), options)
+      Dapple['makerjs'].getToken('ETH').withdraw(web3.toWei(_this.amount()), options, function (error, tx) {
+        if (!error) {
+          Transactions.add(TRANSACTION_TYPE, tx, { type: 'withdraw', amount: _this.amount() })
+        } else {
+          _this.lastError(error.toString())
+        }
+      })
     }
   }
 })
