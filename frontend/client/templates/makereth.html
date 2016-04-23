@@ -59,15 +59,15 @@
           {{/unless}}
         </tfoot>
       </table>
-      {{#if isPending}}
+      {{#if pending}}
         <table>
           <tbody>
             <tr>
               <th colspan="2" style="text-align: center">
-                Pending Deposits
+                Pending
               </th>
             </tr>
-            {{#each pendingList}}
+            {{#each pending}}
               <tr>
                 <th>
                   {{this.type}}

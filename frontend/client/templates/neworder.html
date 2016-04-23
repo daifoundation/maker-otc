@@ -67,6 +67,13 @@
             <button {{b "enable: canSubmit, click: submit"}}>Submit order</button>
           </td>
         </tr>
+        {{#unless equals lastError ''}}
+          <tr>
+            <td colspan="2">
+              {{lastError}}
+            </td>
+          </tr>
+        {{/unless}}
       </tfoot>
     </table>
   </form>

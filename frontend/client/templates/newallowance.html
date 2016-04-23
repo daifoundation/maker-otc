@@ -13,13 +13,20 @@
           </tr>
         </tbody>
         <tfoot>
-          {{#unless equals lastMsg ''}}
+          {{#unless equals lastError ''}}
             <tr>
               <td colspan="2">
-                {{lastMsg}}
+                {{lastError}}
               </td>
             </tr>
           {{/unless}}
+          {{#each pending}}
+          <tr>
+            <td colspan="2">
+              Pending: {{this.value}} {{this.token}}
+            </td>
+          </tr>
+          {{/each}}
           <tr>
             <td colspan="2">
               <button {{b "enable: canChange, click: change"}}>

@@ -1,35 +1,11 @@
+var TRANSACTION_TYPE = 'makereth'
+
 Template.makereth.viewmodel({
   type: 'deposit',
   amount: '',
   lastError: '',
-  lastTx: '',
-  pending: {},
-  isPending: function () {
-    // Subscribe
-    this.lastTx()
-
-    return !_.isEmpty(this.pending())
-  },
-  pendingList: function () {
-    // Subscribe
-    this.lastTx()
-
-    return _.sortBy(_.values(this.pending()), 'timestamp')
-  },
-  autorun: function () {
-    var _this = this
-    web3.eth.filter('latest', function (error, result) {
-      if (!error) {
-        _.each(_this.pending(), function (value) {
-          web3.eth.getTransactionReceipt(value.tx, function (error, result) {
-            if (!error && result != null) {
-              delete _this.pending()[value.tx]
-              _this.lastTx(value.tx + '-done')
-            }
-          })
-        })
-      }
-    })
+  pending: function () {
+    return Transactions.findType(TRANSACTION_TYPE)
   },
   maxAmount: function () {
     if (this.type() === 'deposit') {
@@ -53,12 +29,12 @@ Template.makereth.viewmodel({
     var _this = this
     _this.lastError('')
     var options = { gas: 3141592 }
+
     if (_this.type() === 'deposit') {
       options['value'] = web3.toWei(_this.amount())
       Dapple['makerjs'].getToken('ETH').deposit(options, function (error, tx) {
         if (!error) {
-          _this.pending()[tx] = { tx: tx, type: 'deposit', amount: _this.amount(), timestamp: new Date().getTime() }
-          _this.lastTx(tx)
+          Transactions.add(TRANSACTION_TYPE, tx, { type: 'deposit', amount: _this.amount() })
         } else {
           _this.lastError(error.toString())
         }
@@ -66,8 +42,7 @@ Template.makereth.viewmodel({
     } else {
       Dapple['makerjs'].getToken('ETH').withdraw(web3.toWei(_this.amount()), options, function (error, tx) {
         if (!error) {
-          _this.pending()[tx] = { tx: tx, type: 'withdraw', amount: _this.amount(), timestamp: new Date().getTime() }
-          _this.lastTx(tx)
+          Transactions.add(TRANSACTION_TYPE, tx, { type: 'withdraw', amount: _this.amount() })
         } else {
           _this.lastError(error.toString())
         }
