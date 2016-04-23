@@ -4,4 +4,4 @@ exec docker run --rm -it --name=dapple-$$ \
 -e entrypoint -w "`pwd`" -v "`pwd`:`pwd`" \
 -v "$HOME/.dapplerc:$HOME/.dapplerc" \
 -v "$HOME/.npm:$HOME/.npm" \
-rainbeam/dapple "$@"
+rainbeam/dapple-minimal:alpine "$@"
