@@ -17,7 +17,6 @@ ecmascript              # Enable ECMAScript2015+ syntax in app code
 
 ethereum:web3
 makerotc:dapple
-mrt:exports
 numeral:numeral
 dburles:collection-helpers
 ethereum:tools
