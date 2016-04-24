@@ -24,7 +24,7 @@ env:
 
 before_install:
   - id
-  - if [ $TEST = "dapple" ]; then docker pull rainbeam/dapple && docker images; fi
+  - if [ $TEST = "dapple" ]; then docker pull rainbeam/dapple-minimal && docker images; fi
   - cp .travis.dapplerc $HOME/.dapplerc
 
 install:
