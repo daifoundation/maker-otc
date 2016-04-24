@@ -1,2 +1,2 @@
-var otc = new AtomicTradeMorden()
+var otc = new SimpleMarketMorden()
 export otc

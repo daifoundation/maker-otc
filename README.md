@@ -86,16 +86,16 @@ gulp deploy
 ## Gas Costs
 
 ```
-new AtomicTradeMorden:   909958 gas
-AtomicTradeMorden.offer: 140395-186235 gas
-AtomicTradeMorden.cancel: 33882 gas
-AtomicTradeMorden.buy:    49306-51707 gas
+new SimpleMarketMorden:   909958 gas
+SimpleMarketMorden.offer: 140395-186235 gas
+SimpleMarketMorden.cancel: 33882 gas
+SimpleMarketMorden.buy:    49306-51707 gas
 ```
 
 ## TODOs
 See https://waffle.io/MakerDAO/maker-otc
 
 ## Acknowledgements
-* Atomic Trade contract by [Nikolai Mushegian](https://github.com/nmushegian)
+* Simple Market contract by [Nikolai Mushegian](https://github.com/nmushegian)
 * User interface design by [Daniel Brockman](https://github.com/dbrock)
 * Blockchain Script by [Chris Hitchcott](https://github.com/hitchcott)

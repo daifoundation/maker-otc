@@ -10,7 +10,7 @@ contract EventfulMarket {
     event Trade( uint sell_how_much, bytes32 indexed sell_which_token,
                  uint buy_how_much, bytes32 indexed buy_which_token );
 }
-contract AtomicTrade is MakerUser, EventfulMarket, FallbackFailer, Assertive {
+contract SimpleMarket is MakerUser, EventfulMarket, FallbackFailer, Assertive {
     struct OfferInfo {
         uint sell_how_much;
         bytes32 sell_which_token;
@@ -22,7 +22,7 @@ contract AtomicTrade is MakerUser, EventfulMarket, FallbackFailer, Assertive {
     uint public last_offer_id;
     mapping( uint => OfferInfo ) public offers;
 
-    function AtomicTrade( MakerUserLinkType registry )
+    function SimpleMarket( MakerUserLinkType registry )
              MakerUser( registry )
     {
     }
@@ -110,5 +110,5 @@ contract AtomicTrade is MakerUser, EventfulMarket, FallbackFailer, Assertive {
     }
 }
 
-contract AtomicTradeMainnet is AtomicTrade(MakerUserLinkType(0x0)) {}
-contract AtomicTradeMorden is AtomicTrade(MakerUserLinkType(0x1)) {}
+contract SimpleMarketMainnet is SimpleMarket(MakerUserLinkType(0x0)) {}
+contract SimpleMarketMorden is SimpleMarket(MakerUserLinkType(0x1)) {}
