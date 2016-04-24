@@ -1,14 +1,14 @@
 import 'maker-user/user_test.sol';
-import 'atomic_trade.sol';
+import 'simple_market.sol';
 
-contract AtomicTradeTest is Test
+contract SimpleMarketTest is Test
                            , MakerUserGeneric(new MakerUserMockRegistry())
                            , EventfulMarket
 {
     MakerUserTester user1;
-    AtomicTrade otc;
+    SimpleMarket otc;
     function setUp() {
-        otc = new AtomicTrade(_M);
+        otc = new SimpleMarket(_M);
         user1 = new MakerUserTester(_M);
         user1._target(otc);
         transfer(user1, 100, "DAI");
@@ -23,7 +23,7 @@ contract AtomicTradeTest is Test
         var user1_dai_balance_before = balanceOf(user1, "DAI");
 
         var id = otc.offer( 30, "MKR", 100, "DAI" );
-        AtomicTrade(user1).buy(id);
+        SimpleMarket(user1).buy(id);
         var my_mkr_balance_after = balanceOf(this, "MKR");
         var my_dai_balance_after = balanceOf(this, "DAI");
         var user1_mkr_balance_after = balanceOf(user1, "MKR");
@@ -48,7 +48,7 @@ contract AtomicTradeTest is Test
         var user1_dai_balance_before = balanceOf(user1, "DAI");
 
         var id = otc.offer( 200, "MKR", 500, "DAI" );
-        AtomicTrade(user1).buyPartial(id, 10);
+        SimpleMarket(user1).buyPartial(id, 10);
         var my_mkr_balance_after = balanceOf(this, "MKR");
         var my_dai_balance_after = balanceOf(this, "DAI");
         var user1_mkr_balance_after = balanceOf(user1, "MKR");
@@ -78,13 +78,13 @@ contract AtomicTradeTest is Test
         var user1_dai_balance_before = balanceOf(user1, "DAI");
 
         var id = otc.offer( 500, "DAI", 200, "MKR" );
-        AtomicTrade(user1).buyPartial(id, 10);
+        SimpleMarket(user1).buyPartial(id, 10);
         var my_mkr_balance_after = balanceOf(this, "MKR");
         var my_dai_balance_after = balanceOf(this, "DAI");
         var user1_mkr_balance_after = balanceOf(user1, "MKR");
         var user1_dai_balance_after = balanceOf(user1, "DAI");
         var ( sell_val, sell_token, buy_val, buy_token ) = otc.getOffer(id);
-        
+
         assertEq( 500, my_dai_balance_before - my_dai_balance_after );
         assertEq( 4, my_mkr_balance_after - my_mkr_balance_before );
         assertEq( 10, user1_dai_balance_after - user1_dai_balance_before );
@@ -118,7 +118,7 @@ contract AtomicTradeTest is Test
         user1.doApprove(otc, 101, "DAI");
         log_named_uint("user1 dai allowance", allowance(user1, otc, "DAI"));
         log_named_uint("user1 dai balance before", balanceOf(user1, "DAI"));
-        AtomicTrade(user1).buy(id);
+        SimpleMarket(user1).buy(id);
         log_named_uint("user1 dai allowance", allowance(user1, otc, "DAI"));
         log_named_uint("user1 dai balance after", balanceOf(user1,"DAI"));
     }
@@ -129,7 +129,7 @@ contract AtomicTradeTest is Test
         user1.doApprove(otc, 99, "DAI");
         log_named_uint("user1 dai allowance", allowance(user1, otc, "DAI"));
         log_named_uint("user1 dai balance before", balanceOf(user1, "DAI"));
-        AtomicTrade(user1).buy(id);
+        SimpleMarket(user1).buy(id);
         log_named_uint("user1 dai allowance", allowance(user1, otc, "DAI"));
         log_named_uint("user1 dai balance after", balanceOf(user1,"DAI"));
     }

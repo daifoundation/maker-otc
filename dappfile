@@ -12,5 +12,5 @@ environments:
   morden:
     objects:
       otc:
-        class: AtomicTradeMorden
+        class: SimpleMarketMorden
         address: '0xaaa17aff5a660f73baf140ee02ff805fb79fd845'
