@@ -23,3 +23,4 @@ ethereum:tools
 standard-minifier-css
 standard-minifier-js
 manuel:viewmodel
+twbs:bootstrap

@@ -14,6 +14,9 @@ function initNetwork (newNetwork) {
       console.log('Offer updated', id, result)
       Offers.syncOffer(id)
       Offers.remove(result.transactionHash)
+      if (Session.equals('selectedOffer', result.transactionHash)) {
+        Session.set('selectedOffer', id.toString())
+      }
     }
   })
 }

@@ -27,9 +27,9 @@
               Type
             </th>
             <td>
-              <div class="radios">
-                <label><input type="radio" value="deposit" {{b "group: type"}}>Deposit</label>
-                <label><input type="radio" value="withdraw" {{b "group: type"}}>Withdraw</label>
+              <div class="radio">
+                <label><input type="radio" value="deposit" {{b "group: type"}}> Deposit</label>
+                <label><input type="radio" value="withdraw" {{b "group: type"}}> Withdraw</label>
               </div>
             </td>
           </tr>
@@ -47,7 +47,7 @@
             <th>
             </th>
             <td>
-              <button {{b "text: type, enable: canDeposit, click: deposit"}}></button>
+              <button class="btn btn-default" {{b "text: type, enable: canDeposit, click: deposit"}}></button>
             </td>
           </tr>
           {{#unless equals lastError ''}}

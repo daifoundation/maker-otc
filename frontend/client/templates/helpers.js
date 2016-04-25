@@ -74,12 +74,24 @@ Template.registerHelper('findOffers', function (key, value) {
   return Offers.find(obj)
 })
 
+Template.registerHelper('findOffer', function (id) {
+  return Offers.findOne(id)
+})
+
+Template.registerHelper('selectedOffer', function () {
+  return Session.get('selectedOffer')
+})
+
 Template.registerHelper('baseCurrency', function (value) {
   return BASE_CURRENCY
 })
 
 Template.registerHelper('equals', function (a, b) {
   return a === b
+})
+
+Template.registerHelper('not', function (b) {
+  return !b
 })
 
 Template.registerHelper('concat', function () {

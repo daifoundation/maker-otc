@@ -57,6 +57,9 @@ Offers.syncOffer = function (id, max) {
         Offers.updateOffer(idx, sell_how_much, sell_which_token, buy_how_much, buy_which_token, owner, Status.CONFIRMED)
       } else {
         Offers.remove(idx)
+        if (Session.equals('selectedOffer', idx)) {
+          $('#offerModal').modal('hide')
+        }
       }
       if (max > 0 && id > 1) {
         Session.set('loadingProgress', Math.round(100 * (max - id) / max))
