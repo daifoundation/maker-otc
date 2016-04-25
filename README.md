@@ -2,7 +2,7 @@
 ---
 [![Slack Status](http://slack.makerdao.com/badge.svg)](https:/slack.makerdao.com)
 [![Stories in Ready](https://badge.waffle.io/MakerDAO/maker-otc.png?label=ready&title=Ready)](https://waffle.io/MakerDAO/maker-otc)
-[![Build Status](https://travis-ci.org/makerdao/maker-otc.svg?branch=master)](https://travis-ci.org/makerdao/maker-otc)
+[![Build Status](https://api.travis-ci.org/MakerDAO/maker-otc.svg?branch=master)](https://travis-ci.org/MakerDAO/maker-otc)
 
 
 This is a simple on-chain OTC market for MKR. You can either pick an order from the order book (in which case delivery will happen instantly), or submit a new order yourself.
