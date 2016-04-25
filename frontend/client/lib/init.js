@@ -1,7 +1,22 @@
-/**
- * Network check
- * https://github.com/ethereum/meteor-dapp-wallet/blob/90ad8148d042ef7c28610115e97acfa6449442e3/app/client/lib/ethereum/walletInterface.js#L32-L46
- */
+// Initialize everything on new network
+function initNetwork (newNetwork) {
+  Dapple.init(newNetwork)
+  Session.set('network', newNetwork)
+  Session.set('address', web3.eth.defaultAccount)
+  Tokens.sync()
+  Session.set('isConnected', true)
+  syncOffers()
+
+  // Watch ItemUpdate Event
+  Dapple['maker-otc'].objects.otc.ItemUpdate(function (error, result) {
+    if (!error) {
+      var id = result.args.id.toNumber()
+      console.log('Offer updated', id, result)
+      Offers.syncOffer(id)
+      Offers.remove(result.transactionHash)
+    }
+  })
+}
 
 Session.set('network', false)
 
@@ -17,6 +32,7 @@ function checkNetwork () {
   }
 
   // Check which network are we connected to
+  // https://github.com/ethereum/meteor-dapp-wallet/blob/90ad8148d042ef7c28610115e97acfa6449442e3/app/client/lib/ethereum/walletInterface.js#L32-L46
   if (!Session.equals('isConnected', isConnected)) {
     if (isConnected === true) {
       web3.eth.getBlock(0, function (e, res) {
@@ -34,22 +50,7 @@ function checkNetwork () {
           }
         }
         if (!Session.equals('network', network)) {
-          Dapple.init(network)
-          Session.set('network', network)
-          Session.set('address', web3.eth.defaultAccount)
-          Tokens.sync()
-          Session.set('isConnected', isConnected)
-          syncOffers()
-
-          // Watch ItemUpdate Event
-          Dapple['maker-otc'].objects.otc.ItemUpdate(function (error, result) {
-            if (!error) {
-              var id = result.args.id.toNumber()
-              console.log('Offer updated', id, result)
-              Offers.syncOffer(id)
-              Offers.remove(result.transactionHash)
-            }
-          })
+          initNetwork(network, isConnected)
         }
       })
     } else {
@@ -100,22 +101,7 @@ Meteor.startup(function () {
       }
     } catch (e) { }
     if (!Session.equals('network', network)) {
-      Dapple.init(network)
-      Session.set('network', network)
-      Session.set('address', web3.eth.defaultAccount)
-      Tokens.sync()
-      Session.set('isConnected', true)
-      syncOffers()
-
-      // Watch ItemUpdate Event
-      Dapple['maker-otc'].objects.otc.ItemUpdate(function (error, result) {
-        if (!error) {
-          var id = result.args.id.toNumber()
-          console.log('Offer updated', id, result)
-          Offers.syncOffer(id)
-          Offers.remove(result.transactionHash)
-        }
-      })
+      initNetwork(network)
     }
 
     // Out of sync check
