@@ -5,10 +5,10 @@
       <tbody>
         <tr>
           <th>
-            <label>Order type</label>
+            Order type
           </th>
           <td>
-            <div class="radios">
+            <div class="radio">
               <label><input type="radio" value="buy" {{b "group: type"}}> Buy {{baseCurrency}}</label>
               <label><input type="radio" value="sell" {{b "group: type"}}> Sell {{baseCurrency}}</label>
             </div>
@@ -16,13 +16,10 @@
         </tr>
         <tr>
           <th>
-            <label>
-              <span {{b "text: fancyType"}}></span>
-              Currency
-            </label>
+            <span {{b "text: fancyType"}}></span>
           </th>
           <td>
-            <div class="radios">
+            <div class="radio">
               {{#each token in allTokens}}
                 {{#unless equals token._id baseCurrency}}
                   <label><input type="radio" value={{token._id}} {{b "group: currency"}}> {{token._id}}</label>
@@ -33,10 +30,8 @@
         </tr>
         <tr>
           <th>
-            <label>
-              <span {{b "text: fancyType"}}></span>
-              Price (in <span {{b "text: currency"}}></span>)
-            </label>
+            <span {{b "text: fancyType"}}></span>
+            Price (in <span {{b "text: currency"}}></span>)
           </th>
           <td>
             <input type="number" class="input" step="any" min="0" {{b "value: price, change: calcTotal"}}>
@@ -44,7 +39,7 @@
         </tr>
         <tr>
           <th>
-            <label>Amount (in {{baseCurrency}})</label>
+            Amount (in {{baseCurrency}})
           </th>
           <td>
             <input type="number" class="input" step="any" min="0" {{b "value: amount, change: calcTotal, attr: { max: maxAmount }"}}>
@@ -52,7 +47,7 @@
         </tr>
         <tr>
           <th>
-            <label>Total (in <span {{b "text: currency"}}></span>)</label>
+            Total (in <span {{b "text: currency"}}></span>)
           </th>
           <td>
             <input type="number" class="input" step="any" min="0" {{b "value: total, change: calcAmount, attr: { max: maxTotal }"}}>
@@ -64,7 +59,7 @@
           <th>
           </th>
           <td>
-            <button {{b "enable: canSubmit, click: submit"}}>Submit order</button>
+            <button class="btn btn-default" {{b "enable: canSubmit, click: submit"}}>Submit order</button>
           </td>
         </tr>
         {{#unless equals lastError ''}}

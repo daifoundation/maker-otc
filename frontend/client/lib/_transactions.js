@@ -17,7 +17,6 @@ Transactions.observeRemoved = function (type, callback) {
 Transactions.sync = function () {
   Transactions.find().forEach(function (document) {
     web3.eth.getTransactionReceipt(document.tx, function (error, result) {
-      console.debug('transaction: ', document, error, result)
       if (!error && result != null) {
         Transactions.remove({ tx: document.tx })
       }

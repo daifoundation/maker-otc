@@ -1,0 +1,52 @@
+<template name="offermodal">
+  <div class="modal fade" id="offerModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title">Offer</h4>
+        </div>
+        <div class="modal-body">
+          <table>
+            <tbody>
+              <tr>
+                <th>Type</th>
+                <th>{{offer.type}}</th>
+              </tr>
+              <tr>
+                <th>Owner</th>
+                <td>{{offer.owner}}</td>
+              </tr>
+              <tr>
+                <th>Price</th>
+                <td>{{formatBalance offer.price}} {{offer.currency}}</td>
+              </tr>
+              <tr>
+                <th>Volume</th>
+                <td>{{formatBalance offer.volume}} MKR</td>
+              </tr>
+              <tr>
+                <th>Total</th>
+                <td>{{formatBalance (total offer.price offer.volume)}} {{offer.currency}}</td>
+              </tr>
+              {{#if offer.helper}}
+                <tr>
+                  <td colspan="2">{{offer.helper}}</td>
+                </tr>
+              {{/if}}
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          {{#if offer.canCancel}}
+            <button type="button" class="btn btn-danger">Cancel</button>
+          {{/if}}
+          <button type="button" class="btn btn-primary" disabled={{not offer.canBuy}}>
+            {{#if equals offer.type 'bid'}}Sell{{else}}Buy{{/if}} MKR
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
