@@ -16,11 +16,15 @@
       {{#if syncing}}
         (syncing {{syncingPercentage}}%)
       {{else}}
-        {{#if loading}}
-          (loading offers {{loadingProgress}}%)
+        {{#if outOfSync}}
+          (out of sync, waiting for synchronization)
         {{else}}
-          {{#if ready}}
-            (ready)
+          {{#if loading}}
+            (loading offers {{loadingProgress}}%)
+          {{else}}
+            {{#if ready}}
+              (ready)
+            {{/if}}
           {{/if}}
         {{/if}}
       {{/if}}

@@ -22,11 +22,15 @@ Template.registerHelper('rpccorsdomain', function () {
 })
 
 Template.registerHelper('ready', function () {
-  return Session.get('isConnected') && !Session.get('syncing')
+  return Session.get('isConnected') && !Session.get('syncing') && !Session.get('outOfSync')
 })
 
 Template.registerHelper('isConnected', function () {
   return Session.get('isConnected')
+})
+
+Template.registerHelper('outOfSync', function () {
+  return Session.get('outOfSync')
 })
 
 Template.registerHelper('syncing', function () {
