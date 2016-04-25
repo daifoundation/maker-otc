@@ -8,6 +8,15 @@ Session.set('network', false)
 // CHECK FOR NETWORK
 function checkNetwork () {
   var isConnected = web3.isConnected()
+
+  // Check if we are synced
+  if (isConnected) {
+    web3.eth.getBlock('latest', function (e, res) {
+      Session.set('outOfSync', e != null || new Date().getTime() / 1000 - res.timestamp > 300)
+    })
+  }
+
+  // Check which network are we connected to
   if (!Session.equals('isConnected', isConnected)) {
     if (isConnected === true) {
       web3.eth.getBlock(0, function (e, res) {
@@ -31,6 +40,16 @@ function checkNetwork () {
           Tokens.sync()
           Session.set('isConnected', isConnected)
           syncOffers()
+
+          // Watch ItemUpdate Event
+          Dapple['maker-otc'].objects.otc.ItemUpdate(function (error, result) {
+            if (!error) {
+              var id = result.args.id.toNumber()
+              console.log('Offer updated', id, result)
+              Offers.syncOffer(id)
+              Offers.remove(result.transactionHash)
+            }
+          })
         }
       })
     } else {
@@ -56,6 +75,7 @@ function syncOffers () {
   }
 }
 
+Session.set('outOfSync', false)
 Session.set('syncing', false)
 Session.set('isConnected', false)
 
@@ -86,6 +106,26 @@ Meteor.startup(function () {
       Tokens.sync()
       Session.set('isConnected', true)
       syncOffers()
+
+      // Watch ItemUpdate Event
+      Dapple['maker-otc'].objects.otc.ItemUpdate(function (error, result) {
+        if (!error) {
+          var id = result.args.id.toNumber()
+          console.log('Offer updated', id, result)
+          Offers.syncOffer(id)
+          Offers.remove(result.transactionHash)
+        }
+      })
+    }
+
+    // Out of sync check
+    try {
+      var latest = web3.eth.getBlock('latest')
+      if (new Date().getTime() / 1000 - latest.timestamp > 300) {
+        Session.set('outOfSync', true)
+      }
+    } catch (e) {
+      Session.set('outOfSync', true)
     }
   }
 
@@ -109,6 +149,7 @@ Meteor.startup(function () {
         Session.set('currentBlock', sync.currentBlock)
         Session.set('highestBlock', sync.highestBlock)
       } else {
+        Session.set('outOfSync', false)
         checkNetwork()
         web3.eth.filter('latest', function () {
           Tokens.sync()
@@ -119,13 +160,4 @@ Meteor.startup(function () {
   })
 
   Meteor.setInterval(checkNetwork, 2000)
-
-  Dapple['maker-otc'].objects.otc.ItemUpdate(function (error, result) {
-    if (!error) {
-      var id = result.args.id.toNumber()
-      console.log('Offer updated', id, result)
-      Offers.syncOffer(id)
-      Offers.remove(result.transactionHash)
-    }
-  })
 })
