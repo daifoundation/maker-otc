@@ -39,10 +39,18 @@ Template.neworder.viewmodel({
     }
   },
   maxAmount: function () {
-    var token = Tokens.findOne('MKR')
-    var balance = new BigNumber(token.balance)
-    var allowance = new BigNumber(token.allowance)
-    return this.type() === 'sell' ? web3.fromWei(BigNumber.min(balance, allowance).toString(10)) : '9e999'
+    if (this.type() === 'sell') {
+      var token = Tokens.findOne('MKR')
+      if (!token) {
+        return '0'
+      } else {
+        var balance = new BigNumber(token.balance)
+        var allowance = new BigNumber(token.allowance)
+        return web3.fromWei(BigNumber.min(balance, allowance).toString(10))
+      }
+    } else {
+      return '9e999'
+    }
   },
   maxTotal: function () {
     // Only allow change of total if price is well-defined
@@ -55,10 +63,18 @@ Template.neworder.viewmodel({
       return '0'
     }
     // If price is well-defined, take minimum of balance and allowance of currency, if 'buy', otherwise Infinity
-    var token = Tokens.findOne(this.currency())
-    var balance = new BigNumber(token.balance)
-    var allowance = new BigNumber(token.allowance)
-    return this.type() === 'buy' ? web3.fromWei(BigNumber.min(balance, allowance).toString(10)) : '9e999'
+    if (this.type() === 'buy') {
+      var token = Tokens.findOne(this.currency())
+      if (!token) {
+        return '0'
+      } else {
+        var balance = new BigNumber(token.balance)
+        var allowance = new BigNumber(token.allowance)
+        return web3.fromWei(BigNumber.min(balance, allowance).toString(10))
+      }
+    } else {
+      return '9e999'
+    }
   },
   canSubmit: function () {
     try {
