@@ -7,6 +7,8 @@
 
 This is a simple on-chain OTC market for MKR. You can either pick an order from the order book (in which case delivery will happen instantly), or submit a new order yourself.
 
+**MakerOTC is undergoing alpha testing: Proceed at your own risk, and use only small amounts of ETH and MKR.**
+
 ## Overview
 
 This dapp uses Meteor as frontend; the contract side can be tested and deployed using dapple.
