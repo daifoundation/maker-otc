@@ -1,6 +1,7 @@
 this.Offers = new Meteor.Collection(null)
 
 this.BASE_CURRENCY = 'MKR'
+this.PRICE_CURRENCY = 'USD'
 this.Status = {
   PENDING: 'pending',
   CONFIRMED: 'confirmed',

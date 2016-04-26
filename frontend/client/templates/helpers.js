@@ -90,6 +90,10 @@ Template.registerHelper('baseCurrency', function (value) {
   return BASE_CURRENCY
 })
 
+Template.registerHelper('priceCurrency', function (value) {
+  return PRICE_CURRENCY
+})
+
 Template.registerHelper('equals', function (a, b) {
   return a === b
 })
