@@ -50,12 +50,20 @@
         {{> whatisthis section="balance"}}
       </p>
       <p>Tokens:
-        {{#each token in allTokens}}{{formatBalance token.balance}} {{#if equals token._id 'ETH'}}<a href="#makereth">{{token._id}}</a>{{else}}{{token._id}}{{/if}} | {{/each}}
+        {{#each token in allTokens}}
+          {{formatBalance token.balance}}
+          {{#if equals token._id 'ETH'}}
+            <a href="#makereth">{{token._id}}</a> {{> whatisthis section="eth-wrapper"}}
+          {{else}}
+            {{token._id}}
+          {{/if}}
+          |
+        {{/each}}
         {{> whatisthis section="tokens"}}
       </p>
       <p>
         <a href="#allowance">Allowance</a>: {{#each token in allTokens}}{{formatBalance token.allowance}} {{token._id}} | {{/each}}
-        {{> whatisthis section="tokens"}}
+        {{> whatisthis section="allowance"}}
       </p>
 
       {{#if contractExists}}

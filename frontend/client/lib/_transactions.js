@@ -15,11 +15,20 @@ Transactions.observeRemoved = function (type, callback) {
 }
 
 Transactions.sync = function () {
-  Transactions.find().forEach(function (document) {
-    web3.eth.getTransactionReceipt(document.tx, function (error, result) {
-      if (!error && result != null) {
-        Transactions.remove({ tx: document.tx })
-      }
-    })
-  })
+  var open = Transactions.find().fetch()
+
+  // Sync all open transactions non-blocking and asynchronously
+  var syncTransaction = function (index) {
+    if (index >= 0 && index < open.length) {
+      var document = open[index]
+      web3.eth.getTransactionReceipt(document.tx, function (error, result) {
+        if (!error && result != null) {
+          Transactions.remove({ tx: document.tx })
+        }
+        // Sync next transaction
+        syncTransaction(index + 1)
+      })
+    }
+  }
+  syncTransaction(0)
 }
