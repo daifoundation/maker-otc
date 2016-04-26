@@ -38,7 +38,7 @@
 
     {{#if ready}}
       {{#unless equals network 'private'}}
-        <p>Contract: <a href={{contractHref}}>Etherscan.io</a></p>
+        <p>Contract: <a href={{contractHref}}>{{contractAddress}}</a></p>
       {{/unless}}
       {{> accountSelector }}
       <p>Balance: {{formatBalance ETHBalance}} ETH</p>

@@ -12,6 +12,10 @@ Template.registerHelper('network', function () {
   return Session.get('network')
 })
 
+Template.registerHelper('contractAddress', function () {
+  return Dapple['maker-otc'].objects.otc.address
+})
+
 Template.registerHelper('contractHref', function () {
   var network = Session.get('network')
   return 'https://' + (network === 'test' ? 'testnet.' : '') + 'etherscan.io/address/' + Dapple['maker-otc'].objects.otc.address
