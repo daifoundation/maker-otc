@@ -8,20 +8,38 @@ var ALL_TOKENS = ['ETH', 'MKR', 'DAI']
  */
 Tokens.sync = function () {
   var network = Session.get('network')
-  var address = Session.get('address')
-  var newETHBalance = web3.eth.getBalance(address).toString(10)
-  if (!Session.equals('ETHBalance', newETHBalance)) {
-    Session.set('ETHBalance', newETHBalance)
-  }
+  var address = web3.eth.defaultAccount
+  web3.eth.getBalance(address, function (error, balance) {
+    var newETHBalance = balance.toString(10)
+    if (!error && !Session.equals('ETHBalance', newETHBalance)) {
+      Session.set('ETHBalance', newETHBalance)
+    }
+  })
 
   if (network !== 'private') {
     var contract_address = Dapple['maker-otc'].objects.otc.address
 
-    ALL_TOKENS.forEach(function (token) {
-      var balance = Dapple['makerjs'].getToken(token).balanceOf(address).toString(10)
-      var allowance = Dapple['makerjs'].getToken(token).allowance(address, contract_address).toString(10)
-      Tokens.upsert(token, { $set: { balance: balance, allowance: allowance } })
-    })
+    // Sync token balances and allowances asynchronously
+    var syncToken = function (index) {
+      if (index >= 0 && index < ALL_TOKENS.length) {
+        var token_id = ALL_TOKENS[index]
+        // MakerJS getToken doesn't support async callback yet
+        var token = Dapple['makerjs'].getToken(token_id)
+        token.balanceOf(address, function (error, balance) {
+          if (!error) {
+            Tokens.upsert(token_id, { $set: { balance: balance.toString(10) } })
+          }
+        })
+        token.allowance(address, contract_address, function (error, allowance) {
+          if (!error) {
+            Tokens.upsert(token_id, { $set: { allowance: allowance.toString(10) } })
+          }
+          // Sync next token
+          syncToken(index + 1)
+        })
+      }
+    }
+    syncToken(0)
   } else {
     ALL_TOKENS.forEach(function (token) {
       Tokens.upsert(token, { $set: { balance: '0', allowance: '0' } })
