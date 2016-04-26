@@ -34,16 +34,29 @@
           {{/if}}
         {{/if}}
       {{/unless}}
+      {{> whatisthis section="network"}}
     </p>
 
     {{#if ready}}
       {{#unless equals network 'private'}}
-        <p>Contract: <a href={{contractHref}}>{{contractAddress}}</a></p>
+        <p>
+          Contract: <a href={{contractHref}}>{{contractAddress}}</a>
+          {{> whatisthis section="contract"}}
+        </p>
       {{/unless}}
       {{> accountSelector }}
-      <p>Balance: {{formatBalance ETHBalance}} ETH</p>
-      <p>Tokens: {{#each token in allTokens}}{{formatBalance token.balance}} {{#if equals token._id 'ETH'}}<a href="#makereth">{{token._id}}</a>{{else}}{{token._id}}{{/if}} | {{/each}}</p>
-      <p><a href="#allowance">Allowance</a>: {{#each token in allTokens}}{{formatBalance token.allowance}} {{token._id}} | {{/each}}</p>
+      <p>
+        Balance: {{formatBalance ETHBalance}} ETH
+        {{> whatisthis section="balance"}}
+      </p>
+      <p>Tokens:
+        {{#each token in allTokens}}{{formatBalance token.balance}} {{#if equals token._id 'ETH'}}<a href="#makereth">{{token._id}}</a>{{else}}{{token._id}}{{/if}} | {{/each}}
+        {{> whatisthis section="tokens"}}
+      </p>
+      <p>
+        <a href="#allowance">Allowance</a>: {{#each token in allTokens}}{{formatBalance token.allowance}} {{token._id}} | {{/each}}
+        {{> whatisthis section="tokens"}}
+      </p>
 
       {{#if contractExists}}
         <div class=row>
@@ -64,7 +77,10 @@
         </div>
         <div class=row>
           <section>
-            <h2 id="allowance">Allowance</h2>
+            <h2 id="allowance">
+              Allowance
+              {{> whatisthis section="allowance"}}
+            </h2>
             {{#each token in allTokens}}
               {{> newallowance token=token}}
             {{/each}}
@@ -85,4 +101,5 @@
       {{> noEthereum}}
     {{/unless}}
   </div>
+  {{> footer}}
 </body>
