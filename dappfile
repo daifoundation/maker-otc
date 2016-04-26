@@ -14,3 +14,8 @@ environments:
       otc:
         class: SimpleMarketMorden
         address: '0xaaa17aff5a660f73baf140ee02ff805fb79fd845'
+  live:
+    objects:
+      otc:
+        class: SimpleMarketMainnet
+        address: '0xf51bc4633f5924465c8c6317169faf3e4312e82f'

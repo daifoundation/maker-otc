@@ -89,10 +89,10 @@ gulp deploy
 ## Gas Costs
 
 ```
-new SimpleMarketMorden:   909958 gas
-SimpleMarketMorden.offer: 140395-186235 gas
-SimpleMarketMorden.cancel: 33882 gas
-SimpleMarketMorden.buy:    49306-51707 gas
+new SimpleMarket:   927556 gas
+SimpleMarket.offer: 140395-186235 gas
+SimpleMarket.cancel: 33882 gas
+SimpleMarket.buy:    49306-51707 gas
 ```
 
 ## TODOs

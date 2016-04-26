@@ -1,0 +1,2 @@
+var otc = new SimpleMarketMainnet()
+export otc
