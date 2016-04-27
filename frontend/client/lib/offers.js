@@ -1,4 +1,5 @@
 this.Offers = new Meteor.Collection(null)
+this.Trades = new Meteor.Collection(null)
 
 this.BASE_CURRENCY = 'MKR'
 this.PRICE_CURRENCY = 'USD'
@@ -43,6 +44,40 @@ Offers.helpers({
   }
 })
 
+/**
+ * Syncs up all offers and trades
+ */
+Offers.sync = function () {
+  Offers.remove({})
+  var last_offer_id = Dapple['maker-otc'].objects.otc.last_offer_id().toNumber()
+  console.log('last_offer_id', last_offer_id)
+  if (last_offer_id > 0) {
+    Session.set('loading', true)
+    Session.set('loadingProgress', 0)
+    Offers.syncOffer(last_offer_id, last_offer_id)
+  }
+
+  Dapple['maker-otc'].objects.otc.Trade({}, { fromBlock: 0 }, function (error, trade) {
+    if (!error) {
+      // Transform arguments
+      var args = {
+        buy_how_much: trade.args.buy_how_much.toString(10),
+        buy_which_token: web3.toAscii(trade.args.buy_which_token).replace(/\0[\s\S]*$/g, '').trim(),
+        sell_how_much: trade.args.sell_how_much.toString(10),
+        sell_which_token: web3.toAscii(trade.args.sell_which_token).replace(/\0[\s\S]*$/g, '').trim()
+      }
+      web3.eth.getBlock(trade.blockNumber, function (error, block) {
+        if (!error) {
+          Trades.upsert(trade.transactionHash, _.extend(block, trade, { args: args }))
+        }
+      })
+    }
+  })
+}
+
+/**
+ * Syncs up a single offer
+ */
 Offers.syncOffer = function (id, max) {
   Dapple['maker-otc'].objects.otc.offers(id, function (error, data) {
     if (!error) {

@@ -16,7 +16,7 @@ Template.newallowance.viewmodel({
   },
   canChange: function () {
     try {
-      return this.pending().length === 0 && this.value() !== '' && this.value() !== web3.fromWei(this.allowance())
+      return this.pending().length === 0 && this.value() !== '' && !(new BigNumber(this.value()).equals(new BigNumber(web3.fromWei(this.allowance()))))
     } catch (e) {
       return false
     }

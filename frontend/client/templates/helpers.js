@@ -72,6 +72,10 @@ Template.registerHelper('findToken', function (token) {
   return Tokens.findOne(token)
 })
 
+Template.registerHelper('lastTrades', function () {
+  return Trades.find({}, { sort: { blockNumber: -1, transactionIndex: -1 }, limit: 10 })
+})
+
 Template.registerHelper('findOffers', function (key, value) {
   var obj = {}
   obj[key] = value
@@ -104,6 +108,14 @@ Template.registerHelper('not', function (b) {
 
 Template.registerHelper('concat', function () {
   return Array.prototype.slice.call(arguments, 0, -1).join('')
+})
+
+Template.registerHelper('timestampToString', function (ts, inSeconds) {
+  if (inSeconds === true) {
+    return new Date(1000 * ts).toLocaleString()
+  } else {
+    return new Date(ts).toLocaleString()
+  }
 })
 
 Template.registerHelper('fromWei', function (s) {

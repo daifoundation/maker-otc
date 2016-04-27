@@ -1,9 +1,36 @@
 <template name="orderbook">
-  <h2>{{title}}
-    <span>{{subtitle}}</span>
-    {{> whatisthis section="orderbook"}}
+  <h2>
+    {{#if history}}
+      <ul class="nav nav-tabs" role="tablist">
+        <li role="presentation" class="active">
+          <a href="#mytrades" aria-controls="mytrades" role="tab" data-toggle="tab">{{title}}</a>
+          {{#if subtitle}}
+            <span>{{subtitle}}</span>
+          {{/if}}
+        </li>
+        <li role="presentation">
+          <a class="pull-right" href="#lasttrades" aria-controls="lasttrades" role="tab" data-toggle="tab">Last Trades</a>
+        </li>
+      </ul>
+    {{else}}
+      {{title}}
+      <span>{{subtitle}}</span>
+      {{> whatisthis section="orderbook"}}
+    {{/if}}
   </h2>
-  <div class=o>
-    {{> orders orders=orders priceLabel=priceLabel}}
-  </div>
+
+  {{#if history}}
+    <div class="tab-content">
+      <div role="tabpanel" class="tab-pane active o" id="mytrades">
+        {{> orders orders=orders priceLabel=priceLabel}}
+      </div>
+      <div role="tabpanel" class="tab-pane o" id="lasttrades">
+        {{> lasttrades}}
+      </div>
+    </div>
+  {{else}}
+    <div class=o>
+      {{> orders orders=orders priceLabel=priceLabel}}
+    </div>
+  {{/if}}
 </template>
