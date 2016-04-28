@@ -1,3 +1,9 @@
+Template.offermodal.onRendered(function () {
+  $('#offerModal').on('hidden.bs.modal', function () {
+    Session.set('selectedOffer', undefined)
+  })
+})
+
 Template.offermodal.viewmodel({
   volume: '',
   total: '',

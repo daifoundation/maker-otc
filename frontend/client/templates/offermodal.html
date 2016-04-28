@@ -54,9 +54,9 @@
           <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
           {{#if offer}}
             {{#if offer.canCancel}}
-              <button type="button" class="btn btn-danger" {{b "click: cancel"}}>Cancel</button>
+              <button type="button" class="btn btn-danger" data-dismiss="modal" {{b "click: cancel"}}>Cancel</button>
             {{/if}}
-            <button type="button" class="btn btn-primary" {{b "enable: canBuy, click: buy"}}>
+            <button type="button" class="btn btn-primary" data-dismiss="modal" {{b "enable: canBuy, click: buy"}}>
               {{#if equals offer.type 'bid'}}Sell{{else}}Buy{{/if}} MKR
             </button>
           {{/if}}
