@@ -25,6 +25,10 @@ Template.registerHelper('rpccorsdomain', function () {
   return window.location.origin
 })
 
+Template.registerHelper('usingHttps', function () {
+  return window.location.protocol === 'https:'
+})
+
 Template.registerHelper('ready', function () {
   return Session.get('isConnected') && !Session.get('syncing') && !Session.get('outOfSync')
 })
