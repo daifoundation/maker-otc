@@ -53,7 +53,7 @@
         {{#each token in allTokens}}
           {{formatBalance token.balance}}
           {{#if equals token._id 'ETH'}}
-            <a href="#makereth">{{token._id}}</a> {{> whatisthis section="eth-wrapper"}}
+            <a href="#ethtokens">{{token._id}}</a> {{> whatisthis section="eth-tokens"}}
           {{else}}
             {{token._id}}
           {{/if}}
@@ -94,7 +94,7 @@
             {{/each}}
           </section>
           <section>
-            {{> makereth}}
+            {{> ethtokens}}
           </section>
         </div>
 

@@ -1,6 +1,6 @@
-var TRANSACTION_TYPE = 'makereth'
+var TRANSACTION_TYPE = 'ethtokens'
 
-Template.makereth.viewmodel({
+Template.ethtokens.viewmodel({
   type: 'deposit',
   amount: '',
   lastError: '',
