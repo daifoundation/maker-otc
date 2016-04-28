@@ -89,6 +89,9 @@ Template.neworder.viewmodel({
       return false
     }
   },
+  preventDefault: function (event) {
+    event.preventDefault()
+  },
   submit: function (event) {
     event.preventDefault()
 
