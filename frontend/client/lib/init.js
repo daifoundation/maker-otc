@@ -5,7 +5,7 @@ function initNetwork (newNetwork) {
   Session.set('address', web3.eth.defaultAccount)
   Tokens.sync()
   Session.set('isConnected', true)
-  syncOffers()
+  Offers.sync()
 
   // Watch ItemUpdate Event
   Dapple['maker-otc'].objects.otc.ItemUpdate(function (error, result) {
@@ -63,22 +63,7 @@ function checkNetwork () {
   }
 }
 
-/**
- * Syncs up all offers in the otc object
- */
 Session.set('loading', false)
-
-function syncOffers () {
-  Offers.remove({})
-  var last_offer_id = Dapple['maker-otc'].objects.otc.last_offer_id().toNumber()
-  console.log('last_offer_id', last_offer_id)
-  if (last_offer_id > 0) {
-    Session.set('loading', true)
-    Session.set('loadingProgress', 0)
-    Offers.syncOffer(last_offer_id, last_offer_id)
-  }
-}
-
 Session.set('outOfSync', false)
 Session.set('syncing', false)
 Session.set('isConnected', false)

@@ -28,6 +28,7 @@ h2 span { font-size: .6rem }
 h2 span { font-weight: normal }
 h2 span { margin-left: .5rem }
 h2 span { color: gray }
+h2 .nav-tabs a:focus { outline: none }
 
 p { max-width: 30rem }
 p { margin: 0 0 10px }
@@ -60,6 +61,9 @@ small { color: lightgray }
 .o tbody tr.bought { font-weight: 600 }
 .o tbody tr.helper-row { color: grey }
 .o tbody tr.helper-row { font-size: smaller }
+
+td.bid, th.bid { color: darkgreen }
+td.ask, th.ask { color: darkred }
 
 form th { text-align: right }
 form th { padding: .2rem 1rem }

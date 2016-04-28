@@ -1,9 +1,11 @@
 <template name="orderbook">
-  <h2>{{title}}
+  <h2>
+    {{title}}
     <span>{{subtitle}}</span>
     {{> whatisthis section="orderbook"}}
   </h2>
+
   <div class=o>
-    {{> orders orders=orders priceLabel=priceLabel}}
+    {{> orders orders=orders priceLabel=priceLabel priceClass=priceClass}}
   </div>
 </template>
