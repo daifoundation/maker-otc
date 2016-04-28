@@ -1,6 +1,6 @@
 <template name="orderRow">
-  <tr class={{order.status}}>
-    <td>{{formatBalance order.price}}</td>
+  <tr class={{order.status}} title={{timestampToString order.timestamp true}}>
+    <td class={{order.type}}>{{formatBalance order.price}}</td>
     <td>{{order.currency}}</td>
     <td>~{{formatPrice order}}</td>
     <td>{{formatBalance order.volume}} {{baseCurrency}}</td>

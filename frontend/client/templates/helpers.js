@@ -111,10 +111,14 @@ Template.registerHelper('concat', function () {
 })
 
 Template.registerHelper('timestampToString', function (ts, inSeconds) {
-  if (inSeconds === true) {
-    return new Date(1000 * ts).toLocaleString()
+  if (ts) {
+    if (inSeconds === true) {
+      return new Date(1000 * ts).toLocaleString()
+    } else {
+      return new Date(ts).toLocaleString()
+    }
   } else {
-    return new Date(ts).toLocaleString()
+    return ''
   }
 })
 

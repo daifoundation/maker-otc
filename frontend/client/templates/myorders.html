@@ -1,0 +1,21 @@
+<template name="myorders">
+  <h2>
+    <ul class="nav nav-tabs" role="tablist">
+      <li role="presentation" class="active">
+        <a href="#mytrades" aria-controls="mytrades" role="tab" data-toggle="tab">My Trades</a>
+      </li>
+      <li role="presentation">
+        <a href="#lasttrades" aria-controls="lasttrades" role="tab" data-toggle="tab">Last Trades</a>
+      </li>
+    </ul>
+  </h2>
+
+  <div class="tab-content">
+    <div role="tabpanel" class="tab-pane active o" id="mytrades">
+      {{> orders orders=(findOffers 'owner' address) priceLabel='Price'}}
+    </div>
+    <div role="tabpanel" class="tab-pane o" id="lasttrades">
+      {{> orders orders=lastTrades priceLabel='Price'}}
+    </div>
+  </div>
+</template>

@@ -60,15 +60,22 @@ Offers.sync = function () {
   Dapple['maker-otc'].objects.otc.Trade({}, { fromBlock: 0 }, function (error, trade) {
     if (!error) {
       // Transform arguments
-      var args = {
-        buy_how_much: trade.args.buy_how_much.toString(10),
-        buy_which_token: web3.toAscii(trade.args.buy_which_token).replace(/\0[\s\S]*$/g, '').trim(),
-        sell_how_much: trade.args.sell_how_much.toString(10),
-        sell_which_token: web3.toAscii(trade.args.sell_which_token).replace(/\0[\s\S]*$/g, '').trim()
+      var args = {}
+      if (formattedString(trade.args.buy_which_token) === BASE_CURRENCY) {
+        args.type = 'bid'
+        args.currency = formattedString(trade.args.sell_which_token)
+        args.volume = trade.args.buy_how_much.toString(10)
+        args.price = web3.toWei(trade.args.sell_how_much.div(trade.args.buy_how_much)).toString(10)
+      } else {
+        args.type = 'ask'
+        args.currency = formattedString(trade.args.buy_which_token)
+        args.volume = trade.args.sell_how_much.toString(10)
+        args.price = web3.toWei(trade.args.buy_how_much.div(trade.args.sell_how_much)).toString(10)
       }
+      // Get block for timestamp
       web3.eth.getBlock(trade.blockNumber, function (error, block) {
         if (!error) {
-          Trades.upsert(trade.transactionHash, _.extend(block, trade, { args: args }))
+          Trades.upsert(trade.transactionHash, _.extend(block, trade, args))
         }
       })
     }
