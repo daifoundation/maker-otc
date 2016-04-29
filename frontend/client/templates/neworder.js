@@ -40,7 +40,7 @@ Template.neworder.viewmodel({
   },
   maxAmount: function () {
     if (this.type() === 'sell') {
-      var token = Tokens.findOne('MKR')
+      var token = Tokens.findOne(BASE_CURRENCY)
       if (!token) {
         return '0'
       } else {

@@ -95,7 +95,7 @@
               </tr>
               <tr>
                 <th>Volume</th>
-                <td>{{formatBalance (toWei amount)}} MKR</td>
+                <td>{{formatBalance (toWei amount)}} {{baseCurrency}}</td>
               </tr>
               <tr>
                 <th>Total</th>
@@ -109,7 +109,7 @@
             {{#if equals type 'buy'}}
               This action will remove {{formatBalance (toWei total)}} {{currency}} from your token balance and allowance.
             {{else}}
-              This action will remove {{formatBalance (toWei amount)}} MKR from your token balance and allowance.
+              This action will remove {{formatBalance (toWei amount)}} {{baseCurrency}} from your token balance and allowance.
             {{/if}}
           </span>
         </div>

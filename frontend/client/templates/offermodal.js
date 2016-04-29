@@ -20,7 +20,7 @@ Template.offermodal.viewmodel({
     try {
       if (Template.currentData().offer.type === 'bid') {
         // Calculate max volume, since we want to sell MKR, we need to check how much MKR we can sell
-        var token = Tokens.findOne('MKR')
+        var token = Tokens.findOne(BASE_CURRENCY)
         if (!token) {
           return '0'
         } else {
