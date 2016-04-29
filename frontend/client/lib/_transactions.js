@@ -23,7 +23,9 @@ Transactions.sync = function () {
       var document = open[index]
       web3.eth.getTransactionReceipt(document.tx, function (error, result) {
         if (!error && result != null) {
-          Transactions.remove({ tx: document.tx })
+          Transactions.update({ tx: document.tx }, { $set: { receipt: result } }, function () {
+            Transactions.remove({ tx: document.tx })
+          })
         }
         // Sync next transaction
         syncTransaction(index + 1)

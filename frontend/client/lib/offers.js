@@ -15,30 +15,6 @@ function formattedString (str) {
 }
 
 Offers.helpers({
-  canBuy: function () {
-    // Check if order is confirmed and user has enough funds
-    if (this.status !== Status.CONFIRMED) {
-      return false
-    } else if (this.type === 'bid') {
-      // Since allowance can be larger than the balance,
-      // check if both the MKR balance and allowance are greater than or equal to the offer's volume
-      // TODO: add support for partial orders
-      var MKRToken = Tokens.findOne('MKR')
-      var MKRBalance = new BigNumber(MKRToken.balance)
-      var MKRAllowance = new BigNumber(MKRToken.allowance)
-      return BigNumber.min(MKRBalance, MKRAllowance).gte(new BigNumber(this.volume))
-    } else {
-      // Since allowance can be larger than the balance,
-      // check if both the balance and allowance are greater than or equal to the offer's volume times its price
-      // TODO: add support for partial orders, take transaction gas cost into account
-      var token = Tokens.findOne(this.currency)
-      var balance = new BigNumber(token.balance)
-      var allowance = new BigNumber(token.allowance)
-      var volume = new BigNumber(this.volume)
-      var price = new BigNumber(this.price)
-      return BigNumber.min(balance, allowance).gte(volume.times(web3.fromWei(price)))
-    }
-  },
   canCancel: function () {
     return (this.status === Status.CONFIRMED) && Session.equals('address', this.owner)
   }
@@ -137,6 +113,7 @@ Offers.updateOffer = function (idx, sell_how_much, sell_which_token, buy_how_muc
       type: 'ask',
       currency: buy_which_token,
       volume: sell_how_much.toString(10),
+      total: buy_how_much.toString(10),
       price: web3.toWei(buy_how_much.dividedBy(sell_how_much)).toString()
     })
     Offers.upsert(idx, { $set: sellOffer })
@@ -145,6 +122,7 @@ Offers.updateOffer = function (idx, sell_how_much, sell_which_token, buy_how_muc
       type: 'bid',
       currency: sell_which_token,
       volume: buy_how_much.toString(10),
+      total: sell_how_much.toString(10),
       price: web3.toWei(sell_how_much.dividedBy(buy_how_much)).toString()
     })
     Offers.upsert(idx, { $set: buyOffer })
@@ -162,15 +140,16 @@ Offers.newOffer = function (sell_how_much, sell_which_token, buy_how_much, buy_w
   })
 }
 
-Offers.buyOffer = function (idx) {
-  var id = parseInt(idx, 10)
-  Offers.update(idx, { $unset: { helper: '' } })
-  Dapple['maker-otc'].objects.otc.buy(id, { gas: 3141592 }, function (error, tx) {
+Offers.buyOffer = function (_id, _quantity) {
+  var id = parseInt(_id, 10)
+  var quantity = _quantity.toNumber()
+  Offers.update(_id, { $unset: { helper: '' } })
+  Dapple['maker-otc'].objects.otc.buyPartial(id.toString(10), quantity, { gas: 3141592 }, function (error, tx) {
     if (!error) {
-      Transactions.add('offer', tx, { id: idx, status: Status.BOUGHT })
-      Offers.update(idx, { $set: { tx: tx, status: Status.BOUGHT, helper: 'Your buy / sell order is being processed...' } })
+      Transactions.add('offer', tx, { id: _id, status: Status.BOUGHT })
+      Offers.update(_id, { $set: { tx: tx, status: Status.BOUGHT, helper: 'Your buy / sell order is being processed...' } })
     } else {
-      Offers.update(idx, { $set: { helper: error.toString() } })
+      Offers.update(_id, { $set: { helper: error.toString() } })
     }
   })
 }
@@ -193,8 +172,11 @@ Transactions.observeRemoved('offer', function (document) {
     case Status.CANCELLED:
     case Status.BOUGHT:
       Offers.syncOffer(document.object.id)
-      // If it worked and it was successfully bought / cancelled, the following will do nothing since the object got removed
-      Offers.update(document.object.id, { $set: { helper: document.object.status + ': Error during Contract Execution' } })
+      if (document.receipt.logs.length === 0) {
+        Offers.update(document.object.id, { $set: { helper: document.object.status + ': Error during Contract Execution' } })
+      } else {
+        Offers.update(document.object.id, { $unset: { helper: '' } })
+      }
       break
     case Status.PENDING:
       // The ItemUpdate event will be triggered on successful generation, which will delete the object; otherwise set helper

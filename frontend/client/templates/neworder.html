@@ -36,7 +36,7 @@
             {{fancyType}} Price (in {{currency}})
           </th>
           <td>
-            <input type="number" class="input" step="any" min="0" {{b "value: price, change: calcTotal"}}>
+            <input type="number" class="input" step="any" min="0" {{b "value: price, input: calcTotal"}}>
           </td>
         </tr>
         <tr>
@@ -44,7 +44,7 @@
             Amount (in {{baseCurrency}})
           </th>
           <td>
-            <input type="number" class="input" step="any" min="0" {{b "value: amount, change: calcTotal, attr: { max: maxAmount }"}}>
+            <input type="number" class="input" step="any" min="0" {{b "value: amount, input: calcTotal, attr: { max: maxAmount }"}}>
           </td>
         </tr>
         <tr>
@@ -52,7 +52,7 @@
             Total (in {{currency}})
           </th>
           <td>
-            <input type="number" class="input" step="any" min="0" {{b "value: total, change: calcAmount, attr: { max: maxTotal }"}}>
+            <input type="number" class="input" step="any" min="0" {{b "value: total, input: calcAmount, attr: { max: maxTotal }"}}>
           </td>
         </tr>
       </tbody>
@@ -95,7 +95,7 @@
               </tr>
               <tr>
                 <th>Volume</th>
-                <td>{{formatBalance (toWei amount)}} MKR</td>
+                <td>{{formatBalance (toWei amount)}} {{baseCurrency}}</td>
               </tr>
               <tr>
                 <th>Total</th>
@@ -109,7 +109,7 @@
             {{#if equals type 'buy'}}
               This action will remove {{formatBalance (toWei total)}} {{currency}} from your token balance and allowance.
             {{else}}
-              This action will remove {{formatBalance (toWei amount)}} MKR from your token balance and allowance.
+              This action will remove {{formatBalance (toWei amount)}} {{baseCurrency}} from your token balance and allowance.
             {{/if}}
           </span>
         </div>

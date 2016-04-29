@@ -7,44 +7,88 @@
           <h4 class="modal-title">Offer</h4>
         </div>
         <div class="modal-body">
-          <table>
-            <tbody>
-              <tr>
-                <th>Type</th>
-                <th>{{offer.type}}</th>
-              </tr>
-              <tr>
-                <th>Owner</th>
-                <td>{{offer.owner}}</td>
-              </tr>
-              <tr>
-                <th>Price</th>
-                <td>{{formatBalance offer.price}} {{offer.currency}}</td>
-              </tr>
-              <tr>
-                <th>Volume</th>
-                <td>{{formatBalance offer.volume}} MKR</td>
-              </tr>
-              <tr>
-                <th>Total</th>
-                <td>{{formatBalance (total offer.price offer.volume)}} {{offer.currency}}</td>
-              </tr>
-              {{#if offer.helper}}
+          {{#if offer}}
+            <table>
+              <tbody>
                 <tr>
-                  <td colspan="2">{{offer.helper}}</td>
+                  <th>Type</th>
+                  <th>{{offer.type}}</th>
                 </tr>
+                <tr>
+                  <th>Owner</th>
+                  <td>{{offer.owner}}</td>
+                </tr>
+                <tr>
+                  <th>Price</th>
+                  <td>{{formatBalance offer.price}} {{offer.currency}}</td>
+                </tr>
+                <tr>
+                  <th>Volume</th>
+                  <td><input type="number" class="input" step="any" min="0" max={{maxVolume}} {{b "value: volume, input: calcTotal"}}> {{baseCurrency}}</td>
+                </tr>
+                <tr>
+                  <th>Total</th>
+                  <td><input type="number" class="input" step="any" min="0" max={{maxTotal}} {{b "value: total, input: calcVolume"}}> {{offer.currency}}</td>
+                </tr>
+                {{#if offer.helper}}
+                  <tr>
+                    <td colspan="2">{{offer.helper}}</td>
+                  </tr>
+                {{/if}}
+              </tbody>
+            </table>
+            <hr>
+            <span class="text-danger">
+              <b>Warning!</b>
+              {{#if equals offer.type 'bid'}}
+                This action will remove {{formatBalance (toWei volume)}} {{baseCurrency}} from your token balance and allowance, and add {{formatBalance (toWei total)}} {{offer.currency}} to your token balance.
+              {{else}}
+                This action will remove {{formatBalance (toWei total)}} {{offer.currency}} from your token balance and allowance, and add {{formatBalance (toWei volume)}} {{baseCurrency}} to your token balance.
               {{/if}}
-            </tbody>
-          </table>
+              <br>
+              If someone (partially) fills this order before you do, your offer may only be partially filled or even denied, in which case unused funds will be refunded to your balance and allowance.
+            </span>
+          {{/if}}
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-          {{#if offer.canCancel}}
-            <button type="button" class="btn btn-danger">Cancel</button>
+          {{#if offer}}
+            {{#if canCancel}}
+              <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#cancelModal">Cancel</button>
+            {{/if}}
+            <button type="button" class="btn btn-primary" data-dismiss="modal" {{b "enable: canBuy, click: buy"}}>
+              {{#if equals offer.type 'bid'}}Sell{{else}}Buy{{/if}} {{baseCurrency}}
+            </button>
           {{/if}}
-          <button type="button" class="btn btn-primary" disabled={{not offer.canBuy}}>
-            {{#if equals offer.type 'bid'}}Sell{{else}}Buy{{/if}} MKR
-          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="cancelModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title">Cancel Offer</h4>
+        </div>
+        <div class="modal-body">
+          {{#if offer}}
+            <span class="text-danger">
+              <b>Warning!</b>
+              {{#if equals offer.type 'bid'}}
+                This action will return {{formatBalance offer.total}} {{offer.currency}} to your token balance.
+              {{else}}
+                This action will return {{formatBalance offer.volume}} {{baseCurrency}} to your token balance.
+              {{/if}}
+              <br>
+              If someone (partially) fills this order before you cancel it, your order may not or only be partially cancelled. 
+            </span>
+          {{/if}}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-danger" data-dismiss="modal" {{b "click: cancel, enable: canCancel"}}>Cancel Offer</button>
         </div>
       </div>
     </div>
