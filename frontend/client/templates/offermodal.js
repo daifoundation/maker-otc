@@ -1,6 +1,8 @@
 Template.offermodal.onRendered(function () {
-  $('#offerModal').on('hidden.bs.modal', function () {
-    Session.set('selectedOffer', undefined)
+  $('#offerModal,#cancelModal').on('hidden.bs.modal', function () {
+    if (!($('#offerModal').data('bs.modal') || { isShown: false }).isShown) {
+      Session.set('selectedOffer', undefined)
+    }
   })
 })
 
@@ -10,8 +12,7 @@ Template.offermodal.viewmodel({
   autorun: function () {
     if (Template.currentData().offer) {
       var volume = web3.fromWei(new BigNumber(Template.currentData().offer.volume))
-      var price = web3.fromWei(new BigNumber(Template.currentData().offer.price))
-      var total = volume.times(price)
+      var total = web3.fromWei(new BigNumber(Template.currentData().offer.total))
       this.volume(volume.toString(10))
       this.total(total.toString(10))
     }
@@ -52,8 +53,7 @@ Template.offermodal.viewmodel({
         if (!token) {
           return '0'
         } else {
-          var volume = new BigNumber(Template.currentData().offer.volume)
-          var total = volume.times(price)
+          var total = new BigNumber(Template.currentData().offer.total)
           var balance = new BigNumber(token.balance)
           var allowance = new BigNumber(token.allowance)
           return web3.fromWei(BigNumber.min(balance, allowance, total)).toString(10)
@@ -63,7 +63,7 @@ Template.offermodal.viewmodel({
       return '0'
     }
   },
-  calcVolume: function (event) {
+  calcVolume: function () {
     try {
       var price = web3.fromWei(new BigNumber(this.templateInstance.data.offer.price))
       var total = new BigNumber(this.total())
@@ -72,7 +72,7 @@ Template.offermodal.viewmodel({
       this.volume('0')
     }
   },
-  calcTotal: function (event) {
+  calcTotal: function () {
     try {
       var price = web3.fromWei(new BigNumber(this.templateInstance.data.offer.price))
       var volume = new BigNumber(this.volume())
@@ -81,8 +81,15 @@ Template.offermodal.viewmodel({
       this.total('0')
     }
   },
+  canCancel: function () {
+    if (!Template.currentData().offer) {
+      return false
+    } else {
+      return Template.currentData().offer.status === Status.CONFIRMED && Session.equals('address', Template.currentData().offer.owner)
+    }
+  },
   cancel: function () {
-    var _id = Template.currentData().offer._id
+    var _id = this.templateInstance.data.offer._id
     Offers.cancelOffer(_id)
   },
   canBuy: function () {

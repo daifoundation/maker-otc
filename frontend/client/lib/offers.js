@@ -113,6 +113,7 @@ Offers.updateOffer = function (idx, sell_how_much, sell_which_token, buy_how_muc
       type: 'ask',
       currency: buy_which_token,
       volume: sell_how_much.toString(10),
+      total: buy_how_much.toString(10),
       price: web3.toWei(buy_how_much.dividedBy(sell_how_much)).toString()
     })
     Offers.upsert(idx, { $set: sellOffer })
@@ -121,6 +122,7 @@ Offers.updateOffer = function (idx, sell_how_much, sell_which_token, buy_how_muc
       type: 'bid',
       currency: sell_which_token,
       volume: buy_how_much.toString(10),
+      total: sell_how_much.toString(10),
       price: web3.toWei(sell_how_much.dividedBy(buy_how_much)).toString()
     })
     Offers.upsert(idx, { $set: buyOffer })
