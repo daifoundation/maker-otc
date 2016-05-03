@@ -19,21 +19,7 @@
         </tr>
         <tr>
           <th>
-            {{fancyType}}
-          </th>
-          <td>
-            <div class="radio">
-              {{#each token in allTokens}}
-                {{#unless equals token._id baseCurrency}}
-                  <label><input type="radio" value={{token._id}} {{b "group: currency"}}> {{token._id}}</label>
-                {{/unless}}
-              {{/each}}
-            </div>
-          </td>
-        </tr>
-        <tr>
-          <th>
-            {{fancyType}} Price (in {{currency}})
+            {{fancyType}} Price (in {{quoteCurrency}})
           </th>
           <td>
             <input type="number" class="input" step="any" min="0" {{b "value: price, input: calcTotal"}}>
@@ -49,7 +35,7 @@
         </tr>
         <tr>
           <th>
-            Total (in {{currency}})
+            Total (in {{quoteCurrency}})
           </th>
           <td>
             <input type="number" class="input" step="any" min="0" {{b "value: total, input: calcAmount, attr: { max: maxTotal }"}}>
@@ -91,7 +77,7 @@
               </tr>
               <tr>
                 <th>Price</th>
-                <td>{{formatBalance (toWei price)}} {{currency}}</td>
+                <td>{{formatBalance (toWei price)}} {{quoteCurrency}}</td>
               </tr>
               <tr>
                 <th>Volume</th>
@@ -99,7 +85,7 @@
               </tr>
               <tr>
                 <th>Total</th>
-                <td>{{formatBalance (toWei total)}} {{currency}}</td>
+                <td>{{formatBalance (toWei total)}} {{quoteCurrency}}</td>
               </tr>
             </tbody>
           </table>
@@ -107,9 +93,9 @@
           <span class="text-danger">
             <b>Warning!</b>
             {{#if equals type 'buy'}}
-              This action will remove {{formatBalance (toWei total)}} {{currency}} from your token balance and allowance.
+              This action will <b>remove {{formatBalance (toWei total)}} {{quoteCurrency}}</b> {{formatPrice (toWei total) quoteCurrency}} from your token balance and allowance.
             {{else}}
-              This action will remove {{formatBalance (toWei amount)}} {{baseCurrency}} from your token balance and allowance.
+              This action will <b>remove {{formatBalance (toWei amount)}} {{baseCurrency}}</b> {{formatPrice (toWei amount) baseCurrency}} from your token balance and allowance.
             {{/if}}
           </span>
         </div>

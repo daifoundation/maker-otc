@@ -43,8 +43,6 @@ small { color: lightgray }
 .o td { text-align: right }
 .o th { text-align: right }
 .o th { color: gray }
-.o th:first-child { text-align: left }
-.o td:nth-child(2) { text-align: left }
 .o tbody tr.confirmed td.buy { cursor: pointer }
 .o tbody tr.confirmed td.cant-buy { cursor: not-allowed }
 .o tbody tr:hover { background: #eee }
@@ -61,6 +59,9 @@ small { color: lightgray }
 .o tbody tr.bought { font-weight: 600 }
 .o tbody tr.helper-row { color: grey }
 .o tbody tr.helper-row { font-size: smaller }
+
+.nostretch { width: 1% }
+.nostretch { white-space: nowrap }
 
 td.bid, th.bid { color: darkgreen }
 td.ask, th.ask { color: darkred }

@@ -1,9 +1,10 @@
 this.Tokens = new Meteor.Collection(null)
 
-var ALL_TOKENS = ['ETH', 'MKR', 'DAI']
+Session.set('quoteCurrency', 'ETH')
+Session.set('baseCurrency', 'MKR')
 
 /**
- * Syncs the ETH, MKR and DAI balances of Session.get('address')
+ * Syncs the quote and base currencies' balances and allowances of selected account,
  * usually called for each new block
  */
 Tokens.sync = function () {
@@ -15,6 +16,8 @@ Tokens.sync = function () {
       Session.set('ETHBalance', newETHBalance)
     }
   })
+
+  var ALL_TOKENS = _.uniq([ Session.get('quoteCurrency'), Session.get('baseCurrency') ])
 
   if (network !== 'private') {
     var contract_address = Dapple['maker-otc'].objects.otc.address

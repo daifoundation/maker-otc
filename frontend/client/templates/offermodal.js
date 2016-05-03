@@ -1,40 +1,37 @@
-Template.offermodal.onRendered(function () {
-  $('#offerModal,#cancelModal').on('hidden.bs.modal', function () {
-    if (!($('#offerModal').data('bs.modal') || { isShown: false }).isShown) {
-      Session.set('selectedOffer', undefined)
-    }
-  })
-})
-
 Template.offermodal.viewmodel({
   volume: '',
   total: '',
   autorun: function () {
     if (Template.currentData().offer) {
-      var volume = web3.fromWei(new BigNumber(Template.currentData().offer.volume))
-      var total = web3.fromWei(new BigNumber(Template.currentData().offer.total))
-      this.volume(volume.toString(10))
-      this.total(total.toString(10))
+      var buy_how_much = web3.fromWei(new BigNumber(Template.currentData().offer.buy_how_much)).toString(10)
+      var sell_how_much = web3.fromWei(new BigNumber(Template.currentData().offer.sell_how_much)).toString(10)
+      var baseCurrency = Session.get('baseCurrency')
+      if (baseCurrency === Template.currentData().offer.buy_which_token) {
+        this.volume(buy_how_much)
+        this.total(sell_how_much)
+      } else {
+        this.volume(sell_how_much)
+        this.total(buy_how_much)
+      }
     }
   },
   maxVolume: function () {
     try {
-      if (Template.currentData().offer.type === 'bid') {
+      var baseCurrency = Session.get('baseCurrency')
+      var volume = new BigNumber(Template.currentData().offer.volume(baseCurrency))
+      if (Template.currentData().offer.buy_which_token === baseCurrency) {
         // Calculate max volume, since we want to sell MKR, we need to check how much MKR we can sell
-        var token = Tokens.findOne(BASE_CURRENCY)
+        var token = Tokens.findOne(baseCurrency)
         if (!token) {
           return '0'
         } else {
-          var volume = new BigNumber(Template.currentData().offer.volume)
+          // Can at most sell balance, allowance, and offer's volume
           var balance = new BigNumber(token.balance)
           var allowance = new BigNumber(token.allowance)
           return web3.fromWei(BigNumber.min(balance, allowance, volume)).toString(10)
         }
       } else {
-        // Derive from max total
-        var maxTotal = new BigNumber(this.maxTotal())
-        var price = web3.fromWei(new BigNumber(Template.currentData().offer.price))
-        return maxTotal.div(price).toString(10)
+        return web3.fromWei(volume).toString(10)
       }
     } catch (e) {
       return '0'
@@ -42,22 +39,21 @@ Template.offermodal.viewmodel({
   },
   maxTotal: function () {
     try {
-      var price = web3.fromWei(new BigNumber(Template.currentData().offer.price))
-      if (Template.currentData().offer.type === 'bid') {
-        // Derive total from max volume
-        var maxVolume = new BigNumber(this.maxVolume())
-        return price.times(maxVolume).toString(10)
-      } else {
+      var quoteCurrency = Session.get('quoteCurrency')
+      var total = new BigNumber(Template.currentData().offer.volume(quoteCurrency))
+      if (Template.currentData().offer.buy_which_token === quoteCurrency) {
         // Calculate max total, since we want to buy MKR, we need to check how much of the currency is available
-        var token = Tokens.findOne(Template.currentData().offer.currency)
+        var token = Tokens.findOne(quoteCurrency)
         if (!token) {
           return '0'
         } else {
-          var total = new BigNumber(Template.currentData().offer.total)
+          // Can at most buy balance, allowance, and offer's total
           var balance = new BigNumber(token.balance)
           var allowance = new BigNumber(token.allowance)
           return web3.fromWei(BigNumber.min(balance, allowance, total)).toString(10)
         }
+      } else {
+        return web3.fromWei(total).toString(10)
       }
     } catch (e) {
       return '0'
@@ -65,27 +61,32 @@ Template.offermodal.viewmodel({
   },
   calcVolume: function () {
     try {
-      var price = web3.fromWei(new BigNumber(this.templateInstance.data.offer.price))
+      var baseCurrency = Session.get('baseCurrency')
       var total = new BigNumber(this.total())
-      this.volume(total.div(price).toString(10))
+      var buy_how_much = new BigNumber(this.templateInstance.data.offer.buy_how_much)
+      var sell_how_much = new BigNumber(this.templateInstance.data.offer.sell_how_much)
+      if (this.templateInstance.data.offer.buy_which_token === baseCurrency) {
+        this.volume(buy_how_much.div(sell_how_much).times(total).toString(10))
+      } else {
+        this.volume(sell_how_much.div(buy_how_much).times(total).toString(10))
+      }
     } catch (e) {
       this.volume('0')
     }
   },
   calcTotal: function () {
     try {
-      var price = web3.fromWei(new BigNumber(this.templateInstance.data.offer.price))
+      var baseCurrency = Session.get('baseCurrency')
       var volume = new BigNumber(this.volume())
-      this.total(price.times(volume))
+      var buy_how_much = new BigNumber(this.templateInstance.data.offer.buy_how_much)
+      var sell_how_much = new BigNumber(this.templateInstance.data.offer.sell_how_much)
+      if (this.templateInstance.data.offer.buy_which_token === baseCurrency) {
+        this.total(sell_how_much.div(buy_how_much).times(volume).toString(10))
+      } else {
+        this.total(buy_how_much.div(sell_how_much).times(volume).toString(10))
+      }
     } catch (e) {
       this.total('0')
-    }
-  },
-  canCancel: function () {
-    if (!Template.currentData().offer) {
-      return false
-    } else {
-      return Template.currentData().offer.status === Status.CONFIRMED && Session.equals('address', Template.currentData().offer.owner)
     }
   },
   cancel: function () {
@@ -94,6 +95,9 @@ Template.offermodal.viewmodel({
   },
   canBuy: function () {
     try {
+      if (Template.currentData().offer.status !== Status.CONFIRMED) {
+        return false
+      }
       var volume = new BigNumber(this.volume())
       var total = new BigNumber(this.total())
       return !total.isNaN() && total.gt(0) && total.lte(new BigNumber(this.maxTotal())) && !volume.isNaN() && volume.gt(0) && volume.lte(new BigNumber(this.maxVolume()))

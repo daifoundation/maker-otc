@@ -9,7 +9,6 @@ Template.neworder.viewmodel({
   fancyType: function () {
     return this.type() === 'buy' ? 'Bid' : 'Ask'
   },
-  currency: 'ETH',
   price: '0',
   amount: '0',
   calcTotal: function (event) {
@@ -40,7 +39,7 @@ Template.neworder.viewmodel({
   },
   maxAmount: function () {
     if (this.type() === 'sell') {
-      var token = Tokens.findOne(BASE_CURRENCY)
+      var token = Tokens.findOne(Session.get('baseCurrency'))
       if (!token) {
         return '0'
       } else {
@@ -64,7 +63,7 @@ Template.neworder.viewmodel({
     }
     // If price is well-defined, take minimum of balance and allowance of currency, if 'buy', otherwise Infinity
     if (this.type() === 'buy') {
-      var token = Tokens.findOne(this.currency())
+      var token = Tokens.findOne(Session.get('quoteCurrency'))
       if (!token) {
         return '0'
       } else {
@@ -100,14 +99,14 @@ Template.neworder.viewmodel({
     var sell_how_much, sell_which_token, buy_how_much, buy_which_token
     if (this.type() === 'buy') {
       sell_how_much = web3.toWei(this.total())
-      sell_which_token = this.currency()
+      sell_which_token = Session.get('quoteCurrency')
       buy_how_much = web3.toWei(this.amount())
-      buy_which_token = BASE_CURRENCY
+      buy_which_token = Session.get('baseCurrency')
     } else {
       sell_how_much = web3.toWei(this.amount())
-      sell_which_token = BASE_CURRENCY
+      sell_which_token = Session.get('baseCurrency')
       buy_how_much = web3.toWei(this.total())
-      buy_which_token = this.currency()
+      buy_which_token = Session.get('quoteCurrency')
     }
     Offers.newOffer(sell_how_much, sell_which_token, buy_how_much, buy_which_token, function (error, tx) {
       if (error != null) {

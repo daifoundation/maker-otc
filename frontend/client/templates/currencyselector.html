@@ -1,0 +1,12 @@
+<template name="currencySelector">
+  <p>
+    Quote Currency:
+    <select {{b "options: currencies, value: quoteCurrency, change: quoteChange"}}></select>
+    <span class="text-danger" {{b "text: quoteHelper"}}></span>
+  </p>
+  <p>
+    Base Currency:
+    <select {{b "options: currencies, value: baseCurrency, change: baseChange"}}></select>
+    <span class="text-danger" {{b "text: baseHelper"}}></span>
+  </p>
+</template>
