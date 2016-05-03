@@ -1,4 +1,4 @@
-[![MKROTC Header](https://ipfs.pics/QmYyqTEebLaBaCnQpDH7q8JSNuzvSWrVsWPA4SCbPi2u5L)]()
+[![MMRKT Header](https://ipfs.pics/ipfs/QmYyqTEebLaBaCnQpDH7q8JSNuzvSWrVsWPA4SCbPi2u5L)]()
 ---
 [![Slack Status](http://slack.makerdao.com/badge.svg)](https:/slack.makerdao.com)
 [![Stories in Ready](https://badge.waffle.io/MakerDAO/maker-otc.png?label=ready&title=Ready)](https://waffle.io/MakerDAO/maker-otc)
