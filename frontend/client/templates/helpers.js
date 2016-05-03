@@ -69,7 +69,9 @@ Template.registerHelper('ETHBalance', function () {
 })
 
 Template.registerHelper('allTokens', function () {
-  return Tokens.find()
+  var quoteCurrency = Session.get('quoteCurrency')
+  var baseCurrency = Session.get('baseCurrency')
+  return _.uniq([ quoteCurrency, baseCurrency ]).map(function (value) { return Tokens.findOne(value) })
 })
 
 Template.registerHelper('findToken', function (token) {
@@ -77,13 +79,32 @@ Template.registerHelper('findToken', function (token) {
 })
 
 Template.registerHelper('lastTrades', function () {
-  return Trades.find({}, { sort: { blockNumber: -1, transactionIndex: -1 }, limit: 10 })
+  var quoteCurrency = Session.get('quoteCurrency')
+  var baseCurrency = Session.get('baseCurrency')
+  var obj = { $or: [
+    { buy_which_token: quoteCurrency, sell_which_token: baseCurrency },
+    { buy_which_token: baseCurrency, sell_which_token: quoteCurrency }
+  ] }
+  return Trades.find(obj, { sort: { blockNumber: -1, transactionIndex: -1 }, limit: 10 })
 })
 
-Template.registerHelper('findOffers', function (key, value) {
-  var obj = {}
-  obj[key] = value
-  return Offers.find(obj)
+Template.registerHelper('findOffers', function (type) {
+  var quoteCurrency = Session.get('quoteCurrency')
+  var baseCurrency = Session.get('baseCurrency')
+  var address = Session.get('address')
+  if (type === 'ask') {
+    return Offers.find({ buy_which_token: quoteCurrency, sell_which_token: baseCurrency }, { sort: { ask_price: 1 }, limit: 10 })
+  } else if (type === 'bid') {
+    return Offers.find({ buy_which_token: baseCurrency, sell_which_token: quoteCurrency }, { sort: { bid_price: -1 }, limit: 10 })
+  } else if (type === 'mine') {
+    var or = [
+      { buy_which_token: quoteCurrency, sell_which_token: baseCurrency },
+      { buy_which_token: baseCurrency, sell_which_token: quoteCurrency }
+    ]
+    return Offers.find({ owner: address, $or: or })
+  } else {
+    return []
+  }
 })
 
 Template.registerHelper('findOffer', function (id) {
@@ -94,11 +115,15 @@ Template.registerHelper('selectedOffer', function () {
   return Session.get('selectedOffer')
 })
 
-Template.registerHelper('baseCurrency', function (value) {
-  return BASE_CURRENCY
+Template.registerHelper('quoteCurrency', function () {
+  return Session.get('quoteCurrency')
 })
 
-Template.registerHelper('priceCurrency', function (value) {
+Template.registerHelper('baseCurrency', function () {
+  return Session.get('baseCurrency')
+})
+
+Template.registerHelper('priceCurrency', function () {
   return PRICE_CURRENCY
 })
 
@@ -143,17 +168,23 @@ Template.registerHelper('formatBalance', function (wei, format) {
   return EthTools.formatBalance(wei, format)
 })
 
-Template.registerHelper('formatPrice', function (order) {
-  var format = '0,0.00[0000]'
-  var price = new BigNumber(order.price, 10)
-  if (order.currency === 'ETH') {
-    var usd = EthTools.ticker.findOne('usd')
-    if (usd) {
-      var usd_value = price.times(usd.price)
-      return EthTools.formatBalance(usd_value, format)
+Template.registerHelper('formatPrice', function (value, currency) {
+  try {
+    var format = '0,0.00[0000]'
+    if (!(value instanceof BigNumber)) {
+      value = new BigNumber(value)
     }
-  } else if (order.currency === 'DAI') {
-    var value = price.times(0.73) // TODO DAI exchange rate
-    return EthTools.formatBalance(value, format)
+
+    if (currency === 'ETH') {
+      var usd = EthTools.ticker.findOne('usd')
+      if (usd) {
+        var usdValue = value.times(usd.price)
+        return '(~' + EthTools.formatBalance(usdValue, format) + ' USD)'
+      }
+    }
+    // TODO: other exchange rates
+    return ''
+  } catch (e) {
+    return ''
   }
 })

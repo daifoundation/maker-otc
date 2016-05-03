@@ -16,11 +16,11 @@
                 </tr>
                 <tr>
                   <th>Owner</th>
-                  <td>{{offer.owner}}</td>
+                  <td>{{offer.owner}} {{#if equals offer.owner address}}(<span class="text-success">you</span>){{/if}}</td>
                 </tr>
                 <tr>
                   <th>Price</th>
-                  <td>{{formatBalance offer.price}} {{offer.currency}}</td>
+                  <td>{{formatBalance (toWei offer.price)}} {{quoteCurrency}}</td>
                 </tr>
                 <tr>
                   <th>Volume</th>
@@ -28,7 +28,7 @@
                 </tr>
                 <tr>
                   <th>Total</th>
-                  <td><input type="number" class="input" step="any" min="0" max={{maxTotal}} {{b "value: total, input: calcVolume"}}> {{offer.currency}}</td>
+                  <td><input type="number" class="input" step="any" min="0" max={{maxTotal}} {{b "value: total, input: calcVolume"}}> {{quoteCurrency}}</td>
                 </tr>
                 {{#if offer.helper}}
                   <tr>
@@ -41,9 +41,11 @@
             <span class="text-danger">
               <b>Warning!</b>
               {{#if equals offer.type 'bid'}}
-                This action will remove {{formatBalance (toWei volume)}} {{baseCurrency}} from your token balance and allowance, and add {{formatBalance (toWei total)}} {{offer.currency}} to your token balance.
+                This action will <b>remove {{formatBalance (toWei volume)}} {{baseCurrency}}</b> {{formatPrice (toWei volume) baseCurrency}} from your token balance and allowance,
+                and <b>add {{formatBalance (toWei total)}} {{quoteCurrency}}</b> {{formatPrice (toWei total) quoteCurrency}} to your token balance.
               {{else}}
-                This action will remove {{formatBalance (toWei total)}} {{offer.currency}} from your token balance and allowance, and add {{formatBalance (toWei volume)}} {{baseCurrency}} to your token balance.
+                This action will <b>remove {{formatBalance (toWei total)}} {{quoteCurrency}}</b> {{formatPrice (toWei total) quoteCurrency}} from your token balance and allowance,
+                and <b>add {{formatBalance (toWei volume)}} {{baseCurrency}}</b> {{formatPrice (toWei volume) baseCurrency}} to your token balance.
               {{/if}}
               <br>
               If someone (partially) fills this order before you do, your offer may only be partially filled or even denied, in which case unused funds will be refunded to your balance and allowance.
@@ -53,8 +55,8 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
           {{#if offer}}
-            {{#if canCancel}}
-              <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#cancelModal">Cancel</button>
+            {{#if offer.isMine}}
+              <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#cancelModal" disabled={{not offer.canCancel}}>Cancel Order</button>
             {{/if}}
             <button type="button" class="btn btn-primary" data-dismiss="modal" {{b "enable: canBuy, click: buy"}}>
               {{#if equals offer.type 'bid'}}Sell{{else}}Buy{{/if}} {{baseCurrency}}
@@ -77,9 +79,9 @@
             <span class="text-danger">
               <b>Warning!</b>
               {{#if equals offer.type 'bid'}}
-                This action will return {{formatBalance offer.total}} {{offer.currency}} to your token balance.
+                This action will <b>return {{formatBalance (offer.volume quoteCurrency)}} {{quoteCurrency}}</b> {{formatPrice (offer.volume quoteCurrency) quoteCurrency}} to your token balance.
               {{else}}
-                This action will return {{formatBalance offer.volume}} {{baseCurrency}} to your token balance.
+                This action will <b>return {{formatBalance (offer.volume baseCurrency)}} {{baseCurrency}}</b> {{formatPrice (offer.volume baseCurrency) baseCurrency}} to your token balance.
               {{/if}}
               <br>
               If someone (partially) fills this order before you cancel it, your order may not or only be partially cancelled. 
@@ -88,7 +90,9 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-danger" data-dismiss="modal" {{b "click: cancel, enable: canCancel"}}>Cancel Offer</button>
+          {{#if offer}}
+            <button type="button" class="btn btn-danger" data-dismiss="modal" disabled={{not offer.canCancel}} {{b "click: cancel"}}>Cancel Offer</button>
+          {{/if}}
         </div>
       </div>
     </div>

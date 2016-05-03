@@ -1,13 +1,10 @@
 Template.newallowance.viewmodel({
-  TRANSACTION_TYPE: function () {
-    return 'allowance_' + this.templateInstance.data.token._id
-  },
   value: '',
   allowance: function () {
     return Template.currentData().token.allowance
   },
   pending: function () {
-    return Transactions.findType(this.TRANSACTION_TYPE())
+    return Transactions.findType('allowance_' + Template.currentData().token._id)
   },
   lastError: '',
   autorun: function () {
@@ -32,7 +29,7 @@ Template.newallowance.viewmodel({
 
     Dapple['makerjs'].getToken(_this.templateInstance.data.token._id).approve(contract_address, web3.toWei(_this.value()), options, function (error, tx) {
       if (!error) {
-        Transactions.add(_this.TRANSACTION_TYPE(), tx, { value: _this.value(), token: _this.templateInstance.data.token._id })
+        Transactions.add('allowance_' + _this.templateInstance.data.token._id, tx, { value: _this.value(), token: _this.templateInstance.data.token._id })
       } else {
         _this.lastError(error.toString())
       }

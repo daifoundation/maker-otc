@@ -6,11 +6,11 @@
     </h1>
 
     <p>
-      This is a simple on-chain OTC market for {{baseCurrency}}. Either pick an order below (in which case delivery will happen instantly), or <a href="#neworder">submit a new order</a>.
+      This is a simple on-chain OTC market. Either pick an order below (in which case delivery will happen instantly), or <a href="#neworder">submit a new order</a>.
     </p>
 
     <p class="text-danger">
-      <strong>Warning!</strong> MakerOTC is undergoing alpha testing: Proceed at your own risk, and use only small amounts of ETH and MKR.
+      <strong>Warning!</strong> MakerOTC is undergoing alpha testing: Proceed at your own risk, and use only small amounts of {{quoteCurrency}} and {{baseCurrency}}.
     </p>
 
     <p>
@@ -45,6 +45,7 @@
         </p>
       {{/unless}}
       {{> accountSelector }}
+      {{> currencySelector }}
       <p>
         Balance: {{formatBalance ETHBalance}} ETH
         {{> whatisthis section="balance"}}
@@ -69,10 +70,10 @@
       {{#if contractExists}}
         <div class=row>
           <section>
-            {{> orderbook title='Buy orders' subtitle=(concat '(click to sell ' baseCurrency ')') priceLabel='Bid Price' priceClass='bid' orders=(findOffers 'type' 'bid')}}
+            {{> orderbook title='Buy orders' subtitle=(concat '(click to sell ' baseCurrency ')') priceLabel='Bid Price' priceClass='bid' orders=(findOffers 'bid')}}
           </section>
           <section>
-            {{> orderbook title='Sell orders' subtitle=(concat '(click to buy ' baseCurrency ')') priceLabel='Ask Price' priceClass='ask' orders=(findOffers 'type' 'ask')}}
+            {{> orderbook title='Sell orders' subtitle=(concat '(click to buy ' baseCurrency ')') priceLabel='Ask Price' priceClass='ask' orders=(findOffers 'ask')}}
           </section>
         </div>
         <div class=row>
@@ -90,7 +91,9 @@
               {{> whatisthis section="allowance"}}
             </h2>
             {{#each token in allTokens}}
-              {{> newallowance token=token}}
+              {{#if token}}
+                {{> newallowance token=token}}
+              {{/if}}
             {{/each}}
           </section>
           <section>
