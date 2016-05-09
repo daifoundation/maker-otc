@@ -9,6 +9,13 @@ Template.neworder.viewmodel({
   fancyType: function () {
     return this.type() === 'buy' ? 'Bid' : 'Ask'
   },
+  sellCurrency: function () {
+    if (this.type() === 'buy') {
+      return Session.get('quoteCurrency')
+    } else {
+      return Session.get('baseCurrency')
+    }
+  },
   price: '0',
   amount: '0',
   calcTotal: function (event) {
@@ -74,6 +81,10 @@ Template.neworder.viewmodel({
     } else {
       return '9e999'
     }
+  },
+  hasAllowance: function (currency) {
+    var token = Tokens.findOne(currency)
+    return token && token.allowance !== '0'
   },
   canSubmit: function () {
     try {

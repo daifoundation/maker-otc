@@ -48,6 +48,9 @@
           </th>
           <td>
             <button class="btn btn-default" data-toggle="modal" data-target="#newOrderModal" {{b "enable: canSubmit, click: preventDefault"}}>Submit order</button>
+            {{#unless hasAllowance sellCurrency}}
+              <span class="help-block text-warning">Please raise your {{sellCurrency}} <a href="#allowance">allowance</a>.</span>
+            {{/unless}}
           </td>
         </tr>
         {{#unless equals lastError ''}}
