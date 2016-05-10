@@ -71,7 +71,7 @@ Template.registerHelper('ETHBalance', function () {
 Template.registerHelper('allTokens', function () {
   var quoteCurrency = Session.get('quoteCurrency')
   var baseCurrency = Session.get('baseCurrency')
-  return _.uniq([ quoteCurrency, baseCurrency ]).map(function (value) { return Tokens.findOne(value) })
+  return _.uniq([ quoteCurrency, baseCurrency ]).map(function (token) { return Tokens.findOne(token) })
 })
 
 Template.registerHelper('findToken', function (token) {
