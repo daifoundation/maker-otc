@@ -85,8 +85,8 @@ Template.neworder.viewmodel({
   hasBalance: function (currency) {
     try {
       var token = Tokens.findOne(currency)
-      var allowance = new BigNumber(token.balance)
-      return token && allowance.gte(web3.toWei(new BigNumber(this.type() === 'sell' ? this.amount() : this.total())))
+      var balance = new BigNumber(token.balance)
+      return token && balance.gte(web3.toWei(new BigNumber(this.type() === 'sell' ? this.amount() : this.total())))
     } catch (e) {
       return false
     }

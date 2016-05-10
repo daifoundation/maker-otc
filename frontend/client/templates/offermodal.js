@@ -15,6 +15,43 @@ Template.offermodal.viewmodel({
       }
     }
   },
+  type: function () {
+    if (Template.currentData().offer) {
+      return Template.currentData().offer.type()
+    }
+  },
+  buyCurrency: function () {
+    return this.type() === 'bid' ? Session.get('quoteCurrency') : Session.get('baseCurrency')
+  },
+  sellCurrency: function () {
+    return this.type() === 'bid' ? Session.get('baseCurrency') : Session.get('quoteCurrency')
+  },
+  hasBalance: function () {
+    try {
+      var token = Tokens.findOne(this.sellCurrency())
+      var balance = new BigNumber(token.balance)
+      return token && balance.gte(web3.toWei(new BigNumber(this.type() === 'bid' ? this.volume() : this.total())))
+    } catch (e) {
+      return false
+    }
+  },
+  hasAllowance: function () {
+    try {
+      var token = Tokens.findOne(this.sellCurrency())
+      var allowance = new BigNumber(token.allowance)
+      return token && allowance.gte(web3.toWei(new BigNumber(this.type() === 'bid' ? this.volume() : this.total())))
+    } catch (e) {
+      return false
+    }
+  },
+  hasVolume: function () {
+    try {
+      var volume = new BigNumber(Template.currentData().offer.volume(this.buyCurrency()))
+      return volume.gte(web3.toWei(new BigNumber(this.type() === 'bid' ? this.total() : this.volume())))
+    } catch (e) {
+      return false
+    }
+  },
   maxVolume: function () {
     try {
       var baseCurrency = Session.get('baseCurrency')
@@ -88,6 +125,9 @@ Template.offermodal.viewmodel({
     } catch (e) {
       this.total('0')
     }
+  },
+  dismiss: function (event) {
+    $(event.target).closest('.modal').modal('hide')
   },
   cancel: function () {
     var _id = this.templateInstance.data.offer._id
