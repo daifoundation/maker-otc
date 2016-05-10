@@ -38,18 +38,36 @@
               </tbody>
             </table>
             <hr>
-            <span class="text-danger">
-              <b>Warning!</b>
-              {{#if equals offer.type 'bid'}}
-                This action will <b>remove {{formatBalance (toWei volume)}} {{baseCurrency}}</b> {{formatPrice (toWei volume) baseCurrency}} from your token balance and allowance,
-                and <b>add {{formatBalance (toWei total)}} {{quoteCurrency}}</b> {{formatPrice (toWei total) quoteCurrency}} to your token balance.
+            {{#unless hasVolume}}
+              <span class="text-danger">
+                The order doesn't have a high enough {{buyCurrency}} volume.
+              </span>
+            {{else}}
+              {{#unless hasBalance}}
+                <span class="text-danger">
+                  You don't have enough {{#if equals sellCurrency 'ETH'}}<a href="#ethtokens" {{b "click: dismiss"}}>{{sellCurrency}}</a>{{else}}{{sellCurrency}}{{/if}} tokens.
+                </span>
               {{else}}
-                This action will <b>remove {{formatBalance (toWei total)}} {{quoteCurrency}}</b> {{formatPrice (toWei total) quoteCurrency}} from your token balance and allowance,
-                and <b>add {{formatBalance (toWei volume)}} {{baseCurrency}}</b> {{formatPrice (toWei volume) baseCurrency}} to your token balance.
-              {{/if}}
-              <br>
-              If someone (partially) fills this order before you do, your offer may only be partially filled or even denied, in which case unused funds will be refunded to your balance and allowance.
-            </span>
+                {{#unless hasAllowance}}
+                  <span class="text-danger">
+                    You don't have enough {{sellCurrency}} <a href="#allowance" {{b "click: dismiss"}}>allowance</a>.
+                  </span>
+                {{else}}
+                  <span class="text-danger">
+                    <b>Warning!</b>
+                    {{#if equals offer.type 'bid'}}
+                      This action will <b>remove {{formatBalance (toWei volume)}} {{baseCurrency}}</b> {{formatPrice (toWei volume) baseCurrency}} from your token balance and allowance,
+                      and <b>add {{formatBalance (toWei total)}} {{quoteCurrency}}</b> {{formatPrice (toWei total) quoteCurrency}} to your token balance.
+                    {{else}}
+                      This action will <b>remove {{formatBalance (toWei total)}} {{quoteCurrency}}</b> {{formatPrice (toWei total) quoteCurrency}} from your token balance and allowance,
+                      and <b>add {{formatBalance (toWei volume)}} {{baseCurrency}}</b> {{formatPrice (toWei volume) baseCurrency}} to your token balance.
+                    {{/if}}
+                    <br>
+                    If someone (partially) fills this order before you do, your offer may only be partially filled or even denied, in which case unused funds will be refunded to your balance and allowance.
+                  </span>
+                {{/unless}}
+              {{/unless}}
+            {{/unless}}
           {{/if}}
         </div>
         <div class="modal-footer">

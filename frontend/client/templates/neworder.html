@@ -48,15 +48,27 @@
           </th>
           <td>
             <button class="btn btn-default" data-toggle="modal" data-target="#newOrderModal" {{b "enable: canSubmit, click: preventDefault"}}>Submit order</button>
-            {{#unless hasAllowance sellCurrency}}
-              <span class="help-block text-warning">Please raise your {{sellCurrency}} <a href="#allowance">allowance</a>.</span>
-            {{/unless}}
           </td>
         </tr>
+        {{#unless hasBalance sellCurrency}}
+          <tr>
+            <td colspan="2">
+              <span class="help-block">You don't have enough {{#if equals sellCurrency 'ETH'}}<a href="#ethtokens">{{sellCurrency}}</a>{{else}}{{sellCurrency}}{{/if}} tokens.</span>
+            </td>
+          </tr>
+        {{else}}
+          {{#unless hasAllowance sellCurrency}}
+            <tr>
+              <td colspan="2">
+                <span class="help-block">You don't have enough {{sellCurrency}} <a href="#allowance">allowance</a>.</span>
+              </td>
+            </tr>
+          {{/unless}}
+        {{/unless}}
         {{#unless equals lastError ''}}
           <tr>
             <td colspan="2">
-              {{lastError}}
+              <span class="help-block">{{lastError}}</span>
             </td>
           </tr>
         {{/unless}}

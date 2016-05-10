@@ -82,9 +82,23 @@ Template.neworder.viewmodel({
       return '9e999'
     }
   },
+  hasBalance: function (currency) {
+    try {
+      var token = Tokens.findOne(currency)
+      var balance = new BigNumber(token.balance)
+      return token && balance.gte(web3.toWei(new BigNumber(this.type() === 'sell' ? this.amount() : this.total())))
+    } catch (e) {
+      return false
+    }
+  },
   hasAllowance: function (currency) {
-    var token = Tokens.findOne(currency)
-    return token && token.allowance !== '0'
+    try {
+      var token = Tokens.findOne(currency)
+      var allowance = new BigNumber(token.allowance)
+      return token && allowance.gte(web3.toWei(new BigNumber(this.type() === 'sell' ? this.amount() : this.total())))
+    } catch (e) {
+      return false
+    }
   },
   canSubmit: function () {
     try {
