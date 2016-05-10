@@ -6,19 +6,6 @@ function initNetwork (newNetwork) {
   Tokens.sync()
   Session.set('isConnected', true)
   Offers.sync()
-
-  // Watch ItemUpdate Event
-  Dapple['maker-otc'].objects.otc.ItemUpdate(function (error, result) {
-    if (!error) {
-      var id = result.args.id.toNumber()
-      console.log('Offer updated', id, result)
-      Offers.syncOffer(id)
-      Offers.remove(result.transactionHash)
-      if (Session.equals('selectedOffer', result.transactionHash)) {
-        Session.set('selectedOffer', id.toString())
-      }
-    }
-  })
 }
 
 Session.set('network', false)
@@ -124,7 +111,7 @@ Meteor.startup(function () {
         Session.set('highestBlock', sync.highestBlock)
       } else {
         Session.set('outOfSync', false)
-        checkNetwork()
+        Offers.sync()
         web3.eth.filter('latest', function () {
           Tokens.sync()
           Transactions.sync()
@@ -133,5 +120,5 @@ Meteor.startup(function () {
     }
   })
 
-  Meteor.setInterval(checkNetwork, 2000)
+  Meteor.setInterval(checkNetwork, 2503)
 })

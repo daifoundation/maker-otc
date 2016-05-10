@@ -64,6 +64,21 @@ Trades.helpers(helpers)
  */
 Offers.sync = function () {
   Offers.remove({})
+
+  // Watch ItemUpdate Event
+  Dapple['maker-otc'].objects.otc.ItemUpdate(function (error, result) {
+    if (!error) {
+      var id = result.args.id.toNumber()
+      console.log('Offer updated', id, result)
+      Offers.syncOffer(id)
+      Offers.remove(result.transactionHash)
+      if (Session.equals('selectedOffer', result.transactionHash)) {
+        Session.set('selectedOffer', id.toString())
+      }
+    }
+  })
+
+  // Sync all past offers
   var last_offer_id = Dapple['maker-otc'].objects.otc.last_offer_id().toNumber()
   console.log('last_offer_id', last_offer_id)
   if (last_offer_id > 0) {
@@ -72,6 +87,7 @@ Offers.sync = function () {
     Offers.syncOffer(last_offer_id, last_offer_id)
   }
 
+  // Watch Trade events
   Dapple['maker-otc'].objects.otc.Trade({}, { fromBlock: 0 }, function (error, trade) {
     if (!error) {
       // Transform arguments
