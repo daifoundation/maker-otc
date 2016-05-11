@@ -2,54 +2,54 @@
 function initNetwork (newNetwork) {
   Dapple.init(newNetwork)
   Session.set('network', newNetwork)
-  Session.set('address', web3.eth.defaultAccount)
   Tokens.sync()
   Session.set('isConnected', true)
   Offers.sync()
 }
 
-Session.set('network', false)
-
 // CHECK FOR NETWORK
 function checkNetwork () {
-  var isConnected = web3.isConnected()
+  web3.version.getNode(function (error, node) {
+    var isConnected = !error
 
-  // Check if we are synced
-  if (isConnected) {
-    web3.eth.getBlock('latest', function (e, res) {
-      Session.set('outOfSync', e != null || new Date().getTime() / 1000 - res.timestamp > 300)
-    })
-  }
-
-  // Check which network are we connected to
-  // https://github.com/ethereum/meteor-dapp-wallet/blob/90ad8148d042ef7c28610115e97acfa6449442e3/app/client/lib/ethereum/walletInterface.js#L32-L46
-  if (!Session.equals('isConnected', isConnected)) {
-    if (isConnected === true) {
-      web3.eth.getBlock(0, function (e, res) {
-        var network = false
-        if (!e) {
-          switch (res.hash) {
-            case '0x0cd786a2425d16f152c658316c423e6ce1181e15c3295826d7c9904cba9ce303':
-              network = 'test'
-              break
-            case '0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3':
-              network = 'main'
-              break
-            default:
-              network = 'private'
-          }
-        }
-        if (!Session.equals('network', network)) {
-          initNetwork(network, isConnected)
-        }
+    // Check if we are synced
+    if (isConnected) {
+      web3.eth.getBlock('latest', function (e, res) {
+        Session.set('outOfSync', e != null || new Date().getTime() / 1000 - res.timestamp > 300)
       })
-    } else {
-      Session.set('isConnected', isConnected)
-      Session.set('network', false)
     }
-  }
+
+    // Check which network are we connected to
+    // https://github.com/ethereum/meteor-dapp-wallet/blob/90ad8148d042ef7c28610115e97acfa6449442e3/app/client/lib/ethereum/walletInterface.js#L32-L46
+    if (!Session.equals('isConnected', isConnected)) {
+      if (isConnected === true) {
+        web3.eth.getBlock(0, function (e, res) {
+          var network = false
+          if (!e) {
+            switch (res.hash) {
+              case '0x0cd786a2425d16f152c658316c423e6ce1181e15c3295826d7c9904cba9ce303':
+                network = 'test'
+                break
+              case '0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3':
+                network = 'main'
+                break
+              default:
+                network = 'private'
+            }
+          }
+          if (!Session.equals('network', network)) {
+            initNetwork(network, isConnected)
+          }
+        })
+      } else {
+        Session.set('isConnected', isConnected)
+        Session.set('network', false)
+      }
+    }
+  })
 }
 
+Session.set('network', false)
 Session.set('loading', false)
 Session.set('outOfSync', false)
 Session.set('syncing', false)
@@ -59,36 +59,7 @@ Session.set('isConnected', false)
  * Startup code
  */
 Meteor.startup(function () {
-  if (web3.isConnected()) {
-    // Initial synchronous network check
-    // Asynchronous check often causes Meteor 'cannot flush during autorun' error
-    var network = false
-    try {
-      switch (web3.eth.getBlock(0).hash) {
-        case '0x0cd786a2425d16f152c658316c423e6ce1181e15c3295826d7c9904cba9ce303':
-          network = 'test'
-          break
-        case '0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3':
-          network = 'main'
-          break
-        default:
-          network = 'private'
-      }
-    } catch (e) { }
-    if (!Session.equals('network', network)) {
-      initNetwork(network)
-    }
-
-    // Out of sync check
-    try {
-      var latest = web3.eth.getBlock('latest')
-      if (new Date().getTime() / 1000 - latest.timestamp > 300) {
-        Session.set('outOfSync', true)
-      }
-    } catch (e) {
-      Session.set('outOfSync', true)
-    }
-  }
+  checkNetwork()
 
   web3.eth.filter('latest', function () {
     Tokens.sync()

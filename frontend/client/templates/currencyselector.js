@@ -9,23 +9,41 @@ Template.currencySelector.viewmodel({
   quoteHelper: '',
   baseHelper: '',
   quoteChange: function () {
-    try {
-      Dapple['makerjs'].getToken(this.quoteCurrency()).totalSupply()
-      this.quoteHelper('')
-      Session.set('quoteCurrency', this.quoteCurrency())
-      Tokens.sync()
-    } catch (e) {
-      this.quoteHelper('token not found')
-    }
+    var _this = this
+    Dapple['makerjs'].getToken(_this.quoteCurrency(), function (error, token) {
+      if (!error) {
+        token.totalSupply(function (error, supply) {
+          if (!error) {
+            _this.quoteHelper('')
+            localStorage.setItem('quoteCurrency', _this.quoteCurrency())
+            Session.set('quoteCurrency', _this.quoteCurrency())
+            Tokens.sync()
+          } else {
+            _this.quoteHelper('Token not found')
+          }
+        })
+      } else {
+        _this.quoteHelper('Token not found')
+      }
+    })
   },
   baseChange: function () {
-    try {
-      Dapple['makerjs'].getToken(this.baseCurrency()).totalSupply()
-      this.baseHelper('')
-      Session.set('baseCurrency', this.baseCurrency())
-      Tokens.sync()
-    } catch (e) {
-      this.baseHelper('token not found')
-    }
+    var _this = this
+    Dapple['makerjs'].getToken(_this.baseCurrency(), function (error, token) {
+      if (!error) {
+        token.totalSupply(function (error, supply) {
+          if (!error) {
+            _this.baseHelper('')
+            localStorage.setItem('baseCurrency', _this.baseCurrency())
+            Session.set('baseCurrency', _this.baseCurrency())
+            Tokens.sync()
+          } else {
+            _this.baseHelper('Token not found')
+          }
+        })
+      } else {
+        _this.baseHelper('Token not found')
+      }
+    })
   }
 })

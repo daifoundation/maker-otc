@@ -20,6 +20,7 @@
     "globals": [
       "Meteor",
       "Session",
+      "localStorage",
       "Template",
       "EthTools",
       "Dapple",
