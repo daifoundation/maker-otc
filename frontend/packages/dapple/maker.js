@@ -4674,14 +4674,18 @@ Dapple['Maker'] = (function builder () {
     var _this = this
     _this.dappsys.objects.token_registry.get(symbol, function (error, n) {
       if (!error) {
-        _this.dappsys.classes[tokenClass].at(_this._web3.toHex(_this._web3.toBigNumber(n)), function (error, token) {
-          if (!error) {
-            token.abi = _this.dappsys.classes[tokenClass].abi;
-            callback(error, token)
-          } else {
-            callback(error, token)
-          }
-        })
+        try {
+          _this.dappsys.classes[tokenClass].at(_this._web3.toHex(_this._web3.toBigNumber(n)), function (error, token) {
+            if (!error) {
+              token.abi = _this.dappsys.classes[tokenClass].abi;
+              callback(error, token)
+            } else {
+              callback(error, token)
+            }
+          })
+        } catch (e) {
+          callback(e, null)
+        }
       } else {
         callback(error, n)
       }
