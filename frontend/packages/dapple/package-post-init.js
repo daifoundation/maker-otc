@@ -9,15 +9,20 @@ Dapple['init'] = function (env) {
   } else if (env === 'private' || env === 'default') {
     Dapple['maker-otc'].class(web3, Dapple['maker-otc'].environments['default'])
   }
-  if (_.contains(web3.eth.accounts, localStorage.getItem('address'))) {
-    web3.eth.defaultAccount = localStorage.getItem('address')
-  } else if (!_.contains(web3.eth.accounts, web3.eth.defaultAccount)) {
-    if (web3.eth.accounts.length > 0) {
-      web3.eth.defaultAccount = web3.eth.accounts[0]
-    } else {
-      web3.eth.defaultAccount = undefined
+  web3.eth.getAccounts(function (error, accounts) {
+    if (!error) {
+      Session.set('accounts', accounts)
+      if (_.contains(accounts, localStorage.getItem('address'))) {
+        web3.eth.defaultAccount = localStorage.getItem('address')
+      } else if (!_.contains(accounts, web3.eth.defaultAccount)) {
+        if (accounts.length > 0) {
+          web3.eth.defaultAccount = accounts[0]
+        } else {
+          web3.eth.defaultAccount = undefined
+        }
+      }
     }
-  }
+  })
   if (env !== false) {
     var code = web3.eth.getCode(Dapple['maker-otc'].objects.otc.address, function (error, code) {
       Session.set('contractExists', !error && typeof code === 'string' && code !== '' && code !== '0x')

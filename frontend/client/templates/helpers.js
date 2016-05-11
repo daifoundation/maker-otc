@@ -2,7 +2,7 @@ Template.registerHelper('contractExists', function () {
   var network = Session.get('network')
   var isConnected = Session.get('isConnected')
   var exists = Session.get('contractExists')
-  return network !== false && isConnected !== false && exists === true
+  return network !== false && isConnected === true && exists === true
 })
 
 Template.registerHelper('network', function () {

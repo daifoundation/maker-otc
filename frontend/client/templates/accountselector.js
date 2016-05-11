@@ -1,6 +1,6 @@
 Template.accountSelector.helpers({
   accounts: function () {
-    return web3.eth.accounts
+    return Session.get('accounts')
   }
 })
 
