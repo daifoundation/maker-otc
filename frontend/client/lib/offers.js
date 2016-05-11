@@ -9,6 +9,10 @@ this.Status = {
   BOUGHT: 'bought'
 }
 
+var OFFER_GAS = 300000
+var BUY_PARTIAL_GAS = 300000
+var CANCEL_GAS = 150000
+
 function formattedString (str) {
   return web3.toAscii(str).replace(/\0[\s\S]*$/g, '').trim()
 }
@@ -69,7 +73,6 @@ Offers.sync = function () {
   Dapple['maker-otc'].objects.otc.ItemUpdate(function (error, result) {
     if (!error) {
       var id = result.args.id.toNumber()
-      console.log('Offer updated', id, result)
       Offers.syncOffer(id)
       Offers.remove(result.transactionHash)
       if (Session.equals('selectedOffer', result.transactionHash)) {
@@ -167,7 +170,7 @@ Offers.updateOffer = function (idx, sell_how_much, sell_which_token, buy_how_muc
 }
 
 Offers.newOffer = function (sell_how_much, sell_which_token, buy_how_much, buy_which_token, callback) {
-  Dapple['maker-otc'].objects.otc.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token, { gas: 3141592 }, function (error, tx) {
+  Dapple['maker-otc'].objects.otc.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token, { gas: OFFER_GAS }, function (error, tx) {
     callback(error, tx)
     if (!error) {
       Offers.updateOffer(tx, sell_how_much, sell_which_token, buy_how_much, buy_which_token, web3.eth.defaultAccount, Status.PENDING)
@@ -180,7 +183,7 @@ Offers.buyOffer = function (_id, _quantity) {
   var id = parseInt(_id, 10)
   var quantity = _quantity.toNumber()
   Offers.update(_id, { $unset: { helper: '' } })
-  Dapple['maker-otc'].objects.otc.buyPartial(id.toString(10), quantity, { gas: 3141592 }, function (error, tx) {
+  Dapple['maker-otc'].objects.otc.buyPartial(id.toString(10), quantity, { gas: BUY_PARTIAL_GAS }, function (error, tx) {
     if (!error) {
       Transactions.add('offer', tx, { id: _id, status: Status.BOUGHT })
       Offers.update(_id, { $set: { tx: tx, status: Status.BOUGHT, helper: 'Your buy / sell order is being processed...' } })
@@ -193,7 +196,7 @@ Offers.buyOffer = function (_id, _quantity) {
 Offers.cancelOffer = function (idx) {
   var id = parseInt(idx, 10)
   Offers.update(idx, { $unset: { helper: '' } })
-  Dapple['maker-otc'].objects.otc.cancel(id, { gas: 3141592 }, function (error, tx) {
+  Dapple['maker-otc'].objects.otc.cancel(id, { gas: CANCEL_GAS }, function (error, tx) {
     if (!error) {
       Transactions.add('offer', tx, { id: idx, status: Status.CANCELLED })
       Offers.update(idx, { $set: { tx: tx, status: Status.CANCELLED, helper: 'Your order is being cancelled...' } })

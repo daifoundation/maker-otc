@@ -1,4 +1,6 @@
 var TRANSACTION_TYPE = 'ethtokens'
+var DEPOSIT_GAS = 150000
+var WITHDRAW_GAS = 150000
 
 Template.ethtokens.viewmodel({
   type: 'deposit',
@@ -28,10 +30,12 @@ Template.ethtokens.viewmodel({
 
     var _this = this
     _this.lastError('')
-    var options = { gas: 3141592 }
 
     if (_this.type() === 'deposit') {
-      options['value'] = web3.toWei(_this.amount())
+      var options = {
+        gas: DEPOSIT_GAS,
+        value: web3.toWei(_this.amount())
+      }
       Dapple['makerjs'].getToken('ETH', function (error, token) {
         if (!error) {
           token.deposit(options, function (error, tx) {
@@ -48,7 +52,7 @@ Template.ethtokens.viewmodel({
     } else {
       Dapple['makerjs'].getToken('ETH', function (error, token) {
         if (!error) {
-          token.withdraw(web3.toWei(_this.amount()), options, function (error, tx) {
+          token.withdraw(web3.toWei(_this.amount()), { gas: WITHDRAW_GAS }, function (error, tx) {
             if (!error) {
               Transactions.add(TRANSACTION_TYPE, tx, { type: 'withdraw', amount: _this.amount() })
             } else {

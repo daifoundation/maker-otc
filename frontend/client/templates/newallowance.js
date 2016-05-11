@@ -1,3 +1,5 @@
+var APPROVE_GAS = 150000
+
 Template.newallowance.viewmodel({
   value: '',
   allowance: function () {
@@ -25,7 +27,7 @@ Template.newallowance.viewmodel({
     _this.lastError('')
 
     var contract_address = Dapple['maker-otc'].objects.otc.address
-    var options = { gas: 3141592 }
+    var options = { gas: APPROVE_GAS }
 
     Dapple['makerjs'].getToken(_this.templateInstance.data.token._id, function (error, token) {
       if (!error) {
