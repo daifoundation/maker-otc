@@ -1,6 +1,7 @@
 this.Transactions = new Meteor.Collection(null)
 
 Transactions.add = function (type, transaction_hash, object) {
+  console.log('tx', type, transaction_hash, object)
   Transactions.insert({ type: type, tx: transaction_hash, object: object })
 }
 
@@ -23,6 +24,11 @@ Transactions.sync = function () {
       var document = open[index]
       web3.eth.getTransactionReceipt(document.tx, function (error, result) {
         if (!error && result != null) {
+          if (result.logs.length > 0) {
+            console.log('tx_success', document.tx, result.gasUsed)
+          } else {
+            console.error('tx_oog', document.tx, result.gasUsed)
+          }
           Transactions.update({ tx: document.tx }, { $set: { receipt: result } }, function () {
             Transactions.remove({ tx: document.tx })
           })
