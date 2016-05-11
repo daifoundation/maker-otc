@@ -1,7 +1,7 @@
 this.Tokens = new Meteor.Collection(null)
 
-Session.set('quoteCurrency', 'ETH')
-Session.set('baseCurrency', 'MKR')
+Session.set('quoteCurrency', localStorage.getItem('quoteCurrency') || 'ETH')
+Session.set('baseCurrency', localStorage.getItem('baseCurrency') || 'MKR')
 
 /**
  * Syncs the quote and base currencies' balances and allowances of selected account,

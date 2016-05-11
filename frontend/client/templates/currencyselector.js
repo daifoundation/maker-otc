@@ -16,6 +16,7 @@ Template.currencySelector.viewmodel({
           try {
             token.totalSupply()
             _this.quoteHelper('')
+            localStorage.setItem('quoteCurrency', _this.quoteCurrency())
             Session.set('quoteCurrency', _this.quoteCurrency())
             Tokens.sync()
           } catch (e) {
@@ -35,6 +36,7 @@ Template.currencySelector.viewmodel({
           try {
             token.totalSupply()
             _this.baseHelper('')
+            localStorage.setItem('baseCurrency', _this.baseCurrency())
             Session.set('baseCurrency', _this.baseCurrency())
             Tokens.sync()
           } catch (e) {
