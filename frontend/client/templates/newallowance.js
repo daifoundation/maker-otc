@@ -27,9 +27,15 @@ Template.newallowance.viewmodel({
     var contract_address = Dapple['maker-otc'].objects.otc.address
     var options = { gas: 3141592 }
 
-    Dapple['makerjs'].getToken(_this.templateInstance.data.token._id).approve(contract_address, web3.toWei(_this.value()), options, function (error, tx) {
+    Dapple['makerjs'].getToken(_this.templateInstance.data.token._id, function (error, token) {
       if (!error) {
-        Transactions.add('allowance_' + _this.templateInstance.data.token._id, tx, { value: _this.value(), token: _this.templateInstance.data.token._id })
+        token.approve(contract_address, web3.toWei(_this.value()), options, function (error, tx) {
+          if (!error) {
+            Transactions.add('allowance_' + _this.templateInstance.data.token._id, tx, { value: _this.value(), token: _this.templateInstance.data.token._id })
+          } else {
+            _this.lastError(error.toString())
+          }
+        })
       } else {
         _this.lastError(error.toString())
       }

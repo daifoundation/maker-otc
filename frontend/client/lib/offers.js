@@ -79,13 +79,17 @@ Offers.sync = function () {
   })
 
   // Sync all past offers
-  var last_offer_id = Dapple['maker-otc'].objects.otc.last_offer_id().toNumber()
-  console.log('last_offer_id', last_offer_id)
-  if (last_offer_id > 0) {
-    Session.set('loading', true)
-    Session.set('loadingProgress', 0)
-    Offers.syncOffer(last_offer_id, last_offer_id)
-  }
+  Dapple['maker-otc'].objects.otc.last_offer_id(function (error, n) {
+    if (!error) {
+      var last_offer_id = n.toNumber()
+      console.log('last_offer_id', last_offer_id)
+      if (last_offer_id > 0) {
+        Session.set('loading', true)
+        Session.set('loadingProgress', 0)
+        Offers.syncOffer(last_offer_id, last_offer_id)
+      }
+    }
+  })
 
   // Watch Trade events
   Dapple['maker-otc'].objects.otc.Trade({}, { fromBlock: 0 }, function (error, trade) {

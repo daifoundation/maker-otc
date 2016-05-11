@@ -10,20 +10,38 @@ Template.currencySelector.viewmodel({
   baseHelper: '',
   quoteChange: function () {
     try {
-      Dapple['makerjs'].getToken(this.quoteCurrency()).totalSupply()
-      this.quoteHelper('')
-      Session.set('quoteCurrency', this.quoteCurrency())
-      Tokens.sync()
+      var _this = this
+      Dapple['makerjs'].getToken(_this.quoteCurrency(), function (error, token) {
+        if (!error) {
+          try {
+            token.totalSupply()
+            _this.quoteHelper('')
+            Session.set('quoteCurrency', _this.quoteCurrency())
+            Tokens.sync()
+          } catch (e) {
+            _this.quoteHelper('token not found')
+          }
+        }
+      })
     } catch (e) {
       this.quoteHelper('token not found')
     }
   },
   baseChange: function () {
     try {
-      Dapple['makerjs'].getToken(this.baseCurrency()).totalSupply()
-      this.baseHelper('')
-      Session.set('baseCurrency', this.baseCurrency())
-      Tokens.sync()
+      var _this = this
+      Dapple['makerjs'].getToken(_this.baseCurrency(), function (error, token) {
+        if (!error) {
+          try {
+            token.totalSupply()
+            _this.baseHelper('')
+            Session.set('baseCurrency', _this.baseCurrency())
+            Tokens.sync()
+          } catch (e) {
+            _this.baseHelper('token not found')
+          }
+        }
+      })
     } catch (e) {
       this.baseHelper('token not found')
     }

@@ -32,17 +32,29 @@ Template.ethtokens.viewmodel({
 
     if (_this.type() === 'deposit') {
       options['value'] = web3.toWei(_this.amount())
-      Dapple['makerjs'].getToken('ETH').deposit(options, function (error, tx) {
+      Dapple['makerjs'].getToken('ETH', function (error, token) {
         if (!error) {
-          Transactions.add(TRANSACTION_TYPE, tx, { type: 'deposit', amount: _this.amount() })
+          token.deposit(options, function (error, tx) {
+            if (!error) {
+              Transactions.add(TRANSACTION_TYPE, tx, { type: 'deposit', amount: _this.amount() })
+            } else {
+              _this.lastError(error.toString())
+            }
+          })
         } else {
           _this.lastError(error.toString())
         }
       })
     } else {
-      Dapple['makerjs'].getToken('ETH').withdraw(web3.toWei(_this.amount()), options, function (error, tx) {
+      Dapple['makerjs'].getToken('ETH', function (error, token) {
         if (!error) {
-          Transactions.add(TRANSACTION_TYPE, tx, { type: 'withdraw', amount: _this.amount() })
+          token.withdraw(web3.toWei(_this.amount()), options, function (error, tx) {
+            if (!error) {
+              Transactions.add(TRANSACTION_TYPE, tx, { type: 'withdraw', amount: _this.amount() })
+            } else {
+              _this.lastError(error.toString())
+            }
+          })
         } else {
           _this.lastError(error.toString())
         }

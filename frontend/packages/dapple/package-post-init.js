@@ -16,6 +16,11 @@ Dapple['init'] = function (env) {
       web3.eth.defaultAccount = undefined
     }
   }
+  if (env !== false) {
+    var code = web3.eth.getCode(Dapple['maker-otc'].objects.otc.address, function (error, code) {
+      Session.set('contractExists', !error && typeof code === 'string' && code !== '' && code !== '0x')
+    })
+  }
 }
 
 console.log('DAPPLE', Dapple)

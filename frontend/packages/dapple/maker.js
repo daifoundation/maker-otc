@@ -4666,17 +4666,26 @@ Dapple['Maker'] = (function builder () {
     this.admin = new MakerAdmin(this);
   };
 
-  Maker.prototype.getToken = function (symbol) {
+  Maker.prototype.getToken = function (symbol, callback) {
     var tokenClass = 'DSTokenFrontend';
     if (symbol === 'ETH') {
       tokenClass = 'DSEthToken';
     }
-    var token = this.dappsys.classes[tokenClass].at(
-        this._web3.toHex(this._web3.toBigNumber(
-            this.dappsys.objects.token_registry.get(symbol))));
-    token.abi = this.dappsys.classes[tokenClass].abi;
-
-    return token;
+    var _this = this
+    _this.dappsys.objects.token_registry.get(symbol, function (error, n) {
+      if (!error) {
+        _this.dappsys.classes[tokenClass].at(_this._web3.toHex(_this._web3.toBigNumber(n)), function (error, token) {
+          if (!error) {
+            token.abi = _this.dappsys.classes[tokenClass].abi;
+            callback(error, token)
+          } else {
+            callback(error, token)
+          }
+        })
+      } else {
+        callback(error, n)
+      }
+    })
   };
 
   // Helper functions for logging callback arguments.
