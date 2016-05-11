@@ -2,7 +2,6 @@
 function initNetwork (newNetwork) {
   Dapple.init(newNetwork)
   Session.set('network', newNetwork)
-  Session.set('address', web3.eth.defaultAccount)
   Tokens.sync()
   Session.set('isConnected', true)
   Offers.sync()
