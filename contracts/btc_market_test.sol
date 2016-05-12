@@ -196,6 +196,11 @@ contract BTCMarketTest is Test
 
         var balance_diff = user1_mkr_balance_after - user1_mkr_balance_before;
         assertEq(balance_diff, 30);
+
+        // offer should be deleted
+        var (w, x, y, z) = otc.getOffer(id);
+        assertEq(w, 0);
+        assertEq(y, 0);
     }
     function _relayTx() returns (int256) {
         // txid: 29c02a5d572930e6d3de6fad45bbfd8d1a73220f86f1adf4cd1de6332c33ac3c
