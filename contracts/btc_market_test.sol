@@ -7,7 +7,15 @@ contract MockBTCRelay {
                      int256 contractAddress)
         returns (int256)
     {
+        uint256 txHash = 1234;
+        var processor = MockProcessor(contractAddress);
+        return processor.processTransaction(rawTransaction, txHash);
     }
+}
+
+contract MockProcessor {
+    function processTransaction(bytes txBytes, uint256 txHash)
+        returns (int256) {}
 }
 
 contract BTCMarketTest is Test
@@ -127,9 +135,10 @@ contract BTCMarketTest is Test
     function testRelayTx() {
         bytes memory mockBytes = "\x11\x22";
         int256 txIndex = 100;
-        int256[] siblings;
+        int256[] memory siblings;
         int256 blockHash = 100;
-        int256 contractAddress = int256(this);
+        int256 contractAddress = int256(otc);
         var ret = relay.relayTx(mockBytes, txIndex, siblings, blockHash, contractAddress);
+        assertEq(ret, 1);
     }
 }

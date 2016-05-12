@@ -80,6 +80,11 @@ contract BTCMarket is MakerUser, EventfulMarket, FallbackFailer, Assertive {
         offer.confirmed = txHash;
         offersByTxHash[txHash] = id;
     }
+    function processTransaction(bytes txBytes, uint256 txHash)
+        returns (int256)
+    {
+        return 1;
+    }
     function getOffer( uint id ) constant
         returns (uint, bytes32, uint, bytes32) {
       var offer = offers[id];
