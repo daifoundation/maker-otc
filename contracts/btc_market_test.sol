@@ -85,4 +85,20 @@ contract BTCMarketTest is Test
         BTCMarket(user1).buy(id);
         BTCMarket(user2).buy(id);
     }
+    function testConfirm() {
+        // after calling `buy` and sending bitcoin, buyer should call
+        // `confirm` to associate the offer with a bitcoin transaction hash
+        var id = otc.offer(30, "MKR", 10, "BTC", 0x11);
+        BTCMarket(user1).buy(id);
+
+        assertEq(otc.isConfirmed(id), false);
+        var txHash = 1234;
+        BTCMarket(user1).confirm(id, txHash);
+        assertEq(otc.isConfirmed(id), true);
+    }
+    function testFailConfirmNonBuyer() {
+        var id = otc.offer(30, "MKR", 10, "BTC", 0x11);
+        BTCMarket(user1).buy(id);
+        BTCMarket(user2).confirm(id, 123);
+    }
 }
