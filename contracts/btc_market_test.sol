@@ -32,4 +32,7 @@ contract BTCMarketTest is Test
     function testFailOfferSellBitcoin() {
         otc.offer(30, "BTC", 10, "MKR");
     }
+    function testFailOfferBuyNotBitcoin() {
+        otc.offer(30, "MKR", 10, "DAI");
+    }
 }
