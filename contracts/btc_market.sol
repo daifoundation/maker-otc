@@ -15,6 +15,7 @@ contract BTCMarket is MakerUser, EventfulMarket, FallbackFailer, Assertive {
         address owner;
         bool active;
         bytes20 btc_address;
+        address locked;
     }
     uint public last_offer_id;
     mapping( uint => OfferInfo ) public offers;
@@ -49,6 +50,10 @@ contract BTCMarket is MakerUser, EventfulMarket, FallbackFailer, Assertive {
         ItemUpdate(id);
         return id;
     }
+    function buy ( uint id ) {
+        var offer = offers[id];
+        offer.locked = msg.sender;
+    }
     function getOffer( uint id ) constant
         returns (uint, bytes32, uint, bytes32) {
       var offer = offers[id];
@@ -59,4 +64,9 @@ contract BTCMarket is MakerUser, EventfulMarket, FallbackFailer, Assertive {
         var offer = offers[id];
         return offer.btc_address;
     }
+    function isLocked( uint id ) constant returns (bool) {
+        var offer = offers[id];
+        return (offer.locked != 0x00);
+    }
+
 }

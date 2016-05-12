@@ -47,5 +47,10 @@ contract BTCMarketTest is Test
 
         assertEq(transferred, 30);
     }
-
+    function testBuyLocking() {
+        var id = otc.offer(30, "MKR", 10, "BTC", 0x11);
+        assertEq(otc.isLocked(id), false);
+        BTCMarket(user1).buy(id);
+        assertEq(otc.isLocked(id), true);
+    }
 }
