@@ -1,5 +1,6 @@
 import 'dappsys/auth.sol';
 import 'maker-user/user.sol';
+import 'btc-tx/btc_tx.sol';
 import 'assertive.sol';
 import 'fallback_failer.sol';
 import 'simple_market.sol';
@@ -23,11 +24,13 @@ contract BTCMarket is MakerUser, EventfulMarket, FallbackFailer, Assertive {
     mapping( uint256 => uint) public offersByTxHash;
 
     address public trustedRelay;
+    BTCTxParser parser;
 
     function BTCMarket( MakerUserLinkType registry, address BTCRelay)
                         MakerUser( registry )
     {
         trustedRelay = BTCRelay;
+        parser = new BTCTxParser();
     }
 
     function next_id() internal returns (uint) {
@@ -83,7 +86,18 @@ contract BTCMarket is MakerUser, EventfulMarket, FallbackFailer, Assertive {
     function processTransaction(bytes txBytes, uint256 txHash)
         returns (int256)
     {
-        return 1;
+        var id = offersByTxHash[txHash];
+        var offer = offers[id];
+
+        var sent = parser.checkValueSent(txBytes,
+                                         offer.btc_address,
+                                         offer.buy_how_much);
+
+        if (sent) {
+            return 0;
+        } else {
+            return 1;
+        }
     }
     function getOffer( uint id ) constant
         returns (uint, bytes32, uint, bytes32) {
