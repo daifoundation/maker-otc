@@ -2,6 +2,12 @@ import 'maker-user/user_test.sol';
 import 'btc_market.sol';
 
 contract MockBTCRelay {
+    function relayTx(bytes rawTransaction, int256 transactionIndex,
+                     int256[] merkleSibling, int256 blockHash,
+                     int256 contractAddress)
+        returns (int256)
+    {
+    }
 }
 
 contract BTCMarketTest is Test
@@ -117,5 +123,13 @@ contract BTCMarketTest is Test
     }
     function testLinkedRelay() {
         assertEq(otc.getRelay(), relay);
+    }
+    function testRelayTx() {
+        bytes memory mockBytes = "\x11\x22";
+        int256 txIndex = 100;
+        int256[] siblings;
+        int256 blockHash = 100;
+        int256 contractAddress = int256(this);
+        var ret = relay.relayTx(mockBytes, txIndex, siblings, blockHash, contractAddress);
     }
 }
