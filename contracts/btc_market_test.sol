@@ -6,11 +6,14 @@ contract BTCMarketTest is Test
                            , EventfulMarket
 {
     MakerUserTester user1;
+    MakerUserTester user2;
     BTCMarket otc;
     function setUp() {
         otc = new BTCMarket(_M);
         user1 = new MakerUserTester(_M);
         user1._target(otc);
+        user2 = new MakerUserTester(_M);
+        user2._target(otc);
         transfer(user1, 100, "DAI");
         user1.doApprove(otc, 100, "DAI");
         approve(otc, 30, "MKR");
@@ -76,5 +79,10 @@ contract BTCMarketTest is Test
         var id = otc.offer(30, "MKR", 10, "BTC", 0x11);
         BTCMarket(user1).buy(id);
         otc.cancel(id);
+    }
+    function testFailBuyLocked() {
+        var id = otc.offer(30, "MKR", 10, "BTC", 0x11);
+        BTCMarket(user1).buy(id);
+        BTCMarket(user2).buy(id);
     }
 }
