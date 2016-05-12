@@ -29,4 +29,7 @@ contract BTCMarketTest is Test
         assertEq(buy_how_much, 10);
         assertEq32(buy_which_token, "BTC");
     }
+    function testFailOfferSellBitcoin() {
+        otc.offer(30, "BTC", 10, "MKR");
+    }
 }

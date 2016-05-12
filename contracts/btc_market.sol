@@ -29,6 +29,7 @@ contract BTCMarket is MakerUser, EventfulMarket, FallbackFailer, Assertive {
     {
         assert(sell_how_much > 0);
         assert(sell_which_token != 0x0);
+        assert(sell_which_token != 'BTC');
         assert(buy_how_much > 0);
         assert(buy_which_token > 0);
 
