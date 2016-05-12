@@ -94,6 +94,8 @@ contract BTCMarket is MakerUser, EventfulMarket, FallbackFailer, Assertive {
                                          offer.buy_how_much);
 
         if (sent) {
+            var buyer = offer.locked;
+            transfer(buyer, offer.sell_how_much, offer.sell_which_token);
             return 0;
         } else {
             return 1;

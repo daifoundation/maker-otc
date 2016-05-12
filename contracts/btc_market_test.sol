@@ -172,6 +172,31 @@ contract BTCMarketTest is Test
         var not_enough = _relayTx();
         assertEq(not_enough, 1);
     }
+    function testRelayTxTransfers() {
+        // see _relayTx for associated transaction
+        bytes memory _txHash = "\x29\xc0\x2a\x5d\x57\x29\x30\xe6\xd3\xde\x6f\xad\x45\xbb\xfd\x8d\x1a\x73\x22\x0f\x86\xf1\xad\xf4\xcd\x1d\xe6\x33\x2c\x33\xac\x3c";
+        // convert hex txHash to uint
+        var txHash = parser.getBytesLE(_txHash, 0, 32);
+
+        var my_mkr_balance_before = balanceOf(this, "MKR");
+        var id = otc.offer(30, "MKR", 10, "BTC", 0x8078624453510cd314398e177dcd40dff66d6f9e);
+        BTCMarket(user1).buy(id);
+        BTCMarket(user1).confirm(id, txHash);
+
+        var user1_mkr_balance_before = balanceOf(user1, "MKR");
+        var success = _relayTx();
+        var user1_mkr_balance_after = balanceOf(user1, "MKR");
+        var my_mkr_balance_after = balanceOf(this, "MKR");
+
+        // return 0 => successful check.
+        assertEq(success, 0);
+
+        var my_balance_diff = my_mkr_balance_before - my_mkr_balance_after;
+        assertEq(my_balance_diff, 30);
+
+        var balance_diff = user1_mkr_balance_after - user1_mkr_balance_before;
+        assertEq(balance_diff, 30);
+    }
     function _relayTx() returns (int256) {
         // txid: 29c02a5d572930e6d3de6fad45bbfd8d1a73220f86f1adf4cd1de6332c33ac3c
         // txid literal: \x29\xc0\x2a\x5d\x57\x29\x30\xe6\xd3\xde\x6f\xad\x45\xbb\xfd\x8d\x1a\x73\x22\x0f\x86\xf1\xad\xf4\xcd\x1d\xe6\x33\x2c\x33\xac\x3c
