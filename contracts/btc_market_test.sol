@@ -16,7 +16,8 @@ contract BTCMarketTest is Test
         approve(otc, 30, "MKR");
     }
     function testOfferBuyBitcoin() {
-        var id = otc.offer(30, "MKR", 10, "BTC");
+        bytes20 seller_btc_address = 0x123;
+        var id = otc.offer(30, "MKR", 10, "BTC", seller_btc_address);
         assertEq(id, 1);
         assertEq(otc.last_offer_id(), id);
 
@@ -28,11 +29,13 @@ contract BTCMarketTest is Test
 
         assertEq(buy_how_much, 10);
         assertEq32(buy_which_token, "BTC");
+
+        assertEq20(otc.getBtcAddress(id), seller_btc_address);
     }
     function testFailOfferSellBitcoin() {
-        otc.offer(30, "BTC", 10, "MKR");
+        otc.offer(30, "BTC", 10, "MKR", 0x11);
     }
     function testFailOfferBuyNotBitcoin() {
-        otc.offer(30, "MKR", 10, "DAI");
+        otc.offer(30, "MKR", 10, "DAI", 0x11);
     }
 }

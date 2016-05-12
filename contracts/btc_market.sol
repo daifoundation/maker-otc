@@ -14,6 +14,7 @@ contract BTCMarket is MakerUser, EventfulMarket, FallbackFailer, Assertive {
         bytes32 buy_which_token;
         address owner;
         bool active;
+        bytes20 btc_address;
     }
     uint public last_offer_id;
     mapping( uint => OfferInfo ) public offers;
@@ -23,8 +24,9 @@ contract BTCMarket is MakerUser, EventfulMarket, FallbackFailer, Assertive {
     function next_id() internal returns (uint) {
         last_offer_id++; return last_offer_id;
     }
-    function offer( uint sell_how_much, bytes32 sell_which_token
-                  , uint buy_how_much,  bytes32 buy_which_token )
+    function offer( uint sell_how_much, bytes32 sell_which_token,
+                    uint buy_how_much,  bytes32 buy_which_token,
+                    bytes20 btc_address )
         returns (uint id)
     {
         assert(sell_how_much > 0);
@@ -41,6 +43,7 @@ contract BTCMarket is MakerUser, EventfulMarket, FallbackFailer, Assertive {
         info.buy_which_token = buy_which_token;
         info.owner = msg.sender;
         info.active = true;
+        info.btc_address = btc_address;
         id = next_id();
         offers[id] = info;
         ItemUpdate(id);
@@ -51,5 +54,9 @@ contract BTCMarket is MakerUser, EventfulMarket, FallbackFailer, Assertive {
       var offer = offers[id];
       return (offer.sell_how_much, offer.sell_which_token,
               offer.buy_how_much, offer.buy_which_token);
+    }
+    function getBtcAddress( uint id ) constant returns (bytes20) {
+        var offer = offers[id];
+        return offer.btc_address;
     }
 }
