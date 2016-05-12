@@ -72,4 +72,9 @@ contract BTCMarketTest is Test
         var id = otc.offer(30, "MKR", 10, "BTC", 0x11);
         BTCMarket(user1).cancel(id);
     }
+    function testFailCancelLocked() {
+        var id = otc.offer(30, "MKR", 10, "BTC", 0x11);
+        BTCMarket(user1).buy(id);
+        otc.cancel(id);
+    }
 }
