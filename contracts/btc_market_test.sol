@@ -53,4 +53,23 @@ contract BTCMarketTest is Test
         BTCMarket(user1).buy(id);
         assertEq(otc.isLocked(id), true);
     }
+    function testCancelUnlocked() {
+        var my_mkr_balance_before = balanceOf(this, "MKR");
+        var id = otc.offer(30, "MKR", 10, "BTC", 0x11);
+        var my_mkr_balance_after = balanceOf(this, "MKR");
+        otc.cancel(id);
+        var my_mkr_balance_after_cancel = balanceOf(this, "MKR");
+
+        var diff = my_mkr_balance_before - my_mkr_balance_after_cancel;
+        assertEq(diff, 0);
+    }
+    function testFailCancelInactive() {
+        var id = otc.offer(30, "MKR", 10, "BTC", 0x11);
+        otc.cancel(id);
+        otc.cancel(id);
+    }
+    function testFailCancelNonOwner() {
+        var id = otc.offer(30, "MKR", 10, "BTC", 0x11);
+        BTCMarket(user1).cancel(id);
+    }
 }

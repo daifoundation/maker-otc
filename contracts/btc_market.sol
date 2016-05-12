@@ -54,6 +54,16 @@ contract BTCMarket is MakerUser, EventfulMarket, FallbackFailer, Assertive {
         var offer = offers[id];
         offer.locked = msg.sender;
     }
+    function cancel( uint id )
+    {
+        var offer = offers[id];
+        assert(offer.active);
+        assert(msg.sender == offer.owner);
+
+        transfer( msg.sender, offer.sell_how_much, offer.sell_which_token );
+        delete offers[id];
+        ItemUpdate(id);
+    }
     function getOffer( uint id ) constant
         returns (uint, bytes32, uint, bytes32) {
       var offer = offers[id];
