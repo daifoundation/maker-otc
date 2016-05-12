@@ -38,4 +38,14 @@ contract BTCMarketTest is Test
     function testFailOfferBuyNotBitcoin() {
         otc.offer(30, "MKR", 10, "DAI", 0x11);
     }
+    function testOfferTransferFrom() {
+        var my_mkr_balance_before = balanceOf(this, "MKR");
+        var id = otc.offer(30, "MKR", 10, "BTC", 0x11);
+        var my_mkr_balance_after = balanceOf(this, "MKR");
+
+        var transferred = my_mkr_balance_before - my_mkr_balance_after;
+
+        assertEq(transferred, 30);
+    }
+
 }
