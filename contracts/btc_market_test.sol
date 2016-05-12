@@ -101,4 +101,12 @@ contract BTCMarketTest is Test
         BTCMarket(user1).buy(id);
         BTCMarket(user2).confirm(id, 123);
     }
+    function testGetOfferByTxHash() {
+        var id = otc.offer(30, "MKR", 10, "BTC", 0x11);
+        BTCMarket(user1).buy(id);
+
+        var txHash = 1234;
+        BTCMarket(user1).confirm(id, txHash);
+        assertEq(otc.getOfferByTxHash(txHash), id);
+    }
 }
