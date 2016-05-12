@@ -1,6 +1,9 @@
 import 'maker-user/user_test.sol';
 import 'btc_market.sol';
 
+contract MockBTCRelay {
+}
+
 contract BTCMarketTest is Test
                            , MakerUserGeneric(new MakerUserMockRegistry())
                            , EventfulMarket
@@ -8,8 +11,11 @@ contract BTCMarketTest is Test
     MakerUserTester user1;
     MakerUserTester user2;
     BTCMarket otc;
+    MockBTCRelay relay;
+
     function setUp() {
-        otc = new BTCMarket(_M);
+        relay = new MockBTCRelay();
+        otc = new BTCMarket(_M, relay);
         user1 = new MakerUserTester(_M);
         user1._target(otc);
         user2 = new MakerUserTester(_M);
@@ -108,5 +114,8 @@ contract BTCMarketTest is Test
         var txHash = 1234;
         BTCMarket(user1).confirm(id, txHash);
         assertEq(otc.getOfferByTxHash(txHash), id);
+    }
+    function testLinkedRelay() {
+        assertEq(otc.getRelay(), relay);
     }
 }

@@ -22,7 +22,13 @@ contract BTCMarket is MakerUser, EventfulMarket, FallbackFailer, Assertive {
     mapping( uint => OfferInfo ) public offers;
     mapping( uint256 => uint) public offersByTxHash;
 
-    function BTCMarket( MakerUserLinkType registry ) MakerUser( registry ) {}
+    address public trustedRelay;
+
+    function BTCMarket( MakerUserLinkType registry, address BTCRelay)
+                        MakerUser( registry )
+    {
+        trustedRelay = BTCRelay;
+    }
 
     function next_id() internal returns (uint) {
         last_offer_id++; return last_offer_id;
@@ -86,6 +92,9 @@ contract BTCMarket is MakerUser, EventfulMarket, FallbackFailer, Assertive {
     }
     function getOfferByTxHash( uint256 txHash ) returns (uint id) {
         return offersByTxHash[txHash];
+    }
+    function getRelay() returns (address) {
+        return trustedRelay;
     }
     function isLocked( uint id ) constant returns (bool) {
         var offer = offers[id];
