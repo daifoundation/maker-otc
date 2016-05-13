@@ -5,6 +5,7 @@ Template.neworder.viewmodel({
     })
   },
   lastError: '',
+  bestOffer: undefined,
   type: 'buy',
   fancyType: function () {
     return this.type() === 'buy' ? 'Bid' : 'Ask'
@@ -115,6 +116,44 @@ Template.neworder.viewmodel({
   },
   preventDefault: function (event) {
     event.preventDefault()
+  },
+  betterOffer: function () {
+    try {
+      var quoteCurrency = Session.get('quoteCurrency')
+      var baseCurrency = Session.get('baseCurrency')
+      var price = new BigNumber(this.price())
+      if (price.lte(0) || price.isNaN()) {
+        this.bestOffer(undefined)
+        return undefined
+      }
+
+      var offer
+      if (this.type() === 'buy') {
+        offer = Offers.findOne({ buy_which_token: quoteCurrency, sell_which_token: baseCurrency }, { sort: { ask_price: 1 } })
+        if (offer && offer.hasOwnProperty('ask_price') && price.gt(new BigNumber(offer.ask_price.toString()))) {
+          this.bestOffer(offer._id)
+          return offer
+        } else {
+          this.bestOffer(undefined)
+          return undefined
+        }
+      } else {
+        offer = Offers.findOne({ buy_which_token: baseCurrency, sell_which_token: quoteCurrency }, { sort: { ask_price: 1 } })
+        if (offer && offer.hasOwnProperty('bid_price') && price.lt(new BigNumber(offer.bid_price.toString()))) {
+          this.bestOffer(offer._id)
+          return offer
+        } else {
+          this.bestOffer(undefined)
+          return undefined
+        }
+      }
+    } catch (e) {
+      this.bestOffer(undefined)
+      return undefined
+    }
+  },
+  openOfferModal: function () {
+    Session.set('selectedOffer', this.bestOffer())
   },
   submit: function (event) {
     event.preventDefault()
