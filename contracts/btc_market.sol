@@ -3,11 +3,10 @@ import 'maker-user/user.sol';
 import 'btc-tx/btc_tx.sol';
 import 'assertive.sol';
 import 'fallback_failer.sol';
-import 'simple_market.sol';
 
 // BTC-relay integration
 
-contract BTCMarket is MakerUser, EventfulMarket, FallbackFailer, Assertive {
+contract BTCMarket is MakerUser, FallbackFailer, Assertive {
     struct OfferInfo {
         uint sell_how_much;
         bytes32 sell_which_token;
@@ -74,7 +73,6 @@ contract BTCMarket is MakerUser, EventfulMarket, FallbackFailer, Assertive {
         info.btc_address = btc_address;
         id = next_id();
         offers[id] = info;
-        ItemUpdate(id);
         return id;
     }
     function buy ( uint id ) {
@@ -92,7 +90,6 @@ contract BTCMarket is MakerUser, EventfulMarket, FallbackFailer, Assertive {
 
         transfer( msg.sender, offer.sell_how_much, offer.sell_which_token );
         delete offers[id];
-        ItemUpdate(id);
     }
     function confirm( uint id, uint256 txHash ) {
         var offer = offers[id];

@@ -26,7 +26,6 @@ contract MockProcessor {
 
 contract BTCMarketTest is Test
                            , MakerUserGeneric(new MakerUserMockRegistry())
-                           , EventfulMarket
 {
     MakerUserTester user1;
     MakerUserTester user2;
