@@ -1,4 +1,5 @@
 import 'maker-user/user_test.sol';
+import 'dappsys/token/erc20.sol';
 import 'simple_market.sol';
 
 contract SimpleMarketTest is Test
@@ -6,14 +7,18 @@ contract SimpleMarketTest is Test
                            , EventfulMarket
 {
     MakerUserTester user1;
+    ERC20 dai;
+    ERC20 mkr;
     SimpleMarket otc;
     function setUp() {
-        otc = new SimpleMarket(_M);
+        otc = new SimpleMarket();
         user1 = new MakerUserTester(_M);
         user1._target(otc);
         transfer(user1, 100, "DAI");
         user1.doApprove(otc, 100, "DAI");
         approve(otc, 30, "MKR");
+        dai = getToken("DAI");
+        mkr = getToken("MKR");
     }
     function testBasicTrade() {
         user1.doApprove(otc, 100, "DAI");
@@ -22,7 +27,7 @@ contract SimpleMarketTest is Test
         var user1_mkr_balance_before = balanceOf(user1, "MKR");
         var user1_dai_balance_before = balanceOf(user1, "DAI");
 
-        var id = otc.offer( 30, "MKR", 100, "DAI" );
+        var id = otc.offer( 30, mkr, 100, dai );
         SimpleMarket(user1).buy(id);
         var my_mkr_balance_after = balanceOf(this, "MKR");
         var my_dai_balance_after = balanceOf(this, "DAI");
@@ -35,7 +40,7 @@ contract SimpleMarketTest is Test
 
         expectEventsExact(otc);
         ItemUpdate(id);
-        Trade( 30, "MKR", 100, "DAI" );
+        Trade( 30, mkr, 100, dai );
         ItemUpdate(id);
     }
     function testPartiallyFilledOrderMkr() {
@@ -47,7 +52,7 @@ contract SimpleMarketTest is Test
         var user1_mkr_balance_before = balanceOf(user1, "MKR");
         var user1_dai_balance_before = balanceOf(user1, "DAI");
 
-        var id = otc.offer( 200, "MKR", 500, "DAI" );
+        var id = otc.offer( 200, mkr, 500, dai );
         SimpleMarket(user1).buyPartial(id, 10);
         var my_mkr_balance_after = balanceOf(this, "MKR");
         var my_dai_balance_after = balanceOf(this, "DAI");
@@ -64,7 +69,7 @@ contract SimpleMarketTest is Test
 
         expectEventsExact(otc);
         ItemUpdate(id);
-        Trade( 10, "MKR", 25, "DAI" );
+        Trade( 10, mkr, 25, dai );
         ItemUpdate(id);
     }
     function testPartiallyFilledOrderDai() {
@@ -77,7 +82,7 @@ contract SimpleMarketTest is Test
         var user1_mkr_balance_before = balanceOf(user1, "MKR");
         var user1_dai_balance_before = balanceOf(user1, "DAI");
 
-        var id = otc.offer( 500, "DAI", 200, "MKR" );
+        var id = otc.offer( 500, dai, 200, mkr );
         SimpleMarket(user1).buyPartial(id, 10);
         var my_mkr_balance_after = balanceOf(this, "MKR");
         var my_dai_balance_after = balanceOf(this, "DAI");
@@ -94,12 +99,12 @@ contract SimpleMarketTest is Test
 
         expectEventsExact(otc);
         ItemUpdate(id);
-        Trade( 10, "DAI", 4, "MKR" );
+        Trade( 10, dai, 4, mkr );
         ItemUpdate(id);
     }
     function testCancel() {
         approve(otc, 30, "MKR");
-        var id = otc.offer( 30, "MKR", 100, "DAI" );
+        var id = otc.offer( 30, mkr, 100, dai );
         otc.cancel(id);
 
         expectEventsExact(otc);
@@ -109,28 +114,28 @@ contract SimpleMarketTest is Test
 
     function testFailOfferNotEnoughFunds() {
         transfer(address(0x0), balanceOf(this, "MKR")-29, "MKR");
-        var id = otc.offer(30, "MKR", 100, "DAI");
+        var id = otc.offer(30, mkr, 100, dai);
     }
     function testFailBuyNotEnoughFunds() {
         throw;
-        var id = otc.offer(30, "MKR", 101, "DAI");
+        var id = otc.offer(30, mkr, 101, dai);
         log_named_uint("user1 dai allowance", allowance(user1, otc, "DAI"));
         user1.doApprove(otc, 101, "DAI");
         log_named_uint("user1 dai allowance", allowance(user1, otc, "DAI"));
         log_named_uint("user1 dai balance before", balanceOf(user1, "DAI"));
         SimpleMarket(user1).buy(id);
         log_named_uint("user1 dai allowance", allowance(user1, otc, "DAI"));
-        log_named_uint("user1 dai balance after", balanceOf(user1,"DAI"));
+        log_named_uint("user1 dai balance after", balanceOf(user1, "DAI"));
     }
     function testFailBuyNotEnoughApproval() {
         throw;
-        var id = otc.offer(30, "MKR", 100, "DAI");
+        var id = otc.offer(30, mkr, 100, dai);
         log_named_uint("user1 dai allowance", allowance(user1, otc, "DAI"));
         user1.doApprove(otc, 99, "DAI");
         log_named_uint("user1 dai allowance", allowance(user1, otc, "DAI"));
         log_named_uint("user1 dai balance before", balanceOf(user1, "DAI"));
         SimpleMarket(user1).buy(id);
         log_named_uint("user1 dai allowance", allowance(user1, otc, "DAI"));
-        log_named_uint("user1 dai balance after", balanceOf(user1,"DAI"));
+        log_named_uint("user1 dai balance after", balanceOf(user1, "DAI"));
     }
 }
