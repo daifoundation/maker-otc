@@ -1,7 +1,7 @@
 {
   "name": "Maker-OTC",
   "scripts": {
-    "deploy": "dapple run scripts/deploy_private.ds",
+    "deploy": "dapple run scripts/deploy_simple_market.ds",
     "build": "dapple build --template meteor --no-deploy-data",
     "blockchain": "./scripts/blockchain/start-blockchain.sh",
     "attach": "geth attach ipc://$PWD/scripts/blockchain/tmp/geth.ipc",

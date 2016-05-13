@@ -1,5 +1,5 @@
 name: maker-otc
-version: 0.1.0
+version: 0.2.0
 layout:
   sol_sources: contracts
   build_dir: frontend/packages/dapple/build
@@ -12,10 +12,10 @@ environments:
   morden:
     objects:
       otc:
-        class: SimpleMarketMorden
-        address: '0x3623ea50c4442ebed1de6456543f6921cd0e9d59'
+        class: SimpleMarket
+        address: '0x5dedb4f782a884ee4d37f6bee868868796847f1d'
   live:
     objects:
       otc:
-        class: SimpleMarketMainnet
-        address: '0xf51bc4633f5924465c8c6317169faf3e4312e82f'
+        class: SimpleMarket
+        address: '0x0000000000000000000000000000000000000000'
