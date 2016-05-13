@@ -10,10 +10,14 @@ Template.ethtokens.viewmodel({
     return Transactions.findType(TRANSACTION_TYPE)
   },
   maxAmount: function () {
-    if (this.type() === 'deposit') {
-      return web3.fromWei(Session.get('ETHBalance'))
-    } else {
-      return web3.fromWei(Tokens.findOne('ETH').balance)
+    try {
+      if (this.type() === 'deposit') {
+        return web3.fromWei(Session.get('ETHBalance'))
+      } else {
+        return web3.fromWei(Tokens.findOne('ETH').balance)
+      }
+    } catch (e) {
+      return '0'
     }
   },
   canDeposit: function () {
