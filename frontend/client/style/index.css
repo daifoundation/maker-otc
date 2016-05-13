@@ -90,6 +90,7 @@ button.btn-default:disabled { color: #eee }
 .input { background: none }
 .input { padding: .1rem 0rem }
 .input { text-transform: uppercase }
+.input[disabled] { cursor: not-allowed }
 
 @media (min-width: 640px)
 { :root { font-size: 20pt } }

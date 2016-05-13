@@ -25,12 +25,19 @@
             <input type="number" class="input" step="any" min="0" {{b "value: price, input: calcTotal"}}>
           </td>
         </tr>
+        {{#unless priceDefined}}
+          <tr>
+            <td colspan="2">
+              <span class="help-block">Enter a price to unlock amount and total.</span>
+            </td>
+          </tr>
+        {{/unless}}
         <tr>
           <th>
             Amount (in {{baseCurrency}})
           </th>
           <td>
-            <input type="number" class="input" step="any" min="0" {{b "value: amount, input: calcTotal, attr: { max: maxAmount }"}}>
+            <input type="number" class="input" step="any" min="0" {{b "value: amount, input: calcTotal, enable: priceDefined, attr: { max: maxAmount }"}}>
           </td>
         </tr>
         <tr>
@@ -38,7 +45,7 @@
             Total (in {{quoteCurrency}})
           </th>
           <td>
-            <input type="number" class="input" step="any" min="0" {{b "value: total, input: calcAmount, attr: { max: maxTotal }"}}>
+            <input type="number" class="input" step="any" min="0" {{b "value: total, input: calcAmount, enable: priceDefined, attr: { max: maxTotal }"}}>
           </td>
         </tr>
       </tbody>

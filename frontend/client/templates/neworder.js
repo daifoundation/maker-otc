@@ -18,6 +18,14 @@ Template.neworder.viewmodel({
     }
   },
   price: '0',
+  priceDefined: function () {
+    try {
+      var price = new BigNumber(this.price())
+      return !price.isNaN() && price.gt(0)
+    } catch (e) {
+      return false
+    }
+  },
   amount: '0',
   calcTotal: function (event) {
     try {
