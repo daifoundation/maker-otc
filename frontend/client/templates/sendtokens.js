@@ -13,7 +13,7 @@ Template.sendtokens.viewmodel({
   maxAmount: function () {
     try {
       var token = Tokens.findOne(this.currency())
-      return web3.fromWei(BigNumber.min(token.balance, token.allowance).toString(10))
+      return web3.fromWei(token.balance).toString(10)
     } catch (e) {
       return '0'
     }
