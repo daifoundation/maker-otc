@@ -65,6 +65,15 @@
             </tr>
           {{/unless}}
         {{/unless}}
+        {{#let offer=betterOffer}}
+          {{#if offer}}
+            <tr>
+              <td colspan="2">
+                <span class="help-block">There is a better <a href="#offerModal" data-toggle="modal" data-target="#offerModal" {{b "click: openOfferModal"}}>offer</a>.</span>
+              </td>
+            </tr>
+          {{/if}}
+        {{/let}}
         {{#unless equals lastError ''}}
           <tr>
             <td colspan="2">

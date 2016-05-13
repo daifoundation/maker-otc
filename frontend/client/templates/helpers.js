@@ -92,7 +92,7 @@ Template.registerHelper('findOffers', function (type) {
   if (type === 'ask') {
     return Offers.find({ buy_which_token: quoteCurrency, sell_which_token: baseCurrency }, { sort: { ask_price: 1 }, limit: 10 })
   } else if (type === 'bid') {
-    return Offers.find({ buy_which_token: baseCurrency, sell_which_token: quoteCurrency }, { sort: { bid_price: -1 }, limit: 10 })
+    return Offers.find({ buy_which_token: baseCurrency, sell_which_token: quoteCurrency }, { sort: { ask_price: 1 }, limit: 10 })
   } else if (type === 'mine') {
     var or = [
       { buy_which_token: quoteCurrency, sell_which_token: baseCurrency },
