@@ -13,6 +13,8 @@ contract BTCMarket is MakerUser, EventfulMarket, FallbackFailer, Assertive {
         bytes32 sell_which_token;
         uint buy_how_much;
         bytes32 buy_which_token;
+        uint deposit_how_much;
+        bytes32 deposit_which_token;
         address owner;
         bool active;
         bytes20 btc_address;
@@ -41,6 +43,16 @@ contract BTCMarket is MakerUser, EventfulMarket, FallbackFailer, Assertive {
                     bytes20 btc_address )
         returns (uint id)
     {
+        return offer(sell_how_much, sell_which_token,
+                     buy_how_much, buy_which_token,
+                     btc_address, 0, "DAI");
+    }
+    function offer( uint sell_how_much, bytes32 sell_which_token,
+                    uint buy_how_much,  bytes32 buy_which_token,
+                    bytes20 btc_address, uint deposit_how_much,
+                    bytes32 deposit_which_token)
+        returns (uint id)
+    {
         assert(sell_how_much > 0);
         assert(sell_which_token != 0x0);
         assert(sell_which_token != 'BTC');
@@ -48,11 +60,15 @@ contract BTCMarket is MakerUser, EventfulMarket, FallbackFailer, Assertive {
         assert(buy_which_token == 'BTC');
 
         transferFrom( msg.sender, this, sell_how_much, sell_which_token );
+
         OfferInfo memory info;
         info.sell_how_much = sell_how_much;
         info.sell_which_token = sell_which_token;
         info.buy_how_much = buy_how_much;
         info.buy_which_token = buy_which_token;
+        info.deposit_how_much = deposit_how_much;
+        info.deposit_which_token = deposit_which_token;
+
         info.owner = msg.sender;
         info.active = true;
         info.btc_address = btc_address;
@@ -65,6 +81,7 @@ contract BTCMarket is MakerUser, EventfulMarket, FallbackFailer, Assertive {
         assert(!isLocked(id));
         var offer = offers[id];
         offer.locked = msg.sender;
+        transferFrom( msg.sender, this, offer.deposit_how_much, offer.deposit_which_token );
     }
     function cancel( uint id )
     {
@@ -96,6 +113,7 @@ contract BTCMarket is MakerUser, EventfulMarket, FallbackFailer, Assertive {
         if (sent) {
             var buyer = offer.locked;
             transfer(buyer, offer.sell_how_much, offer.sell_which_token);
+            transfer(buyer, offer.deposit_how_much, offer.deposit_which_token );
             delete offers[id];
             return 0;
         } else {

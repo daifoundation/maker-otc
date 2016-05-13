@@ -242,4 +242,29 @@ contract BTCMarketTest is Test
 
         return relay.relayTx(mockBytes, txIndex, siblings, blockHash, contractAddress);
     }
+    function testDeposit() {
+        // create an offer requiring a 5 DAI deposit
+        var id = otc.offer(30, "MKR", 10, "BTC", 0x8078624453510cd314398e177dcd40dff66d6f9e, 5, "DAI");
+
+        // check deposit is taken when user places order
+        transfer(user1, 100, "DAI");
+        user1.doApprove(otc, 100, "DAI");
+        var user_dai_balance_before_buy = balanceOf(user1, "DAI");
+        BTCMarket(user1).buy(id);
+        var user_dai_balance_after_buy = balanceOf(user1, "DAI");
+
+        var user_buy_diff = user_dai_balance_before_buy - user_dai_balance_after_buy;
+        assertEq(user_buy_diff, 5);
+
+        bytes memory _txHash = "\x29\xc0\x2a\x5d\x57\x29\x30\xe6\xd3\xde\x6f\xad\x45\xbb\xfd\x8d\x1a\x73\x22\x0f\x86\xf1\xad\xf4\xcd\x1d\xe6\x33\x2c\x33\xac\x3c";
+        var txHash = parser.getBytesLE(_txHash, 0, 32);
+
+        BTCMarket(user1).confirm(id, txHash);
+
+        // check deposit refunded when user relays good tx */
+        var success = _relayTx();
+        assertEq(success, 0);
+        var user_dai_balance_after_relay = balanceOf(user1, "DAI");
+        assertEq(user_dai_balance_after_relay, user_dai_balance_before_buy);
+    }
 }
