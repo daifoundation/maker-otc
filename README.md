@@ -1,6 +1,6 @@
 [![MMRKT Header](https://ipfs.pics/ipfs/QmYzq3MwiiLZycJ6Fv7LU12HY6ssXRBA4ocHn5mMVU8TQz)]()
 ---
-[![Slack Status](http://slack.makerdao.com/badge.svg)](https:/slack.makerdao.com)
+[![Slack Status](https://makerdao.herokuapp.com/badge.svg)](https://makerdao.herokuapp.com/)
 [![Stories in Ready](https://badge.waffle.io/MakerDAO/maker-otc.png?label=ready&title=Ready)](https://waffle.io/MakerDAO/maker-otc)
 [![Build Status](https://api.travis-ci.org/MakerDAO/maker-otc.svg?branch=master)](https://travis-ci.org/MakerDAO/maker-otc)
 
