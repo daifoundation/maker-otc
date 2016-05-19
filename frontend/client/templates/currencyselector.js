@@ -49,10 +49,10 @@ Template.currencySelector.viewmodel({
 })
 
 Template.currencySelector.events({
-  'click #spnSwitchCurrencies': function() {
-    var quoteCurrency = Session.get('quoteCurrency');
-    var baseCurrency = Session.get('baseCurrency');
-    Session.set('quoteCurrency', baseCurrency);
-    Session.set('baseCurrency', quoteCurrency);
+  'click #spnSwitchCurrencies': function () {
+    var quoteCurrency = Session.get('quoteCurrency')
+    var baseCurrency = Session.get('baseCurrency')
+    Session.set('quoteCurrency', baseCurrency)
+    Session.set('baseCurrency', quoteCurrency)
   }
 })
