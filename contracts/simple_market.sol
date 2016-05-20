@@ -1,5 +1,5 @@
 import 'assertive.sol';
-import 'dappsys/token/erc20.sol';
+import 'erc20/erc20.sol';
 import 'fallback_failer.sol';
 
 // A simple direct exchange order manager.
