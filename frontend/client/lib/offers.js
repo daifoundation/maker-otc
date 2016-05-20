@@ -122,14 +122,14 @@ Offers.syncOffer = function (id, max) {
     if (!error) {
       var idx = id.toString()
       var sell_how_much = data[0]
-      var sell_which_token = formattedString(data[1])
+      var sell_which_token_address = data[1]
       var buy_how_much = data[2]
-      var buy_which_token = formattedString(data[3])
+      var buy_which_token_address = data[3]
       var owner = data[4]
       var active = data[5]
 
       if (active) {
-        Offers.updateOffer(idx, sell_how_much, sell_which_token, buy_how_much, buy_which_token, owner, Status.CONFIRMED)
+        Offers.updateOffer(idx, sell_how_much, sell_which_token_address, buy_how_much, buy_which_token_address, owner, Status.CONFIRMED)
       } else {
         Offers.remove(idx)
         if (Session.equals('selectedOffer', idx)) {
@@ -146,7 +146,7 @@ Offers.syncOffer = function (id, max) {
   })
 }
 
-Offers.updateOffer = function (idx, sell_how_much, sell_which_token, buy_how_much, buy_which_token, owner, status) {
+Offers.updateOffer = function (idx, sell_how_much, sell_which_token_address, buy_how_much, buy_which_token_address, owner, status) {
   if (!(sell_how_much instanceof BigNumber)) {
     sell_how_much = new BigNumber(sell_how_much)
   }
@@ -158,8 +158,10 @@ Offers.updateOffer = function (idx, sell_how_much, sell_which_token, buy_how_muc
     owner: owner,
     status: status,
     helper: status === Status.PENDING ? 'Your new order is being placed...' : '',
-    buy_which_token: buy_which_token,
-    sell_which_token: sell_which_token,
+    buy_which_token_address: buy_which_token_address,
+    buy_which_token: Dapple.getTokenByAddress(buy_which_token_address),
+    sell_which_token_address: sell_which_token_address,
+    sell_which_token: Dapple.getTokenByAddress(sell_which_token_address),
     buy_how_much: buy_how_much.toString(10),
     sell_how_much: sell_how_much.toString(10),
     ask_price: buy_how_much.div(sell_how_much).toNumber(),
@@ -170,10 +172,13 @@ Offers.updateOffer = function (idx, sell_how_much, sell_which_token, buy_how_muc
 }
 
 Offers.newOffer = function (sell_how_much, sell_which_token, buy_how_much, buy_which_token, callback) {
-  Dapple['maker-otc'].objects.otc.offer(sell_how_much, sell_which_token, buy_how_much, buy_which_token, { gas: OFFER_GAS }, function (error, tx) {
+  var sell_which_token_address = Dapple.getTokenAddress(sell_which_token)
+  var buy_which_token_address = Dapple.getTokenAddress(buy_which_token)
+
+  Dapple['maker-otc'].objects.otc.offer(sell_how_much, sell_which_token_address, buy_how_much, buy_which_token_address, { gas: OFFER_GAS }, function (error, tx) {
     callback(error, tx)
     if (!error) {
-      Offers.updateOffer(tx, sell_how_much, sell_which_token, buy_how_much, buy_which_token, web3.eth.defaultAccount, Status.PENDING)
+      Offers.updateOffer(tx, sell_how_much, sell_which_token_address, buy_how_much, buy_which_token_address, web3.eth.defaultAccount, Status.PENDING)
       Transactions.add('offer', tx, { id: tx, status: Status.PENDING })
     }
   })

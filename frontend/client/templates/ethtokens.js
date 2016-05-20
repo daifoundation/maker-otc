@@ -40,7 +40,8 @@ Template.ethtokens.viewmodel({
         gas: DEPOSIT_GAS,
         value: web3.toWei(_this.amount())
       }
-      Dapple['makerjs'].getToken('ETH', function (error, token) {
+      // XXX EIP20
+      Dapple.getToken('ETH', function (error, token) {
         if (!error) {
           token.deposit(options, function (error, tx) {
             if (!error) {
@@ -54,7 +55,8 @@ Template.ethtokens.viewmodel({
         }
       })
     } else {
-      Dapple['makerjs'].getToken('ETH', function (error, token) {
+      // XXX EIP20
+      Dapple.getToken('ETH', function (error, token) {
         if (!error) {
           token.withdraw(web3.toWei(_this.amount()), { gas: WITHDRAW_GAS }, function (error, tx) {
             if (!error) {

@@ -3,14 +3,15 @@ Template.currencySelector.viewmodel({
     this.quoteCurrency(Session.get('quoteCurrency'))
     this.baseCurrency(Session.get('baseCurrency'))
   },
-  currencies: [ 'ETH', 'MKR', 'DAI' ],
+  currencies: Dapple.getTokens(),
   quoteCurrency: '',
   baseCurrency: '',
   quoteHelper: '',
   baseHelper: '',
   quoteChange: function () {
     var _this = this
-    Dapple['makerjs'].getToken(_this.quoteCurrency(), function (error, token) {
+    // XXX EIP20
+    Dapple.getToken(_this.quoteCurrency(), function (error, token) {
       if (!error) {
         token.totalSupply(function (error, supply) {
           if (!error) {
@@ -29,7 +30,8 @@ Template.currencySelector.viewmodel({
   },
   baseChange: function () {
     var _this = this
-    Dapple['makerjs'].getToken(_this.baseCurrency(), function (error, token) {
+    // XXX EIP20
+    Dapple.getToken(_this.baseCurrency(), function (error, token) {
       if (!error) {
         token.totalSupply(function (error, supply) {
           if (!error) {
