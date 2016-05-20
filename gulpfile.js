@@ -3,6 +3,7 @@ var exec = require('child_process').exec
 var gulp = require('gulp')
 var gulpsync = require('gulp-sync')(gulp)
 var ghPages = require('gulp-gh-pages')
+var surge = require('gulp-surge')
 
 // npm run build
 gulp.task('build-dapple', function (cb) {
@@ -38,4 +39,11 @@ gulp.task('deploy-gh-pages', function () {
     .pipe(ghPages())
 })
 
-gulp.task('deploy', gulpsync.sync(['build-dapple', 'build-meteor', 'deploy-gh-pages']))
+gulp.task('deploy-surge', [], function () {
+  return surge({
+    project: './dist',          // Path to your static build directory
+    domain: 'maker-market.surge.sh'  // Your domain or Surge subdomain
+  })
+})
+
+gulp.task('deploy', gulpsync.sync(['build-dapple', 'build-meteor', 'deploy-surge']))
