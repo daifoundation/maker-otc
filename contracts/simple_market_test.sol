@@ -3,6 +3,11 @@ import 'erc20/base.sol';
 import 'simple_market.sol';
 
 contract MarketTester is Tester {
+    SimpleMarket market;
+    function bindMarket(SimpleMarket _market) {
+        _target(_market);
+        market = SimpleMarket(_t);
+    }
     function doApprove(address spender, uint value, ERC20 token) {
         token.approve(spender, value);
     }
@@ -16,11 +21,11 @@ contract SimpleMarketTest is Test, EventfulMarket {
     function setUp() {
         otc = new SimpleMarket();
         user1 = new MarketTester();
+        user1.bindMarket(otc);
 
         dai = new ERC20Base(10 ** 9);
         mkr = new ERC20Base(10 ** 6);
 
-        user1._target(otc);
         mkr.transfer(user1, 100);
         user1.doApprove(otc, 100, dai);
         mkr.approve(otc, 30);
