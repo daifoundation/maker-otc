@@ -104,3 +104,9 @@ h1 img { margin-left: -1.2rem }
 section { float: right; width: 48% }
 section:first-of-type { float: left }
 }
+
+#spnSwitchCurrencies {
+    margin: 0px 10px;
+    vertical-align: middle;
+    cursor: pointer;
+}
