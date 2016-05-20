@@ -12,7 +12,7 @@
 
   <div class="tab-content">
     <div role="tabpanel" class="tab-pane active o" id="myorders">
-      {{> orders orders=(findOffers 'mine') priceLabel='Price'}}
+      {{> orders orders=(findOffers 'mine') priceLabel='Price' showCancel=true}}
     </div>
     <div role="tabpanel" class="tab-pane o" id="lasttrades">
       {{> orders orders=lastTrades priceLabel='Price'}}

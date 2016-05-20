@@ -5,12 +5,11 @@
         <th title={{concat quoteCurrency ' / ' baseCurrency}} class={{priceClass}}>{{priceLabel}}</th>
         <th>{{quoteCurrency}}</th>
         <th>{{baseCurrency}}</th>
-        <th></th>
       </tr>
     </thead>
     <tbody>
       {{#each orders}}
-        {{> orderRow order=this}}
+        {{> orderRow order=this showCancel=../showCancel}}
       {{/each}}
     </tbody>
   </table>
