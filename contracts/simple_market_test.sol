@@ -11,6 +11,12 @@ contract MarketTester is Tester {
     function doApprove(address spender, uint value, ERC20 token) {
         token.approve(spender, value);
     }
+    function doBuy(uint id) {
+        market.buy(id);
+    }
+    function doBuyPartial(uint id, uint buy_how_much) {
+        market.buyPartial(id, buy_how_much);
+    }
 }
 
 contract SimpleMarketTest is Test, EventfulMarket {
@@ -40,7 +46,7 @@ contract SimpleMarketTest is Test, EventfulMarket {
         var user1_dai_balance_before = dai.balanceOf(user1);
 
         var id = otc.offer( 30, mkr, 100, dai );
-        SimpleMarket(user1).buy(id);
+        user1.doBuy(id);
         var my_mkr_balance_after = mkr.balanceOf(this);
         var my_dai_balance_after = dai.balanceOf(this);
         var user1_mkr_balance_after = mkr.balanceOf(user1);
@@ -66,7 +72,7 @@ contract SimpleMarketTest is Test, EventfulMarket {
         var user1_dai_balance_before = dai.balanceOf(user1);
 
         var id = otc.offer( 200, mkr, 500, dai );
-        SimpleMarket(user1).buyPartial(id, 10);
+        user1.doBuyPartial(id, 10);
         var my_mkr_balance_after = mkr.balanceOf(this);
         var my_dai_balance_after = dai.balanceOf(this);
         var user1_mkr_balance_after = mkr.balanceOf(user1);
@@ -96,7 +102,7 @@ contract SimpleMarketTest is Test, EventfulMarket {
         var user1_dai_balance_before = dai.balanceOf(user1);
 
         var id = otc.offer( 500, dai, 200, mkr );
-        SimpleMarket(user1).buyPartial(id, 10);
+        user1.doBuyPartial(id, 10);
         var my_mkr_balance_after = mkr.balanceOf(this);
         var my_dai_balance_after = dai.balanceOf(this);
         var user1_mkr_balance_after = mkr.balanceOf(user1);
@@ -136,7 +142,7 @@ contract SimpleMarketTest is Test, EventfulMarket {
         user1.doApprove(otc, 101, dai);
         log_named_uint("user1 dai allowance", dai.allowance(user1, otc));
         log_named_uint("user1 dai balance before", dai.balanceOf(user1));
-        SimpleMarket(user1).buy(id);
+        user1.doBuy(id);
         log_named_uint("user1 dai allowance", dai.allowance(user1, otc));
         log_named_uint("user1 dai balance after", dai.balanceOf(user1));
     }
@@ -147,7 +153,7 @@ contract SimpleMarketTest is Test, EventfulMarket {
         user1.doApprove(otc, 99, dai);
         log_named_uint("user1 dai allowance", dai.allowance(user1, otc));
         log_named_uint("user1 dai balance before", dai.balanceOf(user1));
-        SimpleMarket(user1).buy(id);
+        user1.doBuy(id);
         log_named_uint("user1 dai allowance", dai.allowance(user1, otc));
         log_named_uint("user1 dai balance after", dai.balanceOf(user1));
     }
