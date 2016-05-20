@@ -39,7 +39,7 @@ function checkNetwork () {
     // Check if we are synced
     if (isConnected) {
       web3.eth.getBlock('latest', function (e, res) {
-        Session.set('outOfSync', e != null || new Date().getTime() / 1000 - res.timestamp > 300)
+        Session.set('outOfSync', e != null || new Date().getTime() / 1000 - res.timestamp > 600)
       })
     }
 
