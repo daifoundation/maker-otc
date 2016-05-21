@@ -9,7 +9,7 @@
     </thead>
     <tbody>
       {{#each orders}}
-        {{> orderRow order=this showCancel=../showCancel}}
+        {{> orderRow order=this canAccept=../canAccept showCancel=../showCancel}}
       {{/each}}
     </tbody>
   </table>
