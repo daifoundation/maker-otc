@@ -70,10 +70,10 @@
       {{#if contractExists}}
         <div class=row>
           <section>
-            {{> orderbook title='Buy orders' subtitle=(concat '(click to sell ' baseCurrency ')') priceLabel='Bid Price' priceClass='bid' orders=(findOffers 'bid')}}
+            {{> orderbook title='Buy orders' subtitle=(concat '(click to sell ' baseCurrency ')') priceLabel='Bid Price' priceClass='bid' orders=(findOffers 'bid') canAccept=true}}
           </section>
           <section>
-            {{> orderbook title='Sell orders' subtitle=(concat '(click to buy ' baseCurrency ')') priceLabel='Ask Price' priceClass='ask' orders=(findOffers 'ask')}}
+            {{> orderbook title='Sell orders' subtitle=(concat '(click to buy ' baseCurrency ')') priceLabel='Ask Price' priceClass='ask' orders=(findOffers 'ask') canAccept=true}}
           </section>
         </div>
         <div class=row>

@@ -8,7 +8,7 @@ Template.orderRow.events({
   },
   'click tr': function (event, template) {
     event.preventDefault()
-    if (template.data.order.event !== 'Trade') {
+    if (template.data.canAccept) {
       var _id = template.data.order._id
       Session.set('selectedOffer', _id)
       $('#offerModal').modal('show')
