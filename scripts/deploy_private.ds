@@ -1,2 +1,0 @@
-var otc = new SimpleMarket("0x07d507a2ea2cef16dc01f4f5cabb778f768879ec")
-export otc

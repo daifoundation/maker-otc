@@ -7,3 +7,6 @@
 [submodule "dapple_packages/feedbase"]
 	path = dapple_packages/feedbase
 	url = https://github.com/nexusdev/feedbase
+[submodule "dapple_packages/erc20"]
+	path = dapple_packages/erc20
+	url = https://github.com/nexusdev/erc20

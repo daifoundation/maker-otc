@@ -29,7 +29,8 @@ Template.newallowance.viewmodel({
     var contract_address = Dapple['maker-otc'].objects.otc.address
     var options = { gas: APPROVE_GAS }
 
-    Dapple['makerjs'].getToken(_this.templateInstance.data.token._id, function (error, token) {
+    // XXX EIP20
+    Dapple.getToken(_this.templateInstance.data.token._id, function (error, token) {
       if (!error) {
         token.approve(contract_address, web3.toWei(_this.value()), options, function (error, tx) {
           if (!error) {

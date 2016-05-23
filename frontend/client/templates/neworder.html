@@ -108,15 +108,15 @@
               </tr>
               <tr>
                 <th>Price</th>
-                <td>{{formatBalance (toWei price)}} {{quoteCurrency}}</td>
+                <td>{{formatCurrency price quoteCurrency}} {{quoteCurrency}}</td>
               </tr>
               <tr>
                 <th>Volume</th>
-                <td>{{formatBalance (toWei amount)}} {{baseCurrency}}</td>
+                <td>{{formatCurrency amount baseCurrency}} {{baseCurrency}}</td>
               </tr>
               <tr>
                 <th>Total</th>
-                <td>{{formatBalance (toWei total)}} {{quoteCurrency}}</td>
+                <td>{{formatCurrency total quoteCurrency}} {{quoteCurrency}}</td>
               </tr>
             </tbody>
           </table>
@@ -124,9 +124,9 @@
           <span class="text-danger">
             <b>Warning!</b>
             {{#if equals type 'buy'}}
-              This action will <b>remove {{formatBalance (toWei total)}} {{quoteCurrency}}</b> {{formatPrice (toWei total) quoteCurrency}} from your token balance and allowance.
+              This action will <b>remove {{formatCurrency total quoteCurrency}} {{quoteCurrency}}</b> from your token balance and allowance.
             {{else}}
-              This action will <b>remove {{formatBalance (toWei amount)}} {{baseCurrency}}</b> {{formatPrice (toWei amount) baseCurrency}} from your token balance and allowance.
+              This action will <b>remove {{formatCurrency amount baseCurrency}} {{baseCurrency}}</b> from your token balance and allowance.
             {{/if}}
           </span>
         </div>

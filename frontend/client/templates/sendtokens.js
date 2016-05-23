@@ -3,7 +3,7 @@ var TRANSACTION_TYPE = 'transfer'
 
 Template.sendtokens.viewmodel({
   currency: 'MKR',
-  currencies: [ 'ETH', 'MKR', 'DAI' ],
+  currencies: Dapple.getTokens(),
   recipient: '',
   lastError: '',
   pending: function () {
@@ -41,7 +41,8 @@ Template.sendtokens.viewmodel({
 
     var options = { gas: TRANSFER_GAS }
 
-    Dapple['makerjs'].getToken(_this.currency(), function (error, token) {
+    // XXX EIP20
+    Dapple.getToken(_this.currency(), function (error, token) {
       if (!error) {
         token.transfer(recipient, web3.toWei(_this.amount()), options, function (error, tx) {
           if (!error) {

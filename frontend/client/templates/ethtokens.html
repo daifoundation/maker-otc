@@ -12,7 +12,7 @@
               ETH
             </th>
             <td>
-              {{formatBalance ETHBalance}}
+              {{formatCurrency ETHBalance 'ETH'}}
             </td>
           </tr>
           <tr>
@@ -21,7 +21,7 @@
             </th>
             <td>
               {{#let token=(findToken 'ETH')}}
-                {{formatBalance token.balance}}
+                {{formatCurrency token.balance 'ETH'}}
               {{/let}}
             </td>
           </tr>

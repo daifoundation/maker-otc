@@ -25,7 +25,8 @@ Tokens.sync = function () {
 
       // Sync token balances and allowances asynchronously
       ALL_TOKENS.forEach(function (token_id) {
-        Dapple['makerjs'].getToken(token_id, function (error, token) {
+        // XXX EIP20
+        Dapple.getToken(token_id, function (error, token) {
           if (!error) {
             token.balanceOf(address, function (error, balance) {
               if (!error) {
