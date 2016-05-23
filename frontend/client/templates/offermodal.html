@@ -20,7 +20,7 @@
                 </tr>
                 <tr>
                   <th>Price</th>
-                  <td>{{formatBalance (toWei offer.price)}} {{quoteCurrency}}</td>
+                  <td>{{formatCurrency offer.price quoteCurrency}} {{quoteCurrency}}</td>
                 </tr>
                 <tr>
                   <th>Volume</th>
@@ -56,11 +56,11 @@
                   <span class="text-danger">
                     <b>Warning!</b>
                     {{#if equals offer.type 'bid'}}
-                      This action will <b>remove {{formatBalance (toWei volume)}} {{baseCurrency}}</b> {{formatPrice (toWei volume) baseCurrency}} from your token balance and allowance,
-                      and <b>add {{formatBalance (toWei total)}} {{quoteCurrency}}</b> {{formatPrice (toWei total) quoteCurrency}} to your token balance.
+                      This action will <b>remove {{formatCurrency volume baseCurrency}} {{baseCurrency}}</b> from your token balance and allowance,
+                      and <b>add {{formatCurrency total quoteCurrency}} {{quoteCurrency}}</b> to your token balance.
                     {{else}}
-                      This action will <b>remove {{formatBalance (toWei total)}} {{quoteCurrency}}</b> {{formatPrice (toWei total) quoteCurrency}} from your token balance and allowance,
-                      and <b>add {{formatBalance (toWei volume)}} {{baseCurrency}}</b> {{formatPrice (toWei volume) baseCurrency}} to your token balance.
+                      This action will <b>remove {{formatCurrency total quoteCurrency}} {{quoteCurrency}}</b> from your token balance and allowance,
+                      and <b>add {{formatCurrency volume baseCurrency}} {{baseCurrency}}</b> to your token balance.
                     {{/if}}
                     <br>
                     If someone (partially) fills this order before you do, your offer may only be partially filled or even denied, in which case unused funds will be refunded to your balance and allowance.
@@ -94,9 +94,9 @@
             <span class="text-danger">
               <b>Warning!</b>
               {{#if equals offer.type 'bid'}}
-                This action will <b>return {{formatBalance (offer.volume quoteCurrency)}} {{quoteCurrency}}</b> {{formatPrice (offer.volume quoteCurrency) quoteCurrency}} to your token balance.
+                This action will <b>return {{formatCurrency offer.volume quoteCurrency}} {{quoteCurrency}}</b> to your token balance.
               {{else}}
-                This action will <b>return {{formatBalance (offer.volume baseCurrency)}} {{baseCurrency}}</b> {{formatPrice (offer.volume baseCurrency) baseCurrency}} to your token balance.
+                This action will <b>return {{formatCurrency offer.volume baseCurrency}} {{baseCurrency}}</b> to your token balance.
               {{/if}}
               <br>
               If someone (partially) fills this order before you cancel it, your order may not or only be partially cancelled. 

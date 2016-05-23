@@ -20,11 +20,11 @@ function formattedString (str) {
 var helpers = {
   volume: function (currency) {
     if (this.buy_which_token === currency) {
-      return this.buy_how_much
+      return new BigNumber(this.buy_how_much) // FIXME
     } else if (this.sell_which_token === currency) {
-      return this.sell_how_much
+      return new BigNumber(this.sell_how_much) // FIXME
     } else {
-      return '0'
+      return new BigNumber(0)
     }
   },
   type: function () {
@@ -41,11 +41,11 @@ var helpers = {
     var quoteCurrency = Session.get('quoteCurrency')
     var baseCurrency = Session.get('baseCurrency')
     if (this.buy_which_token === quoteCurrency && this.sell_which_token === baseCurrency) {
-      return new BigNumber(this.buy_how_much).div(new BigNumber(this.sell_how_much)).toString(10)
+      return new BigNumber(this.buy_how_much).div(new BigNumber(this.sell_how_much)) // FIXME
     } else if (this.buy_which_token === baseCurrency && this.sell_which_token === quoteCurrency) {
-      return new BigNumber(this.sell_how_much).div(new BigNumber(this.buy_how_much)).toString(10)
+      return new BigNumber(this.sell_how_much).div(new BigNumber(this.buy_how_much)) // FIXME
     } else {
-      return '0'
+      return new BigNumber(0)
     }
   }
 }

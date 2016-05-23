@@ -152,36 +152,18 @@ Template.registerHelper('fromWei', function (s) {
   return web3.fromWei(s)
 })
 
-Template.registerHelper('toWei', function (s) {
-  return web3.toWei(s)
-})
-
-Template.registerHelper('formatBalance', function (wei, format) {
-  if (format instanceof Spacebars.kw) {
-    format = null
-  }
-  format = format || '0,0.00[0000]'
-
-  return EthTools.formatBalance(wei, format)
-})
-
-Template.registerHelper('formatPrice', function (value, currency) {
-  try {
-    var format = '0,0.00[0000]'
-    if (!(value instanceof BigNumber)) {
-      value = new BigNumber(value)
+Template.registerHelper('formatCurrency', function (value, currency) {
+  var num
+  if (_.isString(value)) {
+    var unit
+    if (currency === 'DGD') {
+      unit = new BigNumber('1000000000', 10)
+    } else {
+      unit = new BigNumber('1000000000000000000', 10)
     }
-
-    if (currency === 'ETH') {
-      var usd = EthTools.ticker.findOne('usd')
-      if (usd) {
-        var usdValue = value.times(usd.price)
-        return '(~' + EthTools.formatBalance(usdValue, format) + ' USD)'
-      }
-    }
-    // TODO: other exchange rates
-    return ''
-  } catch (e) {
-    return ''
+    num = web3.toBigNumber(value).dividedBy(unit);
+  } else {
+    num = web3.toBigNumber(value)
   }
+  return num.toFormat(4)
 })

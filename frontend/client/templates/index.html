@@ -47,12 +47,12 @@
       {{> accountSelector }}
       {{> currencySelector }}
       <p>
-        Balance: {{formatBalance ETHBalance}} ETH
+        Balance: {{formatCurrency ETHBalance 'ETH'}} ETH
         {{> whatisthis section="balance"}}
       </p>
       <p>Tokens:
         {{#each token in allTokens}}
-          {{formatBalance token.balance}}
+          {{formatCurrency token.balance token._id}}
           {{#if equals token._id 'ETH'}}
             <a href="#ethtokens">{{token._id}}</a> {{> whatisthis section="eth-tokens"}}
           {{else}}
@@ -63,7 +63,7 @@
         {{> whatisthis section="tokens"}}
       </p>
       <p>
-        <a href="#allowance">Allowance</a>: {{#each token in allTokens}}{{formatBalance token.allowance}} {{token._id}} | {{/each}}
+        <a href="#allowance">Allowance</a>: {{#each token in allTokens}}{{formatCurrency token.allowance token._id}} {{token._id}} | {{/each}}
         {{> whatisthis section="allowance"}}
       </p>
 
