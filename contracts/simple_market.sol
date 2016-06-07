@@ -55,7 +55,7 @@ contract SimpleMarket is EventfulMarket, FallbackFailer, Assertive {
         assert(buyer_paid_out);
         Trade( sell_how_much, sell_which_token, buy_how_much, buy_which_token );
     }
-    function buy( uint id )
+    function buy( uint id ) returns ( bool _success )
     {
         var offer = offers[id];
         assert(offer.active);
@@ -65,17 +65,21 @@ contract SimpleMarket is EventfulMarket, FallbackFailer, Assertive {
 
         delete offers[id];
         ItemUpdate(id);
+        return true;
     }
-    function buyPartial( uint id, uint quantity )
+    function buyPartial( uint id, uint quantity ) returns ( bool _success )
     {
         var offer = offers[id];
         assert(offer.active);
 
-        if ( offers[id].sell_how_much <= quantity ) {
+        if ( offers[id].sell_how_much < quantity ) {
+            return false;
+        } else if ( offers[id].sell_how_much == quantity ) {
             trade( offer.owner, offer.sell_how_much, offer.sell_which_token,
                    msg.sender, offer.buy_how_much, offer.buy_which_token );
             delete offers[id];
-
+            ItemUpdate(id);
+            return true;
         } else {
             uint buy_quantity = quantity * offers[id].buy_how_much / offers[id].sell_how_much;
             if ( buy_quantity > 0 ) {
@@ -84,12 +88,12 @@ contract SimpleMarket is EventfulMarket, FallbackFailer, Assertive {
 
                 offer.sell_how_much -= quantity;
                 offer.buy_how_much -= buy_quantity;
-
+                ItemUpdate(id);
+                return true;
             }
         }
-        ItemUpdate(id);
     }
-    function cancel( uint id )
+    function cancel( uint id ) returns ( bool _success )
     {
         var offer = offers[id];
         assert(offer.active);
@@ -99,6 +103,7 @@ contract SimpleMarket is EventfulMarket, FallbackFailer, Assertive {
         assert(seller_refunded);
         delete offers[id];
         ItemUpdate(id);
+        return true;
     }
     function getOffer( uint id ) constant
         returns (uint, ERC20, uint, ERC20) {

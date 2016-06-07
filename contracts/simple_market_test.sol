@@ -11,11 +11,11 @@ contract MarketTester is Tester {
     function doApprove(address spender, uint value, ERC20 token) {
         token.approve(spender, value);
     }
-    function doBuy(uint id) {
-        market.buy(id);
+    function doBuy(uint id) returns (bool _success) {
+        return market.buy(id);
     }
-    function doBuyPartial(uint id, uint buy_how_much) {
-        market.buyPartial(id, buy_how_much);
+    function doBuyPartial(uint id, uint buy_how_much) returns (bool _success) {
+        return market.buyPartial(id, buy_how_much);
     }
 }
 
@@ -46,7 +46,7 @@ contract SimpleMarketTest is Test, EventfulMarket {
         var user1_dai_balance_before = dai.balanceOf(user1);
 
         var id = otc.offer( 30, mkr, 100, dai );
-        user1.doBuy(id);
+        assertTrue(user1.doBuy(id));
         var my_mkr_balance_after = mkr.balanceOf(this);
         var my_dai_balance_after = dai.balanceOf(this);
         var user1_mkr_balance_after = mkr.balanceOf(user1);
@@ -72,7 +72,7 @@ contract SimpleMarketTest is Test, EventfulMarket {
         var user1_dai_balance_before = dai.balanceOf(user1);
 
         var id = otc.offer( 200, mkr, 500, dai );
-        user1.doBuyPartial(id, 10);
+        assertTrue(user1.doBuyPartial(id, 10));
         var my_mkr_balance_after = mkr.balanceOf(this);
         var my_dai_balance_after = dai.balanceOf(this);
         var user1_mkr_balance_after = mkr.balanceOf(user1);
@@ -102,7 +102,7 @@ contract SimpleMarketTest is Test, EventfulMarket {
         var user1_dai_balance_before = dai.balanceOf(user1);
 
         var id = otc.offer( 500, dai, 200, mkr );
-        user1.doBuyPartial(id, 10);
+        assertTrue(user1.doBuyPartial(id, 10));
         var my_mkr_balance_after = mkr.balanceOf(this);
         var my_dai_balance_after = dai.balanceOf(this);
         var user1_mkr_balance_after = mkr.balanceOf(user1);
@@ -121,10 +121,26 @@ contract SimpleMarketTest is Test, EventfulMarket {
         Trade( 10, dai, 4, mkr );
         ItemUpdate(id);
     }
+    function testPartiallyFilledOrderMkrExcessQuantity() {
+        dai.transfer(user1, 30);
+        user1.doApprove(otc, 30, dai);
+        mkr.approve(otc, 200);
+
+        var my_mkr_balance_before = mkr.balanceOf(this);
+        var my_dai_balance_before = dai.balanceOf(this);
+        var user1_mkr_balance_before = mkr.balanceOf(user1);
+        var user1_dai_balance_before = dai.balanceOf(user1);
+
+        var id = otc.offer( 200, mkr, 500, dai );
+        assertFalse(user1.doBuyPartial(id, 201));
+
+        expectEventsExact(otc);
+        ItemUpdate(id);
+    }
     function testCancel() {
         mkr.approve(otc, 30);
         var id = otc.offer( 30, mkr, 100, dai );
-        otc.cancel(id);
+        assertTrue(otc.cancel(id));
 
         expectEventsExact(otc);
         ItemUpdate(id);
@@ -136,24 +152,22 @@ contract SimpleMarketTest is Test, EventfulMarket {
         var id = otc.offer(30, mkr, 100, dai);
     }
     function testFailBuyNotEnoughFunds() {
-        throw;
         var id = otc.offer(30, mkr, 101, dai);
         log_named_uint("user1 dai allowance", dai.allowance(user1, otc));
         user1.doApprove(otc, 101, dai);
         log_named_uint("user1 dai allowance", dai.allowance(user1, otc));
         log_named_uint("user1 dai balance before", dai.balanceOf(user1));
-        user1.doBuy(id);
+        assertTrue(user1.doBuy(id));
         log_named_uint("user1 dai allowance", dai.allowance(user1, otc));
         log_named_uint("user1 dai balance after", dai.balanceOf(user1));
     }
     function testFailBuyNotEnoughApproval() {
-        throw;
         var id = otc.offer(30, mkr, 100, dai);
         log_named_uint("user1 dai allowance", dai.allowance(user1, otc));
         user1.doApprove(otc, 99, dai);
         log_named_uint("user1 dai allowance", dai.allowance(user1, otc));
         log_named_uint("user1 dai balance before", dai.balanceOf(user1));
-        user1.doBuy(id);
+        assertTrue(user1.doBuy(id));
         log_named_uint("user1 dai allowance", dai.allowance(user1, otc));
         log_named_uint("user1 dai balance after", dai.balanceOf(user1));
     }
