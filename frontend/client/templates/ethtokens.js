@@ -36,23 +36,24 @@ Template.ethtokens.viewmodel({
     _this.lastError('')
 
     if (_this.type() === 'deposit') {
-      var options = {
-        gas: DEPOSIT_GAS,
-        value: web3.toWei(_this.amount())
-      }
-      Dapple['makerjs'].getToken('ETH', function (error, token) {
-        if (!error) {
-          token.deposit(options, function (error, tx) {
-            if (!error) {
-              Transactions.add(TRANSACTION_TYPE, tx, { type: 'deposit', amount: _this.amount() })
-            } else {
-              _this.lastError(error.toString())
-            }
-          })
-        } else {
-          _this.lastError(error.toString())
-        }
-      })
+      console.log('ETH deposit disabled')
+      // var options = {
+      //   gas: DEPOSIT_GAS,
+      //   value: web3.toWei(_this.amount())
+      // }
+      // Dapple['makerjs'].getToken('ETH', function (error, token) {
+      //   if (!error) {
+      //     token.deposit(options, function (error, tx) {
+      //       if (!error) {
+      //         Transactions.add(TRANSACTION_TYPE, tx, { type: 'deposit', amount: _this.amount() })
+      //       } else {
+      //         _this.lastError(error.toString())
+      //       }
+      //     })
+      //   } else {
+      //     _this.lastError(error.toString())
+      //   }
+      // })
     } else {
       Dapple['makerjs'].getToken('ETH', function (error, token) {
         if (!error) {
