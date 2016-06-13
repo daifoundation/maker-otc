@@ -46,7 +46,7 @@ Dapple['dappsys'] = (function builder () {
           },
           'eth_token1': {
             'class': 'DSEthToken',
-            'address': '0xfbc7f6b58daa9f99816b6cc77d2a7f4b327fa7bc'
+            'address': '0x52fe88b987c7829e5d5a61c98f67c9c14e6a7a90'
           },
           'token_registry': {
             'class': 'DSTokenRegistry',
@@ -90,7 +90,7 @@ Dapple['dappsys'] = (function builder () {
           },
           'eth_token1': {
             'class': 'DSEthToken',
-            'address': '0xd654bdd32fc99471455e86c2e7f7d7b6437e9179'
+            'address': '0xecf8f87f810ecf450940c9f60066b4a7a501d6a7'
           },
           'token_registry': {
             'class': 'DSTokenRegistry',
