@@ -9,9 +9,9 @@ this.Status = {
   BOUGHT: 'bought'
 }
 
-var OFFER_GAS = 300000
-var BUY_PARTIAL_GAS = 300000
-var CANCEL_GAS = 150000
+var OFFER_GAS = 3000
+var BUY_PARTIAL_GAS = 3000
+var CANCEL_GAS = 300000
 
 function formattedString (str) {
   return web3.toAscii(str).replace(/\0[\s\S]*$/g, '').trim()

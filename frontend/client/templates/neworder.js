@@ -165,25 +165,5 @@ Template.neworder.viewmodel({
   },
   submit: function (event) {
     event.preventDefault()
-
-    var _this = this
-    _this.lastError('')
-    var sell_how_much, sell_which_token, buy_how_much, buy_which_token
-    if (this.type() === 'buy') {
-      sell_how_much = web3.toWei(this.total())
-      sell_which_token = Session.get('quoteCurrency')
-      buy_how_much = web3.toWei(this.amount())
-      buy_which_token = Session.get('baseCurrency')
-    } else {
-      sell_how_much = web3.toWei(this.amount())
-      sell_which_token = Session.get('baseCurrency')
-      buy_how_much = web3.toWei(this.total())
-      buy_which_token = Session.get('quoteCurrency')
-    }
-    Offers.newOffer(sell_how_much, sell_which_token, buy_how_much, buy_which_token, function (error, tx) {
-      if (error != null) {
-        _this.lastError(error.toString())
-      }
-    })
   }
 })
