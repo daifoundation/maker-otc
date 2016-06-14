@@ -134,6 +134,19 @@ contract SimpleMarketTest is Test, EventfulMarket {
         var id = otc.offer( 200, mkr, 500, dai );
         assertFalse(user1.doBuyPartial(id, 201));
 
+        var my_mkr_balance_after = mkr.balanceOf(this);
+        var my_dai_balance_after = dai.balanceOf(this);
+        var user1_mkr_balance_after = mkr.balanceOf(user1);
+        var user1_dai_balance_after = dai.balanceOf(user1);
+        var ( sell_val, sell_token, buy_val, buy_token ) = otc.getOffer(id);
+
+        assertEq( 0, my_dai_balance_before - my_dai_balance_after );
+        assertEq( 200, my_mkr_balance_before - my_mkr_balance_after );
+        assertEq( 0, user1_dai_balance_before - user1_dai_balance_after );
+        assertEq( 0, user1_mkr_balance_before - user1_mkr_balance_after );
+        assertEq( 200, sell_val );
+        assertEq( 500, buy_val );
+
         expectEventsExact(otc);
         ItemUpdate(id);
     }
