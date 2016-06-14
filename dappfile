@@ -4,9 +4,6 @@ layout:
   sol_sources: contracts
   build_dir: frontend/packages/dapple/build
 dependencies:
-  makeruser: 0.1.5
-  dappsys: 0.1.2
-  feedbase: 0.1.1
   erc20: 1.0.0
 environments:
   default: morden
