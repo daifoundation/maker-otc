@@ -2,7 +2,7 @@ name: maker-otc
 version: 0.2.0
 layout:
   sol_sources: contracts
-  build_dir: frontend/packages/dapple/build
+  build_dir: build
 dependencies:
   erc20: 1.0.0
 environments:
