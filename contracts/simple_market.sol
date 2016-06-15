@@ -6,8 +6,8 @@ import 'fallback_failer.sol';
 
 contract EventfulMarket {
     event ItemUpdate( uint id );
-    event Trade( uint sell_how_much, ERC20 indexed sell_which_token,
-                 uint buy_how_much, ERC20 indexed buy_which_token );
+    event Trade( uint sell_how_much, address indexed sell_which_token,
+                 uint buy_how_much, address indexed buy_which_token );
 }
 contract SimpleMarket is EventfulMarket, FallbackFailer, Assertive {
     struct OfferInfo {
