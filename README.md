@@ -9,6 +9,9 @@ This is a simple on-chain OTC market for MKR. You can either pick an order from 
 
 **MakerOTC is undergoing alpha testing: Proceed at your own risk, and use only small amounts of ETH and MKR.**
 
+**Update notice: This is a deprecated version of the Market Market. Be sure to cancel any open orders to unlock the held funds!
+Then proceed to the new version of [Maker Market](http://mkr.market) for further trading.**
+
 ## Overview
 
 This dapp uses Meteor as frontend; the contract side can be tested and deployed using dapple.
