@@ -7,3 +7,6 @@
 [submodule "dapple_packages/feedbase"]
 	path = dapple_packages/feedbase
 	url = https://github.com/nexusdev/feedbase
+[submodule "dapple_packages/btc-tx"]
+	path = dapple_packages/btc-tx
+	url = https://github.com/rainbeam/solidity-btc-parser
