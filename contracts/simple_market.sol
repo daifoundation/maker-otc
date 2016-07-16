@@ -1,6 +1,8 @@
-import 'assertive.sol';
 import 'erc20/erc20.sol';
+
+import 'assertive.sol';
 import 'fallback_failer.sol';
+import 'mutex.sol';
 
 // A simple direct exchange order manager.
 
@@ -9,7 +11,11 @@ contract EventfulMarket {
     event Trade( uint sell_how_much, address indexed sell_which_token,
                  uint buy_how_much, address indexed buy_which_token );
 }
-contract SimpleMarket is EventfulMarket, FallbackFailer, Assertive {
+contract SimpleMarket is EventfulMarket
+                       , Assertive
+                       , FallbackFailer
+                       , MutexUser
+{
     struct OfferInfo {
         uint sell_how_much;
         ERC20 sell_which_token;
@@ -26,6 +32,7 @@ contract SimpleMarket is EventfulMarket, FallbackFailer, Assertive {
     }
     function offer( uint sell_how_much, ERC20 sell_which_token
                   , uint buy_how_much,  ERC20 buy_which_token )
+        exclusive
         returns (uint id)
     {
         assert(sell_how_much > 0);
@@ -45,7 +52,6 @@ contract SimpleMarket is EventfulMarket, FallbackFailer, Assertive {
         id = next_id();
         offers[id] = info;
         ItemUpdate(id);
-        return id;
     }
     function trade( address seller, uint sell_how_much, ERC20 sell_which_token,
                     address buyer,  uint buy_how_much,  ERC20 buy_which_token )
@@ -57,7 +63,9 @@ contract SimpleMarket is EventfulMarket, FallbackFailer, Assertive {
         assert(buyer_paid_out);
         Trade( sell_how_much, sell_which_token, buy_how_much, buy_which_token );
     }
-    function buy( uint id ) returns ( bool _success )
+    function buy( uint id )
+        exclusive
+        returns ( bool success )
     {
         var offer = offers[id];
         assert(offer.active);
@@ -67,21 +75,24 @@ contract SimpleMarket is EventfulMarket, FallbackFailer, Assertive {
 
         delete offers[id];
         ItemUpdate(id);
-        return true;
+
+        success = true;
     }
-    function buyPartial( uint id, uint quantity ) returns ( bool _success )
+    function buyPartial( uint id, uint quantity )
+        exclusive
+        returns ( bool success )
     {
         var offer = offers[id];
         assert(offer.active);
 
         if ( offer.sell_how_much < quantity ) {
-            return false;
+            success = false;
         } else if ( offer.sell_how_much == quantity ) {
             trade( offer.owner, offer.sell_how_much, offer.sell_which_token,
                    msg.sender, offer.buy_how_much, offer.buy_which_token );
             delete offers[id];
             ItemUpdate(id);
-            return true;
+            success = true;
         } else {
             uint buy_quantity = quantity * offer.buy_how_much / offer.sell_how_much;
             if ( buy_quantity > 0 ) {
@@ -92,11 +103,13 @@ contract SimpleMarket is EventfulMarket, FallbackFailer, Assertive {
                 offer.buy_how_much -= buy_quantity;
 
                 ItemUpdate(id);
-                return true;
+                success = true;
             }
         }
     }
-    function cancel( uint id ) returns ( bool _success )
+    function cancel( uint id )
+        exclusive
+        returns ( bool success )
     {
         var offer = offers[id];
         assert(offer.active);
@@ -106,7 +119,8 @@ contract SimpleMarket is EventfulMarket, FallbackFailer, Assertive {
         assert(seller_refunded);
         delete offers[id];
         ItemUpdate(id);
-        return true;
+
+        success = true;
     }
     function getOffer( uint id ) constant
         returns (uint, ERC20, uint, ERC20) {
