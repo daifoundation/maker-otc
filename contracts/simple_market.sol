@@ -63,22 +63,7 @@ contract SimpleMarket is EventfulMarket
         assert(buyer_paid_out);
         Trade( sell_how_much, sell_which_token, buy_how_much, buy_which_token );
     }
-    function buy( uint id )
-        exclusive
-        returns ( bool success )
-    {
-        var offer = offers[id];
-        assert(offer.active);
-
-        trade( offer.owner, offer.sell_how_much, offer.sell_which_token,
-               msg.sender, offer.buy_how_much, offer.buy_which_token );
-
-        delete offers[id];
-        ItemUpdate(id);
-
-        success = true;
-    }
-    function buyPartial( uint id, uint quantity )
+    function buy( uint id, uint quantity )
         exclusive
         returns ( bool success )
     {
@@ -114,6 +99,8 @@ contract SimpleMarket is EventfulMarket
         var offer = offers[id];
         assert(offer.active);
         assert(msg.sender == offer.owner);
+
+        offer.active = false;
 
         var seller_refunded = offer.sell_which_token.transfer( msg.sender, offer.sell_how_much );
         assert(seller_refunded);

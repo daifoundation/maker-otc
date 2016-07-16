@@ -11,11 +11,8 @@ contract MarketTester is Tester {
     function doApprove(address spender, uint value, ERC20 token) {
         token.approve(spender, value);
     }
-    function doBuy(uint id) returns (bool _success) {
-        return market.buy(id);
-    }
-    function doBuyPartial(uint id, uint buy_how_much) returns (bool _success) {
-        return market.buyPartial(id, buy_how_much);
+    function doBuy(uint id, uint buy_how_much) returns (bool _success) {
+        return market.buy(id, buy_how_much);
     }
 }
 
@@ -46,7 +43,7 @@ contract SimpleMarketTest is Test, EventfulMarket {
         var user1_dai_balance_before = dai.balanceOf(user1);
 
         var id = otc.offer( 30, mkr, 100, dai );
-        assertTrue(user1.doBuy(id));
+        assertTrue(user1.doBuy(id, 30));
         var my_mkr_balance_after = mkr.balanceOf(this);
         var my_dai_balance_after = dai.balanceOf(this);
         var user1_mkr_balance_after = mkr.balanceOf(user1);
@@ -72,7 +69,7 @@ contract SimpleMarketTest is Test, EventfulMarket {
         var user1_dai_balance_before = dai.balanceOf(user1);
 
         var id = otc.offer( 200, mkr, 500, dai );
-        assertTrue(user1.doBuyPartial(id, 10));
+        assertTrue(user1.doBuy(id, 10));
         var my_mkr_balance_after = mkr.balanceOf(this);
         var my_dai_balance_after = dai.balanceOf(this);
         var user1_mkr_balance_after = mkr.balanceOf(user1);
@@ -102,7 +99,7 @@ contract SimpleMarketTest is Test, EventfulMarket {
         var user1_dai_balance_before = dai.balanceOf(user1);
 
         var id = otc.offer( 500, dai, 200, mkr );
-        assertTrue(user1.doBuyPartial(id, 10));
+        assertTrue(user1.doBuy(id, 10));
         var my_mkr_balance_after = mkr.balanceOf(this);
         var my_dai_balance_after = dai.balanceOf(this);
         var user1_mkr_balance_after = mkr.balanceOf(user1);
@@ -132,7 +129,7 @@ contract SimpleMarketTest is Test, EventfulMarket {
         var user1_dai_balance_before = dai.balanceOf(user1);
 
         var id = otc.offer( 200, mkr, 500, dai );
-        assertFalse(user1.doBuyPartial(id, 201));
+        assertFalse(user1.doBuy(id, 201));
 
         var my_mkr_balance_after = mkr.balanceOf(this);
         var my_dai_balance_after = dai.balanceOf(this);
@@ -170,7 +167,7 @@ contract SimpleMarketTest is Test, EventfulMarket {
         user1.doApprove(otc, 101, dai);
         log_named_uint("user1 dai allowance", dai.allowance(user1, otc));
         log_named_uint("user1 dai balance before", dai.balanceOf(user1));
-        assertTrue(user1.doBuy(id));
+        assertTrue(user1.doBuy(id, 101));
         log_named_uint("user1 dai allowance", dai.allowance(user1, otc));
         log_named_uint("user1 dai balance after", dai.balanceOf(user1));
     }
@@ -180,7 +177,7 @@ contract SimpleMarketTest is Test, EventfulMarket {
         user1.doApprove(otc, 99, dai);
         log_named_uint("user1 dai allowance", dai.allowance(user1, otc));
         log_named_uint("user1 dai balance before", dai.balanceOf(user1));
-        assertTrue(user1.doBuy(id));
+        assertTrue(user1.doBuy(id, 100));
         log_named_uint("user1 dai allowance", dai.allowance(user1, otc));
         log_named_uint("user1 dai balance after", dai.balanceOf(user1));
     }
