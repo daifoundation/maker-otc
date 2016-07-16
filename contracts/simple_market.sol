@@ -24,12 +24,29 @@ contract SimpleMarket is EventfulMarket
         address owner;
         bool active;
     }
-    uint public last_offer_id;
     mapping( uint => OfferInfo ) public offers;
+
+    uint public last_offer_id;
 
     function next_id() internal returns (uint) {
         last_offer_id++; return last_offer_id;
     }
+
+    modifier only_active(uint id) {
+        assert(isActive(id));
+        _
+    }
+    modifier only_owner(uint id) {
+        assert(getOwner(id) == msg.sender);
+        _
+    }
+    function isActive(uint id) constant returns (bool active) {
+        return offers[id].active;
+    }
+    function getOwner(uint id) constant returns (address owner) {
+        return offers[id].owner;
+    }
+
     function offer( uint sell_how_much, ERC20 sell_which_token
                   , uint buy_how_much,  ERC20 buy_which_token )
         exclusive
@@ -64,11 +81,11 @@ contract SimpleMarket is EventfulMarket
         Trade( sell_how_much, sell_which_token, buy_how_much, buy_which_token );
     }
     function buy( uint id, uint quantity )
+        only_active(id)
         exclusive
         returns ( bool success )
     {
         var offer = offers[id];
-        assert(offer.active);
 
         if ( offer.sell_how_much < quantity ) {
             success = false;
@@ -93,17 +110,16 @@ contract SimpleMarket is EventfulMarket
         }
     }
     function cancel( uint id )
+        only_active(id)
+        only_owner(id)
         exclusive
         returns ( bool success )
     {
         var offer = offers[id];
-        assert(offer.active);
-        assert(msg.sender == offer.owner);
-
-        offer.active = false;
 
         var seller_refunded = offer.sell_which_token.transfer( msg.sender, offer.sell_how_much );
         assert(seller_refunded);
+
         delete offers[id];
         ItemUpdate(id);
 

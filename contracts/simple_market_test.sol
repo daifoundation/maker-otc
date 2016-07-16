@@ -14,6 +14,9 @@ contract MarketTester is Tester {
     function doBuy(uint id, uint buy_how_much) returns (bool _success) {
         return market.buy(id, buy_how_much);
     }
+    function doCancel(uint id) returns (bool _success) {
+        return market.cancel(id);
+    }
 }
 
 contract SimpleMarketTest is Test, EventfulMarket {
@@ -156,7 +159,23 @@ contract SimpleMarketTest is Test, EventfulMarket {
         ItemUpdate(id);
         ItemUpdate(id);
     }
-
+    function testFailCancelNotOwner() {
+        mkr.approve(otc, 30);
+        var id = otc.offer( 30, mkr, 100, dai );
+        user1.doCancel(id);
+    }
+    function testFailCancelInactive() {
+        mkr.approve(otc, 30);
+        var id = otc.offer( 30, mkr, 100, dai );
+        assertTrue(otc.cancel(id));
+        otc.cancel(id);
+    }
+    function testFailBuyInactive() {
+        mkr.approve(otc, 30);
+        var id = otc.offer( 30, mkr, 100, dai );
+        assertTrue(otc.cancel(id));
+        otc.buy(id, 0);
+    }
     function testFailOfferNotEnoughFunds() {
         mkr.transfer(address(0x0), mkr.balanceOf(this) - 29);
         var id = otc.offer(30, mkr, 100, dai);
