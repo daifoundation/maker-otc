@@ -46,6 +46,11 @@ contract SimpleMarket is EventfulMarket
     function getOwner(uint id) constant returns (address owner) {
         return offers[id].owner;
     }
+    function getOffer( uint id ) constant returns (uint, ERC20, uint, ERC20) {
+      var offer = offers[id];
+      return (offer.sell_how_much, offer.sell_which_token,
+              offer.buy_how_much, offer.buy_which_token);
+    }
 
     function offer( uint sell_how_much, ERC20 sell_which_token
                   , uint buy_how_much,  ERC20 buy_which_token )
@@ -124,11 +129,5 @@ contract SimpleMarket is EventfulMarket
         ItemUpdate(id);
 
         success = true;
-    }
-    function getOffer( uint id ) constant
-        returns (uint, ERC20, uint, ERC20) {
-      var offer = offers[id];
-      return (offer.sell_how_much, offer.sell_which_token,
-              offer.buy_how_much, offer.buy_which_token);
     }
 }
