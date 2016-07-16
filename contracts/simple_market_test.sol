@@ -209,3 +209,48 @@ contract SimpleMarketTest is Test, EventfulMarket {
         log_named_uint("user1 dai balance after", dai.balanceOf(user1));
     }
 }
+
+contract GasTest is Test {
+    ERC20 dai;
+    ERC20 mkr;
+    SimpleMarket otc;
+
+    uint id;
+
+    function setUp() {
+        otc = new SimpleMarket();
+
+        dai = new ERC20Base(10 ** 9);
+        mkr = new ERC20Base(10 ** 6);
+
+        mkr.approve(otc, 60);
+        dai.approve(otc, 100);
+
+        id = otc.offer( 30, mkr, 100, dai );
+    }
+    function testNewMarket()
+        logs_gas
+    {
+        new SimpleMarket();
+    }
+    function testNewOffer()
+        logs_gas
+    {
+        otc.offer( 30, mkr, 100, dai );
+    }
+    function testBuy()
+        logs_gas
+    {
+        otc.buy(id, 30);
+    }
+    function testBuyPartial()
+        logs_gas
+    {
+        otc.buy(id, 15);
+    }
+    function testCancel()
+        logs_gas
+    {
+        otc.cancel(id);
+    }
+}
