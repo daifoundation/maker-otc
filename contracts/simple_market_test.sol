@@ -210,6 +210,161 @@ contract SimpleMarketTest is Test, EventfulMarket {
     }
 }
 
+contract TransferTest is Test {
+    MarketTester user1;
+    ERC20 dai;
+    ERC20 mkr;
+    SimpleMarket otc;
+    function setUp() {
+        otc = new SimpleMarket();
+        user1 = new MarketTester();
+        user1.bindMarket(otc);
+
+        dai = new ERC20Base(10 ** 9);
+        mkr = new ERC20Base(10 ** 6);
+
+        dai.transfer(user1, 100);
+        user1.doApprove(otc, 100, dai);
+        mkr.approve(otc, 30);
+    }
+}
+
+contract OfferTransferTest is TransferTest {
+    function testOfferTransfersFromSeller() {
+        var balance_before = mkr.balanceOf(this);
+        var id = otc.offer( 30, mkr, 100, dai );
+        var balance_after = mkr.balanceOf(this);
+
+        assertEq(balance_before - balance_after, 30);
+    }
+    function testOfferTransfersToMarket() {
+        var balance_before = mkr.balanceOf(otc);
+        var id = otc.offer( 30, mkr, 100, dai );
+        var balance_after = mkr.balanceOf(otc);
+
+        assertEq(balance_after - balance_before, 30);
+    }
+}
+
+contract BuyTransferTest is TransferTest {
+    function testBuyTransfersFromBuyer() {
+        var id = otc.offer( 30, mkr, 100, dai );
+
+        var balance_before = dai.balanceOf(user1);
+        user1.doBuy(id, 30);
+        var balance_after = dai.balanceOf(user1);
+
+        assertEq(balance_before - balance_after, 100);
+    }
+    function testBuyTransfersToSeller() {
+        var id = otc.offer( 30, mkr, 100, dai );
+
+        var balance_before = dai.balanceOf(this);
+        user1.doBuy(id, 30);
+        var balance_after = dai.balanceOf(this);
+
+        assertEq(balance_after - balance_before, 100);
+    }
+    function testBuyTransfersFromMarket() {
+        var id = otc.offer( 30, mkr, 100, dai );
+
+        var balance_before = mkr.balanceOf(otc);
+        user1.doBuy(id, 30);
+        var balance_after = mkr.balanceOf(otc);
+
+        assertEq(balance_before - balance_after, 30);
+    }
+    function testBuyTransfersToBuyer() {
+        var id = otc.offer( 30, mkr, 100, dai );
+
+        var balance_before = mkr.balanceOf(user1);
+        user1.doBuy(id, 30);
+        var balance_after = mkr.balanceOf(user1);
+
+        assertEq(balance_after - balance_before, 30);
+    }
+}
+
+contract PartialBuyTransferTest is TransferTest {
+    function testBuyTransfersFromBuyer() {
+        var id = otc.offer( 30, mkr, 100, dai );
+
+        var balance_before = dai.balanceOf(user1);
+        user1.doBuy(id, 15);
+        var balance_after = dai.balanceOf(user1);
+
+        assertEq(balance_before - balance_after, 50);
+    }
+    function testBuyTransfersToSeller() {
+        var id = otc.offer( 30, mkr, 100, dai );
+
+        var balance_before = dai.balanceOf(this);
+        user1.doBuy(id, 15);
+        var balance_after = dai.balanceOf(this);
+
+        assertEq(balance_after - balance_before, 50);
+    }
+    function testBuyTransfersFromMarket() {
+        var id = otc.offer( 30, mkr, 100, dai );
+
+        var balance_before = mkr.balanceOf(otc);
+        user1.doBuy(id, 15);
+        var balance_after = mkr.balanceOf(otc);
+
+        assertEq(balance_before - balance_after, 15);
+    }
+    function testBuyTransfersToBuyer() {
+        var id = otc.offer( 30, mkr, 100, dai );
+
+        var balance_before = mkr.balanceOf(user1);
+        user1.doBuy(id, 15);
+        var balance_after = mkr.balanceOf(user1);
+
+        assertEq(balance_after - balance_before, 15);
+    }
+}
+
+contract CancelTransferTest is TransferTest {
+    function testCancelTransfersFromMarket() {
+        var id = otc.offer( 30, mkr, 100, dai );
+
+        var balance_before = mkr.balanceOf(otc);
+        otc.cancel(id);
+        var balance_after = mkr.balanceOf(otc);
+
+        assertEq(balance_before - balance_after, 30);
+    }
+    function testCancelTransfersToSeller() {
+        var id = otc.offer( 30, mkr, 100, dai );
+
+        var balance_before = mkr.balanceOf(this);
+        otc.cancel(id);
+        var balance_after = mkr.balanceOf(this);
+
+        assertEq(balance_after - balance_before, 30);
+    }
+    function testCancelPartialTransfersFromMarket() {
+        var id = otc.offer( 30, mkr, 100, dai );
+        user1.doBuy(id, 15);
+
+        var balance_before = mkr.balanceOf(otc);
+        otc.cancel(id);
+        var balance_after = mkr.balanceOf(otc);
+
+        assertEq(balance_before - balance_after, 15);
+    }
+    function testCancelPartialTransfersToSeller() {
+        var id = otc.offer( 30, mkr, 100, dai );
+        user1.doBuy(id, 15);
+
+        var balance_before = mkr.balanceOf(this);
+        otc.cancel(id);
+        var balance_after = mkr.balanceOf(this);
+
+        assertEq(balance_after - balance_before, 15);
+    }
+}
+
 contract GasTest is Test {
     ERC20 dai;
     ERC20 mkr;
