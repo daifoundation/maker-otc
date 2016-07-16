@@ -95,9 +95,11 @@ contract SimpleMarket is EventfulMarket
         if ( offer.sell_how_much < quantity ) {
             success = false;
         } else if ( offer.sell_how_much == quantity ) {
+            offer.active = false;
             trade( offer.owner, offer.sell_how_much, offer.sell_which_token,
                    msg.sender, offer.buy_how_much, offer.buy_which_token );
             delete offers[id];
+
             ItemUpdate(id);
             success = true;
         } else {
@@ -122,12 +124,12 @@ contract SimpleMarket is EventfulMarket
     {
         var offer = offers[id];
 
+        offer.active = false;
         var seller_refunded = offer.sell_which_token.transfer( msg.sender, offer.sell_how_much );
         assert(seller_refunded);
-
         delete offers[id];
-        ItemUpdate(id);
 
+        ItemUpdate(id);
         success = true;
     }
 }
