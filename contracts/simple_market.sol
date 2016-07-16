@@ -68,8 +68,6 @@ contract SimpleMarket is EventfulMarket
         assert(buy_how_much > 0);
         assert(buy_which_token != ERC20(0x0));
 
-        var seller_paid = sell_which_token.transferFrom( msg.sender, this, sell_how_much );
-        assert(seller_paid);
         OfferInfo memory info;
         info.sell_how_much = sell_how_much;
         info.sell_which_token = sell_which_token;
@@ -79,6 +77,10 @@ contract SimpleMarket is EventfulMarket
         info.active = true;
         id = next_id();
         offers[id] = info;
+
+        var seller_paid = sell_which_token.transferFrom( msg.sender, this, sell_how_much );
+        assert(seller_paid);
+
         ItemUpdate(id);
     }
     function trade( address seller, uint sell_how_much, ERC20 sell_which_token,
@@ -96,26 +98,27 @@ contract SimpleMarket is EventfulMarket
         exclusive
         returns ( bool success )
     {
-        var offer = offers[id];
+        // read-only offer. Modify an offer by directly accessing offers[id]
+        OfferInfo memory offer = offers[id];
 
         if ( offer.sell_how_much < quantity ) {
             success = false;
         } else if ( offer.sell_how_much == quantity ) {
-            offer.active = false;
+            delete offers[id];
+
             trade( offer.owner, offer.sell_how_much, offer.sell_which_token,
                    msg.sender, offer.buy_how_much, offer.buy_which_token );
-            delete offers[id];
 
             ItemUpdate(id);
             success = true;
         } else {
             uint buy_quantity = quantity * offer.buy_how_much / offer.sell_how_much;
             if ( buy_quantity > 0 ) {
+                offers[id].sell_how_much = safeSub(offer.sell_how_much, quantity);
+                offers[id].buy_how_much = safeSub(offer.buy_how_much, buy_quantity);
+
                 trade( offer.owner, quantity, offer.sell_which_token,
                        msg.sender, buy_quantity, offer.buy_which_token );
-
-                offer.sell_how_much = safeSub(offer.sell_how_much, quantity);
-                offer.buy_how_much = safeSub(offer.buy_how_much, buy_quantity);
 
                 ItemUpdate(id);
                 success = true;
@@ -128,12 +131,12 @@ contract SimpleMarket is EventfulMarket
         exclusive
         returns ( bool success )
     {
-        var offer = offers[id];
+        // read-only offer. Modify an offer by directly accessing offers[id]
+        OfferInfo memory offer = offers[id];
+        delete offers[id];
 
-        offer.active = false;
         var seller_refunded = offer.sell_which_token.transfer( msg.sender, offer.sell_how_much );
         assert(seller_refunded);
-        delete offers[id];
 
         ItemUpdate(id);
         success = true;
