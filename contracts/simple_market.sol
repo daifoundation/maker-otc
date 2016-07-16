@@ -101,28 +101,34 @@ contract SimpleMarket is EventfulMarket
         // read-only offer. Modify an offer by directly accessing offers[id]
         OfferInfo memory offer = offers[id];
 
-        if ( offer.sell_how_much < quantity ) {
+        // inferred quantity that the buyer wishes to spend
+        uint buy_quantity = quantity * offer.buy_how_much / offer.sell_how_much;
+
+        if ( buy_quantity > offer.buy_how_much ) {
+            // buyer wants more than is available
             success = false;
-        } else if ( offer.sell_how_much == quantity ) {
+        } else if ( buy_quantity == offer.buy_how_much ) {
+            // buyer wants exactly what is available
             delete offers[id];
 
-            trade( offer.owner, offer.sell_how_much, offer.sell_which_token,
-                   msg.sender, offer.buy_how_much, offer.buy_which_token );
+            trade( offer.owner, quantity, offer.sell_which_token,
+                   msg.sender, buy_quantity, offer.buy_which_token );
+
+            ItemUpdate(id);
+            success = true;
+        } else if ( buy_quantity > 0 ) {
+            // buyer wants a fraction of what is available
+            offers[id].sell_how_much = safeSub(offer.sell_how_much, quantity);
+            offers[id].buy_how_much = safeSub(offer.buy_how_much, buy_quantity);
+
+            trade( offer.owner, quantity, offer.sell_which_token,
+                    msg.sender, buy_quantity, offer.buy_which_token );
 
             ItemUpdate(id);
             success = true;
         } else {
-            uint buy_quantity = quantity * offer.buy_how_much / offer.sell_how_much;
-            if ( buy_quantity > 0 ) {
-                offers[id].sell_how_much = safeSub(offer.sell_how_much, quantity);
-                offers[id].buy_how_much = safeSub(offer.buy_how_much, buy_quantity);
-
-                trade( offer.owner, quantity, offer.sell_which_token,
-                       msg.sender, buy_quantity, offer.buy_which_token );
-
-                ItemUpdate(id);
-                success = true;
-            }
+            // buyer wants an unsatisfiable amount (less than 1 integer)
+            success = false;
         }
     }
     function cancel( uint id )

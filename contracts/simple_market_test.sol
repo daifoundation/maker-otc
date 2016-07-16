@@ -150,6 +150,14 @@ contract SimpleMarketTest is Test, EventfulMarket {
         expectEventsExact(otc);
         ItemUpdate(id);
     }
+    function testInsufficientlyFilledOrder() {
+        var id = otc.offer( 30, mkr, 10, dai );
+
+        dai.transfer(user1, 1);
+        user1.doApprove(otc, 1, dai);
+        var success = user1.doBuy(id, 1);
+        assertFalse(success);
+    }
     function testCancel() {
         mkr.approve(otc, 30);
         var id = otc.offer( 30, mkr, 100, dai );
