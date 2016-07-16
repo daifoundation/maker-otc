@@ -103,27 +103,27 @@ contract SimpleMarket is EventfulMarket
         OfferInfo memory offer = offers[id];
 
         // inferred quantity that the buyer wishes to spend
-        uint buy_quantity = quantity * offer.buy_how_much / offer.sell_how_much;
+        uint spend = quantity * offer.buy_how_much / offer.sell_how_much;
 
-        if ( buy_quantity > offer.buy_how_much ) {
+        if ( spend > offer.buy_how_much ) {
             // buyer wants more than is available
             success = false;
-        } else if ( buy_quantity == offer.buy_how_much ) {
+        } else if ( spend == offer.buy_how_much ) {
             // buyer wants exactly what is available
             delete offers[id];
 
             trade( offer.owner, quantity, offer.sell_which_token,
-                   msg.sender, buy_quantity, offer.buy_which_token );
+                   msg.sender, spend, offer.buy_which_token );
 
             ItemUpdate(id);
             success = true;
-        } else if ( buy_quantity > 0 ) {
+        } else if ( spend > 0 ) {
             // buyer wants a fraction of what is available
             offers[id].sell_how_much = safeSub(offer.sell_how_much, quantity);
-            offers[id].buy_how_much = safeSub(offer.buy_how_much, buy_quantity);
+            offers[id].buy_how_much = safeSub(offer.buy_how_much, spend);
 
             trade( offer.owner, quantity, offer.sell_which_token,
-                    msg.sender, buy_quantity, offer.buy_which_token );
+                    msg.sender, spend, offer.buy_which_token );
 
             ItemUpdate(id);
             success = true;
