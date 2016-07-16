@@ -52,6 +52,12 @@ contract SimpleMarket is EventfulMarket
               offer.buy_how_much, offer.buy_which_token);
     }
 
+    // non underflowing subtraction
+    function safeSub(uint a, uint b) returns (uint) {
+        assert(b <= a);
+        return a - b;
+    }
+
     function offer( uint sell_how_much, ERC20 sell_which_token
                   , uint buy_how_much,  ERC20 buy_which_token )
         exclusive
@@ -108,8 +114,8 @@ contract SimpleMarket is EventfulMarket
                 trade( offer.owner, quantity, offer.sell_which_token,
                        msg.sender, buy_quantity, offer.buy_which_token );
 
-                offer.sell_how_much -= quantity;
-                offer.buy_how_much -= buy_quantity;
+                offer.sell_how_much = safeSub(offer.sell_how_much, quantity);
+                offer.buy_how_much = safeSub(offer.buy_how_much, buy_quantity);
 
                 ItemUpdate(id);
                 success = true;
