@@ -208,6 +208,10 @@ contract SimpleMarketTest is Test, EventfulMarket {
         log_named_uint("user1 dai allowance", dai.allowance(user1, otc));
         log_named_uint("user1 dai balance after", dai.balanceOf(user1));
     }
+    function testFailOfferSameToken() {
+        dai.approve(otc, 200);
+        otc.offer(100, dai, 100, dai);
+    }
 }
 
 contract TransferTest is Test {
