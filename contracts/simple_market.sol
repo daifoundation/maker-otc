@@ -47,7 +47,9 @@ contract SimpleMarket is EventfulMarket, FallbackFailer, Assertive {
         ItemUpdate(id);
         return id;
     }
-    function trade( address seller, uint sell_how_much, ERC20 sell_which_token, address buyer, uint buy_how_much, ERC20 buy_which_token ) internal
+    function trade( address seller, uint sell_how_much, ERC20 sell_which_token,
+                    address buyer,  uint buy_how_much,  ERC20 buy_which_token )
+        internal
     {
         var seller_paid_out = buy_which_token.transferFrom( buyer, seller, buy_how_much );
         assert(seller_paid_out);
