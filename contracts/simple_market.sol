@@ -74,22 +74,23 @@ contract SimpleMarket is EventfulMarket, FallbackFailer, Assertive {
         var offer = offers[id];
         assert(offer.active);
 
-        if ( offers[id].sell_how_much < quantity ) {
+        if ( offer.sell_how_much < quantity ) {
             return false;
-        } else if ( offers[id].sell_how_much == quantity ) {
+        } else if ( offer.sell_how_much == quantity ) {
             trade( offer.owner, offer.sell_how_much, offer.sell_which_token,
                    msg.sender, offer.buy_how_much, offer.buy_which_token );
             delete offers[id];
             ItemUpdate(id);
             return true;
         } else {
-            uint buy_quantity = quantity * offers[id].buy_how_much / offers[id].sell_how_much;
+            uint buy_quantity = quantity * offer.buy_how_much / offer.sell_how_much;
             if ( buy_quantity > 0 ) {
                 trade( offer.owner, quantity, offer.sell_which_token,
                        msg.sender, buy_quantity, offer.buy_which_token );
 
                 offer.sell_how_much -= quantity;
                 offer.buy_how_much -= buy_quantity;
+
                 ItemUpdate(id);
                 return true;
             }
