@@ -11,7 +11,7 @@ environments:
     objects:
       otc:
         class: SimpleMarket
-        address: '0x5661e7bc2403c7cc08df539e4a8e2972ec256d11'
+        address: '0x0f9322751c543a8e9c83f2367e5bad682d59943d'
   live:
     objects:
       otc:
