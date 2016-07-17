@@ -53,7 +53,7 @@ contract SimpleMarket is EventfulMarket
     }
 
     // non underflowing subtraction
-    function safeSub(uint a, uint b) returns (uint) {
+    function safeSub(uint a, uint b) internal returns (uint) {
         assert(b <= a);
         return a - b;
     }
