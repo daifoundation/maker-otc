@@ -20,7 +20,6 @@ git:
 
 env:
   - TEST=dapple
-  - TEST=npm
 
 before_install:
   - id

@@ -1,0 +1,2 @@
+var otc = new SimpleMarket()
+export otc

@@ -1,9 +1,3 @@
-[submodule "dapple_packages/dappsys"]
-	path = dapple_packages/dappsys
-	url = https://github.com/nexusdev/dappsys
-[submodule "dapple_packages/maker-user"]
-	path = dapple_packages/maker-user
-	url = https://github.com/makerdao/maker-user
-[submodule "dapple_packages/feedbase"]
-	path = dapple_packages/feedbase
-	url = https://github.com/nexusdev/feedbase
+[submodule "dapple_packages/erc20"]
+	path = dapple_packages/erc20
+	url = https://github.com/nexusdev/erc20

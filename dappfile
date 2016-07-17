@@ -1,21 +1,19 @@
 name: maker-otc
-version: 0.1.0
+version: 0.2.0
 layout:
   sol_sources: contracts
-  build_dir: frontend/packages/dapple/build
+  build_dir: build
 dependencies:
-  makeruser: 0.1.5
-  dappsys: 0.1.2
-  feedbase: 0.1.1
+  erc20: 1.0.0
 environments:
   default: morden
   morden:
     objects:
       otc:
-        class: SimpleMarketMorden
-        address: '0x3623ea50c4442ebed1de6456543f6921cd0e9d59'
+        class: SimpleMarket
+        address: '0x5661e7bc2403c7cc08df539e4a8e2972ec256d11'
   live:
     objects:
       otc:
-        class: SimpleMarketMainnet
-        address: '0xf51bc4633f5924465c8c6317169faf3e4312e82f'
+        class: SimpleMarket
+        address: '0x5a70db543902f4ccccf028b19d2142fde7eb0593'
