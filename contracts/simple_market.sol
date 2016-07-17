@@ -58,6 +58,20 @@ contract SimpleMarket is EventfulMarket
         return a - b;
     }
 
+    function trade( address seller, uint sell_how_much, ERC20 sell_which_token,
+                    address buyer,  uint buy_how_much,  ERC20 buy_which_token )
+        internal
+    {
+        var seller_paid_out = buy_which_token.transferFrom( buyer, seller, buy_how_much );
+        assert(seller_paid_out);
+        var buyer_paid_out = sell_which_token.transfer( buyer, sell_how_much );
+        assert(buyer_paid_out);
+        Trade( sell_how_much, sell_which_token, buy_how_much, buy_which_token );
+    }
+
+    // ---- Public entrypoints ---- //
+
+    // Make a new offer. Takes funds from the caller into market escrow.
     function offer( uint sell_how_much, ERC20 sell_which_token
                   , uint buy_how_much,  ERC20 buy_which_token )
         exclusive
@@ -84,16 +98,8 @@ contract SimpleMarket is EventfulMarket
 
         ItemUpdate(id);
     }
-    function trade( address seller, uint sell_how_much, ERC20 sell_which_token,
-                    address buyer,  uint buy_how_much,  ERC20 buy_which_token )
-        internal
-    {
-        var seller_paid_out = buy_which_token.transferFrom( buyer, seller, buy_how_much );
-        assert(seller_paid_out);
-        var buyer_paid_out = sell_which_token.transfer( buyer, sell_how_much );
-        assert(buyer_paid_out);
-        Trade( sell_how_much, sell_which_token, buy_how_much, buy_which_token );
-    }
+    // Accept given `quantity` of an offer. Transfers funds from caller to
+    // offer maker, and from market to caller.
     function buy( uint id, uint quantity )
         only_active(id)
         exclusive
@@ -132,6 +138,7 @@ contract SimpleMarket is EventfulMarket
             success = false;
         }
     }
+    // Cancel an offer. Refunds offer maker.
     function cancel( uint id )
         only_active(id)
         only_owner(id)
