@@ -57,6 +57,11 @@ contract SimpleMarket is EventfulMarket
         assert(b <= a);
         return a - b;
     }
+    // non overflowing multiplication
+    function safeMul(uint a, uint b) internal returns (uint c) {
+        c = a * b;
+        assert(a == 0 || c / a == b);
+    }
 
     function trade( address seller, uint sell_how_much, ERC20 sell_which_token,
                     address buyer,  uint buy_how_much,  ERC20 buy_which_token )
@@ -109,7 +114,7 @@ contract SimpleMarket is EventfulMarket
         OfferInfo memory offer = offers[id];
 
         // inferred quantity that the buyer wishes to spend
-        uint spend = quantity * offer.buy_how_much / offer.sell_how_much;
+        uint spend = safeMul(quantity, offer.buy_how_much) / offer.sell_how_much;
 
         if ( spend > offer.buy_how_much || quantity > offer.sell_how_much ) {
             // buyer wants more than is available

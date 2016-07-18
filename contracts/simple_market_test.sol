@@ -217,6 +217,13 @@ contract SimpleMarketTest is Test, EventfulMarket {
         var id = otc.offer( 30, mkr, 100, dai );
         assertFalse(otc.buy(id, 50));
     }
+    function testFailOverflow() {
+        mkr.approve(otc, 30);
+        var id = otc.offer( 30, mkr, 100, dai );
+        // this should throw because of safeMul being used.
+        // other buy failures will return false
+        otc.buy(id, uint(-1));
+    }
 }
 
 contract TransferTest is Test {
