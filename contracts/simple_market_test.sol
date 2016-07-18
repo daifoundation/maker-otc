@@ -331,6 +331,15 @@ contract PartialBuyTransferTest is TransferTest {
 
         assertEq(balance_after - balance_before, 15);
     }
+    function testBuyOddTransfersFromBuyer() {
+        var id = otc.offer( 30, mkr, 100, dai );
+
+        var balance_before = dai.balanceOf(user1);
+        user1.doBuy(id, 17);
+        var balance_after = dai.balanceOf(user1);
+
+        assertEq(balance_before - balance_after, 56);
+    }
 }
 
 contract CancelTransferTest is TransferTest {
