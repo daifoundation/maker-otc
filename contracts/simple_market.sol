@@ -111,10 +111,10 @@ contract SimpleMarket is EventfulMarket
         // inferred quantity that the buyer wishes to spend
         uint spend = quantity * offer.buy_how_much / offer.sell_how_much;
 
-        if ( spend > offer.buy_how_much ) {
+        if ( spend > offer.buy_how_much || quantity > offer.sell_how_much ) {
             // buyer wants more than is available
             success = false;
-        } else if ( spend == offer.buy_how_much ) {
+        } else if ( spend == offer.buy_how_much && quantity == offer.sell_how_much ) {
             // buyer wants exactly what is available
             delete offers[id];
 
@@ -123,7 +123,7 @@ contract SimpleMarket is EventfulMarket
 
             ItemUpdate(id);
             success = true;
-        } else if ( spend > 0 ) {
+        } else if ( spend > 0 && quantity > 0 ) {
             // buyer wants a fraction of what is available
             offers[id].sell_how_much = safeSub(offer.sell_how_much, quantity);
             offers[id].buy_how_much = safeSub(offer.buy_how_much, spend);

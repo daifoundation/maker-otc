@@ -212,6 +212,11 @@ contract SimpleMarketTest is Test, EventfulMarket {
         dai.approve(otc, 200);
         otc.offer(100, dai, 100, dai);
     }
+    function testBuyTooMuch() {
+        mkr.approve(otc, 30);
+        var id = otc.offer( 30, mkr, 100, dai );
+        assertFalse(otc.buy(id, 50));
+    }
 }
 
 contract TransferTest is Test {
