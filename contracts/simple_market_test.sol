@@ -471,4 +471,11 @@ contract ExpiringMarketTest is Test {
         otc.addTime(1 weeks + 1 seconds);
         assertTrue(otc.isClosed());
     }
+    function testOfferBeforeExpiry() {
+        otc.offer( 30, mkr, 100, dai );
+    }
+    function testFailOfferAfterExpiry() {
+        otc.addTime(1 weeks + 1 seconds);
+        otc.offer( 30, mkr, 100, dai );
+    }
 }

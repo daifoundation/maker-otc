@@ -177,4 +177,9 @@ contract ExpiringMarket is SimpleMarket {
     function isClosed() constant returns (bool closed) {
         return (getTime() > close_time);
     }
+
+    modifier can_offer {
+        if (isClosed()) throw;
+        _
+    }
 }
