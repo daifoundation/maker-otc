@@ -32,7 +32,7 @@ contract SimpleMarketTest is Test, EventfulMarket {
         dai = new ERC20Base(10 ** 9);
         mkr = new ERC20Base(10 ** 6);
 
-        mkr.transfer(user1, 100);
+        dai.transfer(user1, 100);
         user1.doApprove(otc, 100, dai);
         mkr.approve(otc, 30);
     }
@@ -457,7 +457,7 @@ contract ExpiringSimpleMarketTest is SimpleMarketTest {
         dai = new ERC20Base(10 ** 9);
         mkr = new ERC20Base(10 ** 6);
 
-        mkr.transfer(user1, 100);
+        dai.transfer(user1, 100);
         user1.doApprove(otc, 100, dai);
         mkr.approve(otc, 30);
     }
