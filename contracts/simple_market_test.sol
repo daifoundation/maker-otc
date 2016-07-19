@@ -447,6 +447,23 @@ contract TestableExpiringMarket is ExpiringMarket {
     }
 }
 
+// Test expiring market retains behaviour of simple market
+contract ExpiringSimpleMarketTest is SimpleMarketTest {
+    function setUp() {
+        otc = new ExpiringMarket(1 weeks);
+        user1 = new MarketTester();
+        user1.bindMarket(otc);
+
+        dai = new ERC20Base(10 ** 9);
+        mkr = new ERC20Base(10 ** 6);
+
+        mkr.transfer(user1, 100);
+        user1.doApprove(otc, 100, dai);
+        mkr.approve(otc, 30);
+    }
+}
+
+// Expiry specific tests
 contract ExpiringMarketTest is Test {
     MarketTester user1;
     ERC20 dai;
