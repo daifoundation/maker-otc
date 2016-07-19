@@ -165,3 +165,16 @@ contract SimpleMarket is EventfulMarket
         success = true;
     }
 }
+
+contract ExpiringMarket is SimpleMarket {
+    uint public close_time;
+    function ExpiringMarket(uint lifetime) {
+        close_time = getTime() + lifetime;
+    }
+    function getTime() constant returns (uint) {
+        return block.timestamp;
+    }
+    function isClosed() constant returns (bool closed) {
+        return (getTime() > close_time);
+    }
+}

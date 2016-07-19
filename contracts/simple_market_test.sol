@@ -434,3 +434,41 @@ contract GasTest is Test {
         otc.cancel(id);
     }
 }
+
+contract TestableExpiringMarket is ExpiringMarket {
+    uint public time;
+    function TestableExpiringMarket(uint lifetime) ExpiringMarket(lifetime) {
+    }
+    function getTime() constant returns (uint) {
+        return time;
+    }
+    function addTime(uint extra) {
+        time += extra;
+    }
+}
+
+contract ExpiringMarketTest is Test {
+    MarketTester user1;
+    ERC20 dai;
+    ERC20 mkr;
+    TestableExpiringMarket otc;
+    function setUp() {
+        otc = new TestableExpiringMarket(1 weeks);
+        user1 = new MarketTester();
+        user1.bindMarket(otc);
+
+        dai = new ERC20Base(10 ** 9);
+        mkr = new ERC20Base(10 ** 6);
+
+        mkr.transfer(user1, 100);
+        user1.doApprove(otc, 100, dai);
+        mkr.approve(otc, 30);
+    }
+    function testIsClosedBeforeExpiry() {
+        assertFalse(otc.isClosed());
+    }
+    function testIsClosedAfterExpiry() {
+        otc.addTime(1 weeks + 1 seconds);
+        assertTrue(otc.isClosed());
+    }
+}
