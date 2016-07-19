@@ -154,7 +154,7 @@ contract SimpleMarket is EventfulMarket
         OfferInfo memory offer = offers[id];
         delete offers[id];
 
-        var seller_refunded = offer.sell_which_token.transfer( msg.sender, offer.sell_how_much );
+        var seller_refunded = offer.sell_which_token.transfer( offer.owner , offer.sell_how_much );
         assert(seller_refunded);
 
         ItemUpdate(id);
