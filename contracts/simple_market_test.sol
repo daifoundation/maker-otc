@@ -477,7 +477,7 @@ contract ExpiringMarketTest is Test {
         dai = new ERC20Base(10 ** 9);
         mkr = new ERC20Base(10 ** 6);
 
-        mkr.transfer(user1, 100);
+        dai.transfer(user1, 100);
         user1.doApprove(otc, 100, dai);
         mkr.approve(otc, 30);
     }
@@ -510,5 +510,14 @@ contract ExpiringMarketTest is Test {
         assertTrue(otc.isActive(id));
         assertTrue(user1.doCancel(id));
         assertFalse(otc.isActive(id));
+    }
+    function testBuyBeforeExpiry() {
+        var id = otc.offer( 30, mkr, 100, dai );
+        assertTrue(user1.doBuy(id, 30));
+    }
+    function testBuyAfterExpiry() {
+        var id = otc.offer( 30, mkr, 100, dai );
+        otc.addTime(1 weeks + 1 seconds);
+        assertTrue(user1.doBuy(id, 30));
     }
 }
