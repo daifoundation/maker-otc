@@ -515,9 +515,9 @@ contract ExpiringMarketTest is Test {
         var id = otc.offer( 30, mkr, 100, dai );
         assertTrue(user1.doBuy(id, 30));
     }
-    function testBuyAfterExpiry() {
+    function testFailBuyAfterExpiry() {
         var id = otc.offer( 30, mkr, 100, dai );
         otc.addTime(1 weeks + 1 seconds);
-        assertTrue(user1.doBuy(id, 30));
+        user1.doBuy(id, 30);
     }
 }
