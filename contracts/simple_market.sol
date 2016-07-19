@@ -32,11 +32,15 @@ contract SimpleMarket is EventfulMarket
         last_offer_id++; return last_offer_id;
     }
 
-    modifier only_active(uint id) {
+    modifier can_offer {
+        _
+    }
+    modifier can_buy(uint id) {
         assert(isActive(id));
         _
     }
-    modifier only_owner(uint id) {
+    modifier can_cancel(uint id) {
+        assert(isActive(id));
         assert(getOwner(id) == msg.sender);
         _
     }
@@ -79,6 +83,7 @@ contract SimpleMarket is EventfulMarket
     // Make a new offer. Takes funds from the caller into market escrow.
     function offer( uint sell_how_much, ERC20 sell_which_token
                   , uint buy_how_much,  ERC20 buy_which_token )
+        can_offer
         exclusive
         returns (uint id)
     {
@@ -106,7 +111,7 @@ contract SimpleMarket is EventfulMarket
     // Accept given `quantity` of an offer. Transfers funds from caller to
     // offer maker, and from market to caller.
     function buy( uint id, uint quantity )
-        only_active(id)
+        can_buy(id)
         exclusive
         returns ( bool success )
     {
@@ -145,8 +150,7 @@ contract SimpleMarket is EventfulMarket
     }
     // Cancel an offer. Refunds offer maker.
     function cancel( uint id )
-        only_active(id)
-        only_owner(id)
+        can_cancel(id)
         exclusive
         returns ( bool success )
     {
