@@ -93,7 +93,7 @@ contract ExpiringMarketTest is Test {
 
 contract ExpiringTransferTest is TransferTest {
     function setUp() {
-        otc = new ExpiringMarket(1 weeks);
+        otc = new TestableExpiringMarket(1 weeks);
         user1 = new MarketTester();
         user1.bindMarket(otc);
 
@@ -115,7 +115,7 @@ contract ExpiringCancelTransferTest is CancelTransferTest
 {
     function testCancelAfterExpiryTransfersFromMarket() {
         var id = otc.offer( 30, mkr, 100, dai );
-        otc.addTime(1 weeks + 1 seconds);
+        TestableExpiringMarket(otc).addTime(1 weeks + 1 seconds);
 
         var balance_before = mkr.balanceOf(otc);
         otc.cancel(id);
@@ -125,10 +125,10 @@ contract ExpiringCancelTransferTest is CancelTransferTest
     }
     function testCancelAfterExpiryTransfersToSeller() {
         var id = otc.offer( 30, mkr, 100, dai );
-        otc.addTime(1 weeks + 1 seconds);
+        TestableExpiringMarket(otc).addTime(1 weeks + 1 seconds);
 
         var balance_before = mkr.balanceOf(this);
-        otc.cancel(id);
+        user1.doCancel(id);
         var balance_after = mkr.balanceOf(this);
 
         assertEq(balance_after - balance_before, 30);
