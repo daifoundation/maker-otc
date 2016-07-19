@@ -495,4 +495,20 @@ contract ExpiringMarketTest is Test {
         otc.addTime(1 weeks + 1 seconds);
         otc.offer( 30, mkr, 100, dai );
     }
+    function testCancelBeforeExpiry() {
+        var id = otc.offer( 30, mkr, 100, dai );
+        otc.cancel(id);
+    }
+    function testFailCancelNonOwnerBeforeExpiry() {
+        var id = otc.offer( 30, mkr, 100, dai );
+        user1.doCancel(id);
+    }
+    function testCancelNonOwnerAfterExpiry() {
+        var id = otc.offer( 30, mkr, 100, dai );
+        otc.addTime(1 weeks + 1 seconds);
+
+        assertTrue(otc.isActive(id));
+        assertTrue(user1.doCancel(id));
+        assertFalse(otc.isActive(id));
+    }
 }

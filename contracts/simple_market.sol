@@ -178,8 +178,15 @@ contract ExpiringMarket is SimpleMarket {
         return (getTime() > close_time);
     }
 
+    // after market lifetime has expired, no new offers are allowed
     modifier can_offer {
         if (isClosed()) throw;
+        _
+    }
+    // after expiry, anyone can cancel an offer
+    modifier can_cancel(uint id) {
+        assert(isActive(id));
+        assert(isClosed() || (msg.sender == getOwner(id)));
         _
     }
 }
