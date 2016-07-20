@@ -93,6 +93,9 @@ contract SimpleMarket is EventfulMarket
         assert(buy_which_token != ERC20(0x0));
         assert(sell_which_token != buy_which_token);
 
+        assert(sell_which_token.balanceOf(msg.sender) >= sell_how_much);
+        assert(sell_which_token.allowance(msg.sender, this) >= sell_how_much);
+
         OfferInfo memory info;
         info.sell_how_much = sell_how_much;
         info.sell_which_token = sell_which_token;

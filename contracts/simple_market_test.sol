@@ -189,6 +189,10 @@ contract SimpleMarketTest is Test, EventfulMarket {
         mkr.transfer(address(0x0), mkr.balanceOf(this) - 29);
         var id = otc.offer(30, mkr, 100, dai);
     }
+    function testFailNotEnoughApproval() {
+        mkr.approve(otc, 29);
+        var id = otc.offer(30, mkr, 100, dai);
+    }
     function testFailBuyNotEnoughFunds() {
         var id = otc.offer(30, mkr, 101, dai);
         log_named_uint("user1 dai allowance", dai.allowance(user1, otc));
