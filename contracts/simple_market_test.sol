@@ -70,13 +70,15 @@ contract SimpleMarketTest is Test, EventfulMarket {
 
         var id = otc.offer( 200, mkr, 500, dai );
         assertTrue(user1.doBuy(id, 10));
+
         var my_mkr_balance_after = mkr.balanceOf(this);
         var my_dai_balance_after = dai.balanceOf(this);
         var user1_mkr_balance_after = mkr.balanceOf(user1);
         var user1_dai_balance_after = dai.balanceOf(user1);
+
         var ( sell_val, sell_token, buy_val, buy_token ) = otc.getOffer(id);
 
-        assertEq( 200, my_mkr_balance_before - my_mkr_balance_after );
+        assertEq( 10, my_mkr_balance_before - my_mkr_balance_after );
         assertEq( 25, my_dai_balance_after - my_dai_balance_before );
         assertEq( 10, user1_mkr_balance_after - user1_mkr_balance_before );
         assertEq( 25, user1_dai_balance_before - user1_dai_balance_after );
@@ -100,13 +102,14 @@ contract SimpleMarketTest is Test, EventfulMarket {
 
         var id = otc.offer( 500, dai, 200, mkr );
         assertTrue(user1.doBuy(id, 10));
+
         var my_mkr_balance_after = mkr.balanceOf(this);
         var my_dai_balance_after = dai.balanceOf(this);
         var user1_mkr_balance_after = mkr.balanceOf(user1);
         var user1_dai_balance_after = dai.balanceOf(user1);
         var ( sell_val, sell_token, buy_val, buy_token ) = otc.getOffer(id);
 
-        assertEq( 500, my_dai_balance_before - my_dai_balance_after );
+        assertEq( 10, my_dai_balance_before - my_dai_balance_after );
         assertEq( 4, my_mkr_balance_after - my_mkr_balance_before );
         assertEq( 10, user1_dai_balance_after - user1_dai_balance_before );
         assertEq( 4, user1_mkr_balance_before - user1_mkr_balance_after );
@@ -138,7 +141,7 @@ contract SimpleMarketTest is Test, EventfulMarket {
         var ( sell_val, sell_token, buy_val, buy_token ) = otc.getOffer(id);
 
         assertEq( 0, my_dai_balance_before - my_dai_balance_after );
-        assertEq( 200, my_mkr_balance_before - my_mkr_balance_after );
+        assertEq( 0, my_mkr_balance_before - my_mkr_balance_after );
         assertEq( 0, user1_dai_balance_before - user1_dai_balance_after );
         assertEq( 0, user1_mkr_balance_before - user1_mkr_balance_after );
         assertEq( 200, sell_val );
@@ -249,14 +252,14 @@ contract OfferTransferTest is TransferTest {
         var id = otc.offer( 30, mkr, 100, dai );
         var balance_after = mkr.balanceOf(this);
 
-        assertEq(balance_before - balance_after, 30);
+        assertEq(balance_before - balance_after, 0);
     }
     function testOfferTransfersToMarket() {
         var balance_before = mkr.balanceOf(otc);
         var id = otc.offer( 30, mkr, 100, dai );
         var balance_after = mkr.balanceOf(otc);
 
-        assertEq(balance_after - balance_before, 30);
+        assertEq(balance_after - balance_before, 0);
     }
 }
 
@@ -279,12 +282,12 @@ contract BuyTransferTest is TransferTest {
 
         assertEq(balance_after - balance_before, 100);
     }
-    function testBuyTransfersFromMarket() {
+    function testBuyTransfersFromSeller() {
         var id = otc.offer( 30, mkr, 100, dai );
 
-        var balance_before = mkr.balanceOf(otc);
+        var balance_before = mkr.balanceOf(this);
         user1.doBuy(id, 30);
-        var balance_after = mkr.balanceOf(otc);
+        var balance_after = mkr.balanceOf(this);
 
         assertEq(balance_before - balance_after, 30);
     }
@@ -318,12 +321,12 @@ contract PartialBuyTransferTest is TransferTest {
 
         assertEq(balance_after - balance_before, 50);
     }
-    function testBuyTransfersFromMarket() {
+    function testBuyTransfersFromSeller() {
         var id = otc.offer( 30, mkr, 100, dai );
 
-        var balance_before = mkr.balanceOf(otc);
+        var balance_before = mkr.balanceOf(this);
         user1.doBuy(id, 15);
-        var balance_after = mkr.balanceOf(otc);
+        var balance_after = mkr.balanceOf(this);
 
         assertEq(balance_before - balance_after, 15);
     }
@@ -355,7 +358,7 @@ contract CancelTransferTest is TransferTest {
         otc.cancel(id);
         var balance_after = mkr.balanceOf(otc);
 
-        assertEq(balance_before - balance_after, 30);
+        assertEq(balance_before - balance_after, 0);
     }
     function testCancelTransfersToSeller() {
         var id = otc.offer( 30, mkr, 100, dai );
@@ -364,7 +367,7 @@ contract CancelTransferTest is TransferTest {
         otc.cancel(id);
         var balance_after = mkr.balanceOf(this);
 
-        assertEq(balance_after - balance_before, 30);
+        assertEq(balance_after - balance_before, 0);
     }
     function testCancelPartialTransfersFromMarket() {
         var id = otc.offer( 30, mkr, 100, dai );
@@ -374,7 +377,7 @@ contract CancelTransferTest is TransferTest {
         otc.cancel(id);
         var balance_after = mkr.balanceOf(otc);
 
-        assertEq(balance_before - balance_after, 15);
+        assertEq(balance_before - balance_after, 0);
     }
     function testCancelPartialTransfersToSeller() {
         var id = otc.offer( 30, mkr, 100, dai );
@@ -384,7 +387,7 @@ contract CancelTransferTest is TransferTest {
         otc.cancel(id);
         var balance_after = mkr.balanceOf(this);
 
-        assertEq(balance_after - balance_before, 15);
+        assertEq(balance_after - balance_before, 0);
     }
 }
 

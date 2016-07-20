@@ -73,7 +73,7 @@ contract SimpleMarket is EventfulMarket
     {
         var seller_paid_out = buy_which_token.transferFrom( buyer, seller, buy_how_much );
         assert(seller_paid_out);
-        var buyer_paid_out = sell_which_token.transfer( buyer, sell_how_much );
+        var buyer_paid_out = sell_which_token.transferFrom( seller, buyer, sell_how_much );
         assert(buyer_paid_out);
         Trade( sell_how_much, sell_which_token, buy_how_much, buy_which_token );
     }
@@ -102,9 +102,6 @@ contract SimpleMarket is EventfulMarket
         info.active = true;
         id = next_id();
         offers[id] = info;
-
-        var seller_paid = sell_which_token.transferFrom( msg.sender, this, sell_how_much );
-        assert(seller_paid);
 
         ItemUpdate(id);
     }
@@ -154,13 +151,7 @@ contract SimpleMarket is EventfulMarket
         exclusive
         returns ( bool success )
     {
-        // read-only offer. Modify an offer by directly accessing offers[id]
-        OfferInfo memory offer = offers[id];
         delete offers[id];
-
-        var seller_refunded = offer.sell_which_token.transfer( offer.owner , offer.sell_how_much );
-        assert(seller_refunded);
-
         ItemUpdate(id);
         success = true;
     }
