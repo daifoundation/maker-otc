@@ -31,14 +31,11 @@ contract SimpleMarketTest is Test, EventfulMarket {
 
         dai = new ERC20Base(10 ** 9);
         mkr = new ERC20Base(10 ** 6);
-
-        mkr.transfer(user1, 100);
-        user1.doApprove(otc, 100, dai);
-        mkr.approve(otc, 30);
     }
     function testBasicTrade() {
         dai.transfer(user1, 100);
         user1.doApprove(otc, 100, dai);
+        mkr.approve(otc, 30);
 
         var my_mkr_balance_before = mkr.balanceOf(this);
         var my_dai_balance_before = dai.balanceOf(this);
@@ -151,6 +148,7 @@ contract SimpleMarketTest is Test, EventfulMarket {
         ItemUpdate(id);
     }
     function testInsufficientlyFilledOrder() {
+        mkr.approve(otc, 30);
         var id = otc.offer( 30, mkr, 10, dai );
 
         dai.transfer(user1, 1);
