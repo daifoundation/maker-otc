@@ -1,5 +1,5 @@
 name: maker-otc
-version: 0.2.0
+version: 0.3.0
 layout:
   sol_sources: contracts
   build_dir: build
@@ -11,9 +11,4 @@ environments:
     objects:
       otc:
         class: SimpleMarket
-        address: '0x5661e7bc2403c7cc08df539e4a8e2972ec256d11'
-  live:
-    objects:
-      otc:
-        class: SimpleMarket
-        address: '0x5a70db543902f4ccccf028b19d2142fde7eb0593'
+        address: '0xc59877b46e80de9571e2e744f6222dabadecf43c'
