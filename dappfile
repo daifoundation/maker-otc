@@ -1,5 +1,5 @@
 name: maker-otc
-version: 0.3.0
+version: 0.3.1
 layout:
   sol_sources: contracts
   build_dir: build
@@ -10,5 +10,5 @@ environments:
   morden:
     objects:
       otc:
-        class: SimpleMarket
-        address: '0xc59877b46e80de9571e2e744f6222dabadecf43c'
+        class: ExpiringMarket
+        address: '0x613dcdeb32f4d92574b821d0b7eba8ce3d20a074'
