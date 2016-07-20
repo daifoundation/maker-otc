@@ -113,7 +113,7 @@ contract ExpiringPartialBuyTransferTest is PartialBuyTransferTest, ExpiringTrans
 contract ExpiringCancelTransferTest is CancelTransferTest
                                      , ExpiringTransferTest
 {
-    function testCancelAfterExpiryTransfersFromMarket() {
+    function testCancelAfterExpiryTransfersNothingFromMarket() {
         var id = otc.offer( 30, mkr, 100, dai );
         TestableExpiringMarket(otc).addTime(1 weeks + 1 seconds);
 
@@ -121,9 +121,9 @@ contract ExpiringCancelTransferTest is CancelTransferTest
         otc.cancel(id);
         var balance_after = mkr.balanceOf(otc);
 
-        assertEq(balance_before - balance_after, 30);
+        assertEq(balance_before - balance_after, 0);
     }
-    function testCancelAfterExpiryTransfersToSeller() {
+    function testCancelAfterExpiryTransfersNothingToSeller() {
         var id = otc.offer( 30, mkr, 100, dai );
         TestableExpiringMarket(otc).addTime(1 weeks + 1 seconds);
 
@@ -131,6 +131,6 @@ contract ExpiringCancelTransferTest is CancelTransferTest
         user1.doCancel(id);
         var balance_after = mkr.balanceOf(this);
 
-        assertEq(balance_after - balance_before, 30);
+        assertEq(balance_after - balance_before, 0);
     }
 }
