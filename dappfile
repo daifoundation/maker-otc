@@ -11,7 +11,7 @@ environments:
     objects:
       otc:
         class: ExpiringMarket
-        address: '0x613dcdeb32f4d92574b821d0b7eba8ce3d20a074'
+        address: '0x4e2eded9796977d676efa3fc48151a2d2bae4ad0'
   live:
     objects:
       otc:
