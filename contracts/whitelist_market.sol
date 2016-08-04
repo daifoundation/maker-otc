@@ -2,8 +2,8 @@ import 'expiring_market.sol';
 
 
 contract WhitelistedMarket is ExpiringMarket {
-    address public constant MKR = 0x11;
-    address public constant ETH = 0x22;
+    address public constant MKR = 0xc66ea802717bfb9833400264dd12c2bceaa34a6d;
+    address public constant ETH = 0xecf8f87f810ecf450940c9f60066b4a7a501d6a7;
 
     modifier only_whitelisted(ERC20 selling, ERC20 buying) {
         assert(selling == ETH || selling == MKR);
