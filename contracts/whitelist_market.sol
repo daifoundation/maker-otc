@@ -2,17 +2,19 @@ import 'expiring_market.sol';
 
 
 contract WhitelistedMarket is ExpiringMarket {
-    address public constant MKR = 0xc66ea802717bfb9833400264dd12c2bceaa34a6d;
-    address public constant ETH = 0xecf8f87f810ecf450940c9f60066b4a7a501d6a7;
-
-    mapping( address => bool ) public whitelist;
-
-    whitelist[MKR] = true;
-    whitelist[ETH] = true;
+    mapping( address => bool ) public whitelisted;
 
     modifier only_whitelisted(ERC20 token) {
-        assert(whitelist[token]);
+        assert(whitelisted[token]);
         _
+    }
+
+    function WhitelistedMarket(uint lifetime, address[] whitelist)
+        ExpiringMarket(lifetime)
+    {
+        for( uint i = 0; i < whitelist.length; i++ ) {
+            whitelisted[whitelist[i]] = true;
+        }
     }
 
     function offer ( uint sell_how_much, ERC20 sell_which_token,
