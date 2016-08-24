@@ -1,0 +1,6 @@
+var MKR = 0xc66ea802717bfb9833400264dd12c2bceaa34a6d
+var ETH = 0xecf8f87f810ecf450940c9f60066b4a7a501d6a7
+var whitelist = [MKR, ETH]
+
+var otc = new WhitelistedMarket(604800, whitelist)
+export otc
