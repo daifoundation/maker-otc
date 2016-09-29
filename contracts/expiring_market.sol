@@ -1,3 +1,5 @@
+pragma solidity ^0.4.1;
+
 import 'simple_market.sol';
 
 // Simple Market with a market lifetime. When the lifetime has elapsed,
@@ -18,18 +20,18 @@ contract ExpiringMarket is SimpleMarket {
     // after market lifetime has elapsed, no new offers are allowed
     modifier can_offer {
         assert(!isClosed());
-        _
+        _;
     }
     // after close, no new buys are allowed
     modifier can_buy(uint id) {
         assert(isActive(id));
         assert(!isClosed());
-        _
+        _;
     }
     // after close, anyone can cancel an offer
     modifier can_cancel(uint id) {
         assert(isActive(id));
         assert(isClosed() || (msg.sender == getOwner(id)));
-        _
+        _;
     }
 }
