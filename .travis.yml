@@ -23,7 +23,7 @@ env:
 
 before_install:
   - id
-  - if [ $TEST = "dapple" ]; then npm install -g dapple; fi
+  - if [ $TEST = "dapple" ]; then npm install --progress=false -g dapple; fi
   - if [ $TEST = "dapple" ]; then wget https://github.com/rainbeam/solidity-static/releases/download/v0.4.2-rel/solc; fi
   - if [ $TEST = "dapple" ]; then sudo install solc /usr/local/bin/; fi
   - cp .travis.dapplerc $HOME/.dapplerc
