@@ -1,3 +1,5 @@
+pragma solidity ^0.4.2;
+
 import 'simple_market.sol';
 
 // Simple Market with a market lifetime. When the lifetime has elapsed,

@@ -1,3 +1,5 @@
+pragma solidity ^0.4.2;
+
 contract MutexUser {
     bool private lock;
     modifier exclusive {

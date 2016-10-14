@@ -1,3 +1,5 @@
+pragma solidity ^0.4.2;
+
 import 'dapple/test.sol';
 import 'erc20/base.sol';
 import 'expiring_market.sol';
