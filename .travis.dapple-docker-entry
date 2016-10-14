@@ -1,6 +1,0 @@
-#!/bin/sh
-exec docker run --rm -it --name=dapple-$$ \
--e HOME -e USER=`id -un` -e GROUP=`id -gn` \
--e entrypoint -w "`pwd`" -v "`pwd`:`pwd`" \
--v "$HOME/.dapplerc:$HOME/.dapplerc" \
-rainbeam/dapple-minimal:alpine "$@"
