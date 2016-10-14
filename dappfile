@@ -16,4 +16,7 @@ environments:
   live:
     objects: *ref_0
     type: MORDEN
+  dev:
+    objects: {}
+    type: internal
 dapple_version: 0.8.6
