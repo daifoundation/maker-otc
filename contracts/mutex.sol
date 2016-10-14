@@ -5,7 +5,7 @@ contract MutexUser {
     modifier exclusive {
         if (lock) throw;
         lock = true;
-        _
+        _;
         lock = false;
     }
 }
