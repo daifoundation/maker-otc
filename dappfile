@@ -14,4 +14,11 @@ environments:
         type: >-
           ExpiringMarket[1b031902089fe42ea24faa524088f918ab30bd75e2d53c31c4f5b9523a14f96d]
     type: MORDEN
-dapple_version: 0.8.9
+  live:
+    objects:
+      otc:
+        value: '0xbab390b7e06701f9fb32175e1ef3cd9669cd74a2'
+        type: >-
+          ExpiringMarket[1b031902089fe42ea24faa524088f918ab30bd75e2d53c31c4f5b9523a14f96d]
+    type: ETH
+dapple_version: 0.8.11
