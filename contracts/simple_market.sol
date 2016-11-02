@@ -1,3 +1,5 @@
+pragma solidity ^0.4.2;
+
 import 'erc20/erc20.sol';
 
 import 'assertive.sol';
@@ -33,16 +35,16 @@ contract SimpleMarket is EventfulMarket
     }
 
     modifier can_offer {
-        _
+        _;
     }
     modifier can_buy(uint id) {
         assert(isActive(id));
-        _
+        _;
     }
     modifier can_cancel(uint id) {
         assert(isActive(id));
         assert(getOwner(id) == msg.sender);
-        _
+        _;
     }
     function isActive(uint id) constant returns (bool active) {
         return offers[id].active;

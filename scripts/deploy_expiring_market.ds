@@ -1,2 +1,0 @@
-var otc = new ExpiringMarket(1209600) // 604800 = 1 week; 1209600 = 2 weeks
-export otc

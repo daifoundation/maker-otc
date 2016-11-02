@@ -3,17 +3,22 @@ version: 0.3.1
 layout:
   sol_sources: contracts
   build_dir: build
+  packages_directory: dapple_packages
 dependencies:
   erc20: 1.0.0
 environments:
-  default: morden
   morden:
     objects:
       otc:
-        class: ExpiringMarket
-        address: '0xf05f93333a7865129dcc8629dcb416cfeacd3965'
+        value: '0xa91f1ca5d2d2f230f8aec1e8f15a8a77e8e83256'
+        type: >-
+          ExpiringMarket[1b031902089fe42ea24faa524088f918ab30bd75e2d53c31c4f5b9523a14f96d]
+    type: MORDEN
   live:
     objects:
       otc:
-        class: ExpiringMarket
-        address: '0x30bda231dbfa0f79b3b3678b2c6d4bae31055ad1'
+        value: '0xbab390b7e06701f9fb32175e1ef3cd9669cd74a2'
+        type: >-
+          ExpiringMarket[1b031902089fe42ea24faa524088f918ab30bd75e2d53c31c4f5b9523a14f96d]
+    type: ETH
+dapple_version: 0.8.11
