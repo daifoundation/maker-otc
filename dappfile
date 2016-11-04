@@ -7,6 +7,13 @@ layout:
 dependencies:
   erc20: 1.0.0
 environments:
+  live:
+    objects:
+      otc:
+        value: '0x37d65ca0754f12c7eec1c86b0915fba9fcbda131'
+        type: >-
+          ExpiringMarket[9fd3be04a1372d1e726ccc54cb960604b33fc3fc381fd702069d0725690269bd]
+    type: ETH
   morden:
     objects:
       otc:
@@ -14,11 +21,4 @@ environments:
         type: >-
           ExpiringMarket[1b031902089fe42ea24faa524088f918ab30bd75e2d53c31c4f5b9523a14f96d]
     type: MORDEN
-  live:
-    objects:
-      otc:
-        value: '0xbab390b7e06701f9fb32175e1ef3cd9669cd74a2'
-        type: >-
-          ExpiringMarket[1b031902089fe42ea24faa524088f918ab30bd75e2d53c31c4f5b9523a14f96d]
-    type: ETH
-dapple_version: 0.8.11
+dapple_version: 0.8.21
