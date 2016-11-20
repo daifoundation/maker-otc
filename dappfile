@@ -10,7 +10,7 @@ environments:
   live:
     objects:
       otc:
-        value: '0x37d65ca0754f12c7eec1c86b0915fba9fcbda131'
+        value: '0x1f5006dff7e123d550abc8a4c46792518401fcaf'
         type: >-
           ExpiringMarket[9fd3be04a1372d1e726ccc54cb960604b33fc3fc381fd702069d0725690269bd]
     type: ETH
