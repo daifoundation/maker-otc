@@ -7,6 +7,9 @@ layout:
 dependencies:
   erc20: 1.0.0
 environments:
+  develop:
+    objects: {}
+    type: internal
   live:
     objects:
       otc:
@@ -21,4 +24,11 @@ environments:
         type: >-
           ExpiringMarket[1b031902089fe42ea24faa524088f918ab30bd75e2d53c31c4f5b9523a14f96d]
     type: MORDEN
-dapple_version: 0.8.21
+  ropsten:
+    objects:
+      otc:
+        value: '0xa6694d05db3e19b3ae03cef4f1672368d34dbde1'
+        type: >-
+          ExpiringMarket[1b031902089fe42ea24faa524088f918ab30bd75e2d53c31c4f5b9523a14f96d]
+    type: ropsten
+dapple_version: 0.8.36
