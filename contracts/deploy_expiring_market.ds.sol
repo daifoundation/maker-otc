@@ -5,6 +5,6 @@ import "./expiring_market.sol";
 
 contract DeployExpiringMarket is Script {
   function DeployExpiringMarket () {
-    exportObject("otc", new ExpiringMarket(2 weeks));
+    exportObject("otc", new ExpiringMarket(4 weeks));
   }
 }
