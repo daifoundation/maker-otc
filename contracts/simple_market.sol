@@ -2,7 +2,6 @@ pragma solidity ^0.4.8;
 
 import 'erc20/erc20.sol';
 
-import 'assertive.sol';
 import 'mutex.sol';
 
 // A simple direct exchange order manager.
@@ -40,9 +39,12 @@ contract EventfulMarket {
 }
 
 contract SimpleMarket is EventfulMarket
-                       , Assertive
                        , MutexUser
 {
+    function assert(bool assertion) internal {
+        if (!assertion) throw;
+    }
+
     struct OfferInfo {
         uint sell_how_much;
         ERC20 sell_which_token;
