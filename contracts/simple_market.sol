@@ -2,8 +2,6 @@ pragma solidity ^0.4.8;
 
 import 'erc20/erc20.sol';
 
-import 'mutex.sol';
-
 // A simple direct exchange order manager.
 
 contract EventfulMarket {
@@ -38,9 +36,16 @@ contract EventfulMarket {
     );
 }
 
-contract SimpleMarket is EventfulMarket
-                       , MutexUser
-{
+contract SimpleMarket is EventfulMarket {
+    bool private lock;
+
+    modifier exclusive {
+        if (lock) throw;
+        lock = true;
+        _;
+        lock = false;
+    }
+
     function assert(bool assertion) internal {
         if (!assertion) throw;
     }
