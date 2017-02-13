@@ -12,7 +12,34 @@ contract EventfulMarket {
     event ItemUpdate( uint id );
     event Trade( uint sell_how_much, address indexed sell_which_token,
                  uint buy_how_much, address indexed buy_which_token );
+
+    event LogMake(
+        uint              id,
+        address  indexed  maker,
+        address  indexed  haveToken,
+        address  indexed  wantToken,
+        uint              haveAmount,
+        uint              wantAmount
+    );
+
+    event LogTake(
+        uint              id,
+        address  indexed  maker,
+        address  indexed  haveToken,
+        address  indexed  wantToken,
+        address           taker,
+        uint              takeAmount,
+        uint              giveAmount
+    );
+
+    event LogCancel(
+        uint              id,
+        address  indexed  maker,
+        address  indexed  haveToken,
+        address  indexed  wantToken
+    );
 }
+
 contract SimpleMarket is EventfulMarket
                        , Assertive
                        , FallbackFailer
@@ -109,7 +136,16 @@ contract SimpleMarket is EventfulMarket
         assert(seller_paid);
 
         ItemUpdate(id);
+        LogMake(
+            id,
+            msg.sender,
+            sell_which_token,
+            buy_which_token,
+            sell_how_much,
+            buy_how_much
+        );
     }
+
     // Accept given `quantity` of an offer. Transfers funds from caller to
     // offer maker, and from market to caller.
     function buy( uint id, uint quantity )
@@ -134,6 +170,16 @@ contract SimpleMarket is EventfulMarket
                    msg.sender, spend, offer.buy_which_token );
 
             ItemUpdate(id);
+            LogTake(
+                id,
+                offer.owner,
+                offer.sell_which_token,
+                offer.buy_which_token,
+                msg.sender,
+                offer.sell_how_much,
+                offer.buy_how_much
+            );
+
             success = true;
         } else if ( spend > 0 && quantity > 0 ) {
             // buyer wants a fraction of what is available
@@ -144,12 +190,23 @@ contract SimpleMarket is EventfulMarket
                     msg.sender, spend, offer.buy_which_token );
 
             ItemUpdate(id);
+            LogTake(
+                id,
+                offer.owner,
+                offer.sell_which_token,
+                offer.buy_which_token,
+                msg.sender,
+                quantity,
+                spend
+            );
+
             success = true;
         } else {
             // buyer wants an unsatisfiable amount (less than 1 integer)
             success = false;
         }
     }
+
     // Cancel an offer. Refunds offer maker.
     function cancel( uint id )
         can_cancel(id)
@@ -164,6 +221,13 @@ contract SimpleMarket is EventfulMarket
         assert(seller_refunded);
 
         ItemUpdate(id);
+        LogCancel(
+            id,
+            offer.owner,
+            offer.sell_which_token,
+            offer.buy_which_token
+        );
+
         success = true;
     }
 }
