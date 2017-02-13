@@ -10,26 +10,26 @@ contract EventfulMarket {
                  uint buy_how_much, address indexed buy_which_token );
 
     event LogMake(
-        uint              id,
+        bytes32           id,
         address  indexed  maker,
         address  indexed  haveToken,
         address  indexed  wantToken,
-        uint              haveAmount,
-        uint              wantAmount
+        uint128           haveAmount,
+        uint128           wantAmount
     );
 
     event LogTake(
-        uint              id,
+        bytes32           id,
         address  indexed  maker,
         address  indexed  haveToken,
         address  indexed  wantToken,
         address           taker,
-        uint              takeAmount,
-        uint              giveAmount
+        uint128           takeAmount,
+        uint128           giveAmount
     );
 
     event LogCancel(
-        uint              id,
+        bytes32           id,
         address  indexed  maker,
         address  indexed  haveToken,
         address  indexed  wantToken
@@ -114,6 +114,23 @@ contract SimpleMarket is EventfulMarket {
 
     // ---- Public entrypoints ---- //
 
+    function make(
+        ERC20    haveToken,
+        ERC20    wantToken,
+        uint128  haveAmount,
+        uint128  wantAmount
+    ) returns (bytes32 id) {
+        return bytes32(offer(haveAmount, haveToken, wantAmount, wantToken));
+    }
+
+    function take(bytes32 id, uint128 maxTakeAmount) {
+        assert(buy(uint256(id), maxTakeAmount));
+    }
+    
+    function cancel(bytes32 id) {
+        assert(cancel(uint256(id)));
+    }
+
     // Make a new offer. Takes funds from the caller into market escrow.
     function offer( uint sell_how_much, ERC20 sell_which_token
                   , uint buy_how_much,  ERC20 buy_which_token )
@@ -121,6 +138,8 @@ contract SimpleMarket is EventfulMarket {
         exclusive
         returns (uint id)
     {
+        assert(uint128(sell_how_much) == sell_how_much);
+        assert(uint128(buy_how_much) == buy_how_much);
         assert(sell_how_much > 0);
         assert(sell_which_token != ERC20(0x0));
         assert(buy_how_much > 0);
@@ -142,12 +161,12 @@ contract SimpleMarket is EventfulMarket {
 
         ItemUpdate(id);
         LogMake(
-            id,
+            bytes32(id),
             msg.sender,
             sell_which_token,
             buy_which_token,
-            sell_how_much,
-            buy_how_much
+            uint128(sell_how_much),
+            uint128(buy_how_much)
         );
     }
 
@@ -158,11 +177,14 @@ contract SimpleMarket is EventfulMarket {
         exclusive
         returns ( bool success )
     {
+        assert(uint128(quantity) == quantity);
+
         // read-only offer. Modify an offer by directly accessing offers[id]
         OfferInfo memory offer = offers[id];
 
         // inferred quantity that the buyer wishes to spend
         uint spend = safeMul(quantity, offer.buy_how_much) / offer.sell_how_much;
+        assert(uint128(spend) == spend);
 
         if ( spend > offer.buy_how_much || quantity > offer.sell_how_much ) {
             // buyer wants more than is available
@@ -176,13 +198,13 @@ contract SimpleMarket is EventfulMarket {
 
             ItemUpdate(id);
             LogTake(
-                id,
+                bytes32(id),
                 offer.owner,
                 offer.sell_which_token,
                 offer.buy_which_token,
                 msg.sender,
-                offer.sell_how_much,
-                offer.buy_how_much
+                uint128(offer.sell_how_much),
+                uint128(offer.buy_how_much)
             );
 
             success = true;
@@ -196,13 +218,13 @@ contract SimpleMarket is EventfulMarket {
 
             ItemUpdate(id);
             LogTake(
-                id,
+                bytes32(id),
                 offer.owner,
                 offer.sell_which_token,
                 offer.buy_which_token,
                 msg.sender,
-                quantity,
-                spend
+                uint128(quantity),
+                uint128(spend)
             );
 
             success = true;
@@ -227,10 +249,10 @@ contract SimpleMarket is EventfulMarket {
 
         ItemUpdate(id);
         LogCancel(
-            id,
+            bytes32(id),
             offer.owner,
-            offer.sell_which_token,
-            offer.buy_which_token
+            uint128(offer.sell_which_token),
+            uint128(offer.buy_which_token)
         );
 
         success = true;
