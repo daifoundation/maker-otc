@@ -9,9 +9,11 @@ import 'mutex.sol';
 // A simple direct exchange order manager.
 
 contract EventfulMarket {
-    event ItemUpdate( uint id );
-    event Trade( uint sell_how_much, address indexed sell_which_token,
+    event LogOffer( uint id, uint sell_how_much, address indexed sell_which_token,
                  uint buy_how_much, address indexed buy_which_token );
+    event LogTrade( uint id, uint sell_how_much, address indexed sell_which_token,
+                 uint buy_how_much, address indexed buy_which_token );
+    event LogCancel( uint id );
 }
 contract SimpleMarket is EventfulMarket
                        , Assertive
@@ -69,7 +71,7 @@ contract SimpleMarket is EventfulMarket
         assert(a == 0 || c / a == b);
     }
 
-    function trade( address seller, uint sell_how_much, ERC20 sell_which_token,
+    function trade( uint id, address seller, uint sell_how_much, ERC20 sell_which_token,
                     address buyer,  uint buy_how_much,  ERC20 buy_which_token )
         internal
     {
@@ -77,7 +79,7 @@ contract SimpleMarket is EventfulMarket
         assert(seller_paid_out);
         var buyer_paid_out = sell_which_token.transfer( buyer, sell_how_much );
         assert(buyer_paid_out);
-        Trade( sell_how_much, sell_which_token, buy_how_much, buy_which_token );
+        LogTrade( id, sell_how_much, sell_which_token, buy_how_much, buy_which_token );
     }
 
     // ---- Public entrypoints ---- //
@@ -108,7 +110,7 @@ contract SimpleMarket is EventfulMarket
         var seller_paid = sell_which_token.transferFrom( msg.sender, this, sell_how_much );
         assert(seller_paid);
 
-        ItemUpdate(id);
+        LogOffer( id, sell_how_much, sell_which_token, buy_how_much, buy_which_token );
     }
     // Accept given `quantity` of an offer. Transfers funds from caller to
     // offer maker, and from market to caller.
@@ -130,20 +132,18 @@ contract SimpleMarket is EventfulMarket
             // buyer wants exactly what is available
             delete offers[id];
 
-            trade( offer.owner, quantity, offer.sell_which_token,
+            trade( id, offer.owner, quantity, offer.sell_which_token,
                    msg.sender, spend, offer.buy_which_token );
 
-            ItemUpdate(id);
             success = true;
         } else if ( spend > 0 && quantity > 0 ) {
             // buyer wants a fraction of what is available
             offers[id].sell_how_much = safeSub(offer.sell_how_much, quantity);
             offers[id].buy_how_much = safeSub(offer.buy_how_much, spend);
 
-            trade( offer.owner, quantity, offer.sell_which_token,
+            trade( id, offer.owner, quantity, offer.sell_which_token,
                     msg.sender, spend, offer.buy_which_token );
 
-            ItemUpdate(id);
             success = true;
         } else {
             // buyer wants an unsatisfiable amount (less than 1 integer)
@@ -163,7 +163,7 @@ contract SimpleMarket is EventfulMarket
         var seller_refunded = offer.sell_which_token.transfer( offer.owner , offer.sell_how_much );
         assert(seller_refunded);
 
-        ItemUpdate(id);
+        LogCancel(id);
         success = true;
     }
 }
