@@ -1,34 +1,9 @@
-name: maker-otc
-version: 0.3.1
-layout:
-  sol_sources: ./contracts
-  build_dir: ./build
-  packages_directory: ./dapple_packages
-dependencies:
-  erc20: 1.0.0
-environments:
-  develop:
-    objects: {}
-    type: TestRPC
-    chain: ''
-  live:
-    objects:
-      otc:
-        value: '0xa1b5eedc73a978d181d1ea322ba20f0474bb2a25'
-        type: >-
-          ExpiringMarket[9fd3be04a1372d1e726ccc54cb960604b33fc3fc381fd702069d0725690269bd]
-    type: ETH
-    chain: ''
-  ropsten:
-    objects:
-      otc:
-        value: '0xb996fff774d37b900872609bf8b11e31f51bd19e'
-        type: >-
-          ExpiringMarket[3873a13b354d896be99d9d86b7ee2a6af27805d93f934a8b6b321965f6d699fe]
-    type: ropsten
-    chain: ''
-dapple_version: 0.8.41
-description: ''
-authors: []
-keywords:
-  - dapple
+name            maker-otc
+description     Simple on-chain market for ERC20 tokens
+version         0.4
+
+author          Nikolai Mushegian <nikolai@nexusdev.us>
+author          Rain <rainbeam@riseup.net>
+author          Joris Bontje <jorisbontje@gmail.com>
+author          Daniel Brockman <daniel@brockman.se>
+license         Apache-2.0
