@@ -1,10 +1,10 @@
 pragma solidity ^0.4.8;
 
-import 'dapple/test.sol';
-import 'erc20/base.sol';
-import 'expiring_market.sol';
+import "ds-test/DSTest1000.sol";
+import "ds-token/base.sol";
 
-import 'simple_market_test.sol';
+import "./expiring_market.sol";
+import "./simple_market_test.sol";
 
 contract TestableExpiringMarket is ExpiringMarket {
     uint public time;
@@ -25,8 +25,8 @@ contract ExpiringSimpleMarketTest is SimpleMarketTest {
         user1 = new MarketTester();
         user1.bindMarket(otc);
 
-        dai = new ERC20Base(10 ** 9);
-        mkr = new ERC20Base(10 ** 6);
+        dai = new DSTokenBase(10 ** 9);
+        mkr = new DSTokenBase(10 ** 6);
 
         dai.transfer(user1, 100);
         user1.doApprove(otc, 100, dai);
@@ -35,7 +35,7 @@ contract ExpiringSimpleMarketTest is SimpleMarketTest {
 }
 
 // Expiry specific tests
-contract ExpiringMarketTest is Test {
+contract ExpiringMarketTest is DSTest1000 {
     MarketTester user1;
     ERC20 dai;
     ERC20 mkr;
@@ -45,8 +45,8 @@ contract ExpiringMarketTest is Test {
         user1 = new MarketTester();
         user1.bindMarket(otc);
 
-        dai = new ERC20Base(10 ** 9);
-        mkr = new ERC20Base(10 ** 6);
+        dai = new DSTokenBase(10 ** 9);
+        mkr = new DSTokenBase(10 ** 6);
 
         dai.transfer(user1, 100);
         user1.doApprove(otc, 100, dai);
@@ -99,8 +99,8 @@ contract ExpiringTransferTest is TransferTest {
         user1 = new MarketTester();
         user1.bindMarket(otc);
 
-        dai = new ERC20Base(10 ** 9);
-        mkr = new ERC20Base(10 ** 6);
+        dai = new DSTokenBase(10 ** 9);
+        mkr = new DSTokenBase(10 ** 6);
 
         dai.transfer(user1, 100);
         user1.doApprove(otc, 100, dai);

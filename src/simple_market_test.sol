@@ -1,8 +1,9 @@
 pragma solidity ^0.4.8;
 
-import 'dapple/test.sol';
-import 'erc20/base.sol';
-import 'simple_market.sol';
+import "ds-test/DSTest1000.sol";
+import "ds-token/base.sol";
+
+import "./simple_market.sol";
 
 contract MarketTester is Tester {
     SimpleMarket market;
@@ -21,7 +22,7 @@ contract MarketTester is Tester {
     }
 }
 
-contract SimpleMarketTest is Test, EventfulMarket {
+contract SimpleMarketTest is DSTest1000, EventfulMarket {
     MarketTester user1;
     ERC20 dai;
     ERC20 mkr;
@@ -31,8 +32,8 @@ contract SimpleMarketTest is Test, EventfulMarket {
         user1 = new MarketTester();
         user1.bindMarket(otc);
 
-        dai = new ERC20Base(10 ** 9);
-        mkr = new ERC20Base(10 ** 6);
+        dai = new DSTokenBase(10 ** 9);
+        mkr = new DSTokenBase(10 ** 6);
     }
     function testBasicTrade() {
         dai.transfer(user1, 100);
@@ -226,7 +227,7 @@ contract SimpleMarketTest is Test, EventfulMarket {
     }
 }
 
-contract TransferTest is Test {
+contract TransferTest is DSTest1000 {
     MarketTester user1;
     ERC20 dai;
     ERC20 mkr;
@@ -236,8 +237,8 @@ contract TransferTest is Test {
         user1 = new MarketTester();
         user1.bindMarket(otc);
 
-        dai = new ERC20Base(10 ** 9);
-        mkr = new ERC20Base(10 ** 6);
+        dai = new DSTokenBase(10 ** 9);
+        mkr = new DSTokenBase(10 ** 6);
 
         dai.transfer(user1, 100);
         user1.doApprove(otc, 100, dai);
@@ -390,7 +391,7 @@ contract CancelTransferTest is TransferTest {
     }
 }
 
-contract GasTest is Test {
+contract GasTest is DSTest1000 {
     ERC20 dai;
     ERC20 mkr;
     SimpleMarket otc;
@@ -400,8 +401,8 @@ contract GasTest is Test {
     function setUp() {
         otc = new SimpleMarket();
 
-        dai = new ERC20Base(10 ** 9);
-        mkr = new ERC20Base(10 ** 6);
+        dai = new DSTokenBase(10 ** 9);
+        mkr = new DSTokenBase(10 ** 6);
 
         mkr.approve(otc, 60);
         dai.approve(otc, 100);
