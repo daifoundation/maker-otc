@@ -10,13 +10,7 @@ environments:
   develop:
     objects: {}
     type: TestRPC
-  morden:
-    objects:
-      otc:
-        value: '0xa91f1ca5d2d2f230f8aec1e8f15a8a77e8e83256'
-        type: >-
-          ExpiringMarket[1b031902089fe42ea24faa524088f918ab30bd75e2d53c31c4f5b9523a14f96d]
-    type: MORDEN
+    chain: ''
   live:
     objects:
       otc:
@@ -24,14 +18,16 @@ environments:
         type: >-
           ExpiringMarket[9fd3be04a1372d1e726ccc54cb960604b33fc3fc381fd702069d0725690269bd]
     type: ETH
+    chain: ''
   ropsten:
     objects:
       otc:
-        value: '0x0bc603c1e35e0a7c16623230b2c10ca1668cb0c8'
+        value: '0xb996fff774d37b900872609bf8b11e31f51bd19e'
         type: >-
-          ExpiringMarket[abef20e5f4c68b6137555e491df021d19044a4bd8d5c4a568c3644964b75c8e8]
-    type: ROPSTEN
-dapple_version: 0.8.39
+          ExpiringMarket[3873a13b354d896be99d9d86b7ee2a6af27805d93f934a8b6b321965f6d699fe]
+    type: ropsten
+    chain: ''
+dapple_version: 0.8.41
 description: ''
 authors: []
 keywords:
