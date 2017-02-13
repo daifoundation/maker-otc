@@ -1,6 +1,6 @@
 pragma solidity ^0.4.8;
 
-import 'simple_market.sol';
+import "./simple_market.sol";
 
 // Simple Market with a market lifetime. When the lifetime has elapsed,
 // offers can only be cancelled (offer and buy will throw).

@@ -1,6 +1,6 @@
 pragma solidity ^0.4.8;
 
-import 'erc20/erc20.sol';
+import "erc20/erc20.sol";
 
 // A simple direct exchange order manager.
 
