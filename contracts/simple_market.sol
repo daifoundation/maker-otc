@@ -3,7 +3,6 @@ pragma solidity ^0.4.8;
 import 'erc20/erc20.sol';
 
 import 'assertive.sol';
-import 'fallback_failer.sol';
 import 'mutex.sol';
 
 // A simple direct exchange order manager.
@@ -42,7 +41,6 @@ contract EventfulMarket {
 
 contract SimpleMarket is EventfulMarket
                        , Assertive
-                       , FallbackFailer
                        , MutexUser
 {
     struct OfferInfo {
