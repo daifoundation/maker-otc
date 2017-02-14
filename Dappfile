@@ -14,9 +14,9 @@ environments:
   live:
     objects:
       otc:
-        value: '0xa1b5eedc73a978d181d1ea322ba20f0474bb2a25'
+        value: '0xf0c4779de6068c8b801e25960b32197e7897b15a'
         type: >-
-          ExpiringMarket[9fd3be04a1372d1e726ccc54cb960604b33fc3fc381fd702069d0725690269bd]
+          ExpiringMarket[1387b0b87fb0a5fcfebad2fdb1502ea07a3332aa0595e1501711b55656a92711]
     type: ETH
     chain: ''
   ropsten:
@@ -27,7 +27,7 @@ environments:
           ExpiringMarket[3873a13b354d896be99d9d86b7ee2a6af27805d93f934a8b6b321965f6d699fe]
     type: ropsten
     chain: ''
-dapple_version: 0.8.41
+dapple_version: 0.8.45
 description: ''
 authors: []
 keywords:
