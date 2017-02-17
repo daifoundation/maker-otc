@@ -1,6 +1,6 @@
 pragma solidity ^0.4.8;
 
-import "ds-test/DSTest1000.sol";
+import "ds-test/test.sol";
 import "ds-token/base.sol";
 
 import "./expiring_market.sol";
@@ -20,8 +20,7 @@ contract TestableExpiringMarket is ExpiringMarket(1 weeks) {
 contract ExpiringSimpleMarketTest is SimpleMarketTest {
     function setUp() {
         otc = new TestableExpiringMarket();
-        user1 = new MarketTester();
-        user1.bindMarket(otc);
+        user1 = new MarketTester(otc);
 
         dai = new DSTokenBase(10 ** 9);
         mkr = new DSTokenBase(10 ** 6);
@@ -33,15 +32,14 @@ contract ExpiringSimpleMarketTest is SimpleMarketTest {
 }
 
 // Expiry specific tests
-contract ExpiringMarketTest is DSTest1000 {
+contract ExpiringMarketTest is DSTest {
     MarketTester user1;
     ERC20 dai;
     ERC20 mkr;
     TestableExpiringMarket otc;
     function setUp() {
         otc = new TestableExpiringMarket();
-        user1 = new MarketTester();
-        user1.bindMarket(otc);
+        user1 = new MarketTester(otc);
 
         dai = new DSTokenBase(10 ** 9);
         mkr = new DSTokenBase(10 ** 6);
@@ -51,11 +49,11 @@ contract ExpiringMarketTest is DSTest1000 {
         mkr.approve(otc, 30);
     }
     function testIsClosedBeforeExpiry() {
-        assertFalse(otc.isClosed());
+        assert(!otc.isClosed());
     }
     function testIsClosedAfterExpiry() {
         otc.addTime(ExpiringMarket(otc).lifetime() + 1 seconds);
-        assertTrue(otc.isClosed());
+        assert(otc.isClosed());
     }
     function testOfferBeforeExpiry() {
         otc.offer( 30, mkr, 100, dai );
@@ -76,13 +74,13 @@ contract ExpiringMarketTest is DSTest1000 {
         var id = otc.offer( 30, mkr, 100, dai );
         otc.addTime(otc.lifetime() + 1 seconds);
 
-        assertTrue(otc.isActive(id));
-        assertTrue(user1.doCancel(id));
-        assertFalse(otc.isActive(id));
+        assert(otc.isActive(id));
+        assert(user1.doCancel(id));
+        assert(!otc.isActive(id));
     }
     function testBuyBeforeExpiry() {
         var id = otc.offer( 30, mkr, 100, dai );
-        assertTrue(user1.doBuy(id, 30));
+        assert(user1.doBuy(id, 30));
     }
     function testFailBuyAfterExpiry() {
         var id = otc.offer( 30, mkr, 100, dai );
@@ -94,8 +92,7 @@ contract ExpiringMarketTest is DSTest1000 {
 contract ExpiringTransferTest is TransferTest {
     function setUp() {
         otc = new TestableExpiringMarket();
-        user1 = new MarketTester();
-        user1.bindMarket(otc);
+        user1 = new MarketTester(otc);
 
         dai = new DSTokenBase(10 ** 9);
         mkr = new DSTokenBase(10 ** 6);
