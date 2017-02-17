@@ -6,7 +6,7 @@ import "ds-token/base.sol";
 import "./expiring_market.sol";
 import "./simple_market_test.sol";
 
-contract TestableExpiringMarket is ExpiringMarket {
+contract TestableExpiringMarket is ExpiringMarket(1 weeks) {
     uint public time;
     function getTime() constant returns (uint) {
         return time;
@@ -19,7 +19,7 @@ contract TestableExpiringMarket is ExpiringMarket {
 // Test expiring market retains behaviour of simple market
 contract ExpiringSimpleMarketTest is SimpleMarketTest {
     function setUp() {
-        otc = new ExpiringMarket();
+        otc = new TestableExpiringMarket();
         user1 = new MarketTester();
         user1.bindMarket(otc);
 

@@ -6,11 +6,12 @@ import "./simple_market.sol";
 // offers can only be cancelled (offer and buy will throw).
 
 contract ExpiringMarket is SimpleMarket {
-    uint constant public lifetime = 1 weeks;
+    uint public lifetime;
     uint public close_time;
 
-    function ExpiringMarket() {
-        close_time = getTime() + lifetime;
+    function ExpiringMarket(uint lifetime_) {
+        lifetime = lifetime_;
+        close_time = getTime() + lifetime_;
     }
 
     function getTime() constant returns (uint) {
