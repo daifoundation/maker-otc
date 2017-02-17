@@ -3,7 +3,7 @@ description     Simple on-chain market for ERC20 tokens
 version         0.4
 
 author          Nikolai Mushegian <nikolai@nexusdev.us>
-author          Rain <rainbeam@riseup.net>
 author          Joris Bontje <jorisbontje@gmail.com>
+author          Rain <rainbeam@riseup.net>
 author          Daniel Brockman <daniel@brockman.se>
 license         Apache-2.0
