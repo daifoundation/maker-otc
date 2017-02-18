@@ -4,3 +4,6 @@
 [submodule "lib/ds-token"]
 	path = lib/ds-token
 	url = https://github.com/dapphub/ds-token
+[submodule "lib/erc20"]
+	path = lib/erc20
+	url = https://github.com/dapphub/erc20
