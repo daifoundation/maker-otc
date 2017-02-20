@@ -185,6 +185,8 @@ contract SimpleMarket is EventfulMarket
             highest_offer_id[sell_which][buy_which] = id;
         }
     }
+    //return true if offers[lower_offer_id] has less than or equal 
+    //price as offers[higher_offer_id]
     function isLtOrEq(uint lower_offer_id, uint higher_offer_id) 
     internal
     returns (bool)
@@ -192,19 +194,14 @@ contract SimpleMarket is EventfulMarket
         OfferInfo higher_offer = offers[higher_offer_id];
         OfferInfo lower_offer = offers[lower_offer_id];
         
-        //return true if lower_offer has less than or equal 
-        //price as higher_offer
-        if( safeMul( lower_offer.buy_how_much
+        return safeMul( lower_offer.buy_how_much
                 , higher_offer.sell_how_much ) 
                 >= 
                 safeMul( higher_offer.buy_how_much
-                , lower_offer.sell_how_much ) ) {
-            return true;
-        } else {
-            return false;        
-        }
+                , lower_offer.sell_how_much ); 
     }
-    function findNextHigherOfferId(uint id)
+    //find the id of the next higher offer, than offers[id]
+    function findWhereToInsertId(uint id)
     internal
     returns (uint)
     {
@@ -432,7 +429,7 @@ contract SimpleMarket is EventfulMarket
                  && !isLtOrEq( highest_offer_id[sell_which][buy_which], id ) ) {
                     //user_higher_id was 0 because user did not provide one  
 
-                     user_higher_id = findNextHigherOfferId(id);
+                     user_higher_id = findWhereToInsertId(id);
                 }
                 insertIntoSortedList( id, user_higher_id );
             }
