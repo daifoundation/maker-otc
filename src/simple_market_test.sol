@@ -1,14 +1,14 @@
-pragma solidity ^0.4.2;
+pragma solidity ^0.4.8;
 
-import 'dapple/test.sol';
-import 'erc20/base.sol';
-import 'simple_market.sol';
+import "ds-test/test.sol";
+import "ds-token/base.sol";
 
-contract MarketTester is Tester {
+import "./simple_market.sol";
+
+contract MarketTester {
     SimpleMarket market;
-    function bindMarket(SimpleMarket _market) {
-        _target(_market);
-        market = SimpleMarket(_t);
+    function MarketTester(SimpleMarket market_) {
+        market = market_;
     }
     function doApprove(address spender, uint value, ERC20 token) {
         token.approve(spender, value);
@@ -21,18 +21,17 @@ contract MarketTester is Tester {
     }
 }
 
-contract SimpleMarketTest is Test, EventfulMarket {
+contract SimpleMarketTest is DSTest, EventfulMarket {
     MarketTester user1;
     ERC20 dai;
     ERC20 mkr;
     SimpleMarket otc;
     function setUp() {
         otc = new SimpleMarket();
-        user1 = new MarketTester();
-        user1.bindMarket(otc);
+        user1 = new MarketTester(otc);
 
-        dai = new ERC20Base(10 ** 9);
-        mkr = new ERC20Base(10 ** 6);
+        dai = new DSTokenBase(10 ** 9);
+        mkr = new DSTokenBase(10 ** 6);
     }
     function testBasicTrade() {
         dai.transfer(user1, 100);
@@ -45,7 +44,7 @@ contract SimpleMarketTest is Test, EventfulMarket {
         var user1_dai_balance_before = dai.balanceOf(user1);
 
         var id = otc.offer( 30, mkr, 100, dai );
-        assertTrue(user1.doBuy(id, 30));
+        assert(user1.doBuy(id, 30));
         var my_mkr_balance_after = mkr.balanceOf(this);
         var my_dai_balance_after = dai.balanceOf(this);
         var user1_mkr_balance_after = mkr.balanceOf(user1);
@@ -71,7 +70,7 @@ contract SimpleMarketTest is Test, EventfulMarket {
         var user1_dai_balance_before = dai.balanceOf(user1);
 
         var id = otc.offer( 200, mkr, 500, dai );
-        assertTrue(user1.doBuy(id, 10));
+        assert(user1.doBuy(id, 10));
         var my_mkr_balance_after = mkr.balanceOf(this);
         var my_dai_balance_after = dai.balanceOf(this);
         var user1_mkr_balance_after = mkr.balanceOf(user1);
@@ -101,7 +100,7 @@ contract SimpleMarketTest is Test, EventfulMarket {
         var user1_dai_balance_before = dai.balanceOf(user1);
 
         var id = otc.offer( 500, dai, 200, mkr );
-        assertTrue(user1.doBuy(id, 10));
+        assert(user1.doBuy(id, 10));
         var my_mkr_balance_after = mkr.balanceOf(this);
         var my_dai_balance_after = dai.balanceOf(this);
         var user1_mkr_balance_after = mkr.balanceOf(user1);
@@ -131,7 +130,7 @@ contract SimpleMarketTest is Test, EventfulMarket {
         var user1_dai_balance_before = dai.balanceOf(user1);
 
         var id = otc.offer( 200, mkr, 500, dai );
-        assertFalse(user1.doBuy(id, 201));
+        assert(!user1.doBuy(id, 201));
 
         var my_mkr_balance_after = mkr.balanceOf(this);
         var my_dai_balance_after = dai.balanceOf(this);
@@ -156,12 +155,12 @@ contract SimpleMarketTest is Test, EventfulMarket {
         dai.transfer(user1, 1);
         user1.doApprove(otc, 1, dai);
         var success = user1.doBuy(id, 1);
-        assertFalse(success);
+        assert(!success);
     }
     function testCancel() {
         mkr.approve(otc, 30);
         var id = otc.offer( 30, mkr, 100, dai );
-        assertTrue(otc.cancel(id));
+        assert(otc.cancel(id));
 
         expectEventsExact(otc);
         ItemUpdate(id);
@@ -175,13 +174,13 @@ contract SimpleMarketTest is Test, EventfulMarket {
     function testFailCancelInactive() {
         mkr.approve(otc, 30);
         var id = otc.offer( 30, mkr, 100, dai );
-        assertTrue(otc.cancel(id));
+        assert(otc.cancel(id));
         otc.cancel(id);
     }
     function testFailBuyInactive() {
         mkr.approve(otc, 30);
         var id = otc.offer( 30, mkr, 100, dai );
-        assertTrue(otc.cancel(id));
+        assert(otc.cancel(id));
         otc.buy(id, 0);
     }
     function testFailOfferNotEnoughFunds() {
@@ -194,7 +193,7 @@ contract SimpleMarketTest is Test, EventfulMarket {
         user1.doApprove(otc, 101, dai);
         log_named_uint("user1 dai allowance", dai.allowance(user1, otc));
         log_named_uint("user1 dai balance before", dai.balanceOf(user1));
-        assertTrue(user1.doBuy(id, 101));
+        assert(user1.doBuy(id, 101));
         log_named_uint("user1 dai allowance", dai.allowance(user1, otc));
         log_named_uint("user1 dai balance after", dai.balanceOf(user1));
     }
@@ -204,7 +203,7 @@ contract SimpleMarketTest is Test, EventfulMarket {
         user1.doApprove(otc, 99, dai);
         log_named_uint("user1 dai allowance", dai.allowance(user1, otc));
         log_named_uint("user1 dai balance before", dai.balanceOf(user1));
-        assertTrue(user1.doBuy(id, 100));
+        assert(user1.doBuy(id, 100));
         log_named_uint("user1 dai allowance", dai.allowance(user1, otc));
         log_named_uint("user1 dai balance after", dai.balanceOf(user1));
     }
@@ -215,7 +214,7 @@ contract SimpleMarketTest is Test, EventfulMarket {
     function testBuyTooMuch() {
         mkr.approve(otc, 30);
         var id = otc.offer( 30, mkr, 100, dai );
-        assertFalse(otc.buy(id, 50));
+        assert(!otc.buy(id, 50));
     }
     function testFailOverflow() {
         mkr.approve(otc, 30);
@@ -226,18 +225,17 @@ contract SimpleMarketTest is Test, EventfulMarket {
     }
 }
 
-contract TransferTest is Test {
+contract TransferTest is DSTest {
     MarketTester user1;
     ERC20 dai;
     ERC20 mkr;
     SimpleMarket otc;
     function setUp() {
         otc = new SimpleMarket();
-        user1 = new MarketTester();
-        user1.bindMarket(otc);
+        user1 = new MarketTester(otc);
 
-        dai = new ERC20Base(10 ** 9);
-        mkr = new ERC20Base(10 ** 6);
+        dai = new DSTokenBase(10 ** 9);
+        mkr = new DSTokenBase(10 ** 6);
 
         dai.transfer(user1, 100);
         user1.doApprove(otc, 100, dai);
@@ -390,7 +388,7 @@ contract CancelTransferTest is TransferTest {
     }
 }
 
-contract GasTest is Test {
+contract GasTest is DSTest {
     ERC20 dai;
     ERC20 mkr;
     SimpleMarket otc;
@@ -400,8 +398,8 @@ contract GasTest is Test {
     function setUp() {
         otc = new SimpleMarket();
 
-        dai = new ERC20Base(10 ** 9);
-        mkr = new ERC20Base(10 ** 6);
+        dai = new DSTokenBase(10 ** 9);
+        mkr = new DSTokenBase(10 ** 6);
 
         mkr.approve(otc, 60);
         dai.approve(otc, 100);

@@ -1,15 +1,19 @@
-pragma solidity ^0.4.2;
+pragma solidity ^0.4.8;
 
-import 'simple_market.sol';
+import "./simple_market.sol";
 
 // Simple Market with a market lifetime. When the lifetime has elapsed,
 // offers can only be cancelled (offer and buy will throw).
 
 contract ExpiringMarket is SimpleMarket {
+    uint public lifetime;
     uint public close_time;
-    function ExpiringMarket(uint lifetime) {
-        close_time = getTime() + lifetime;
+
+    function ExpiringMarket(uint lifetime_) {
+        lifetime = lifetime_;
+        close_time = getTime() + lifetime_;
     }
+
     function getTime() constant returns (uint) {
         return block.timestamp;
     }
