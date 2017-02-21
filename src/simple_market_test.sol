@@ -453,12 +453,12 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         assertEq( otc.getHigherOfferId(offer_id[3] ), 0);
         assertEq( otc.getHigherOfferIdSize(dai,mkr), 1);
         assert( !otc.isActive( offer_id[3] ) ); 
-        /* //REPORTS FALSE ERROR: 
+
         expectEventsExact(otc);
         ItemUpdate(offer_id[1]);
         ItemUpdate(offer_id[2]);
         ItemUpdate(offer_id[3]);
-        ItemUpdate(offer_id[3]);*/
+        ItemUpdate(offer_id[3]);
     }
     function testHighestOfferWithTwoOffersWithDifferentTokens(){
         dai.transfer(user1, 2 );
@@ -776,8 +776,6 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         assertEq( sell_val1 , 1500 );
         assertEq( buy_val1 , 600 );
 
-        //FIXME: comment 5 lines below
-         //REPORTS FALSE ERROR: 
         expectEventsExact(otc);
         ItemUpdate(offer_id[1]);
         ItemUpdate(offer_id[1]);

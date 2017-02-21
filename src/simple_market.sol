@@ -71,11 +71,6 @@ contract SimpleMarket is EventfulMarket {
 
     uint public last_offer_id;
 
-    //FIXME: remove three lines below
-    function debug(string str, uint my_var){}
-    function debug(string str, bool my_var){}
-    function debug(string str, uint128 my_var){}
-
     function next_id() internal returns (uint) {
         last_offer_id++; return last_offer_id;
     }
@@ -229,8 +224,7 @@ contract SimpleMarket is EventfulMarket {
     {
         OfferInfo higher_offer = offers[higher_offer_id];
         OfferInfo lower_offer = offers[lower_offer_id];
-        //FIXME: remove line below
-        this.debug("test",lower_offer.buy_how_much);
+
         return safeMul( lower_offer.buy_how_much
                 , higher_offer.sell_how_much ) 
                 >= 
@@ -392,12 +386,24 @@ contract SimpleMarket is EventfulMarket {
                         
                         spend = safeMul( bid_buy_how_much, ask_buy_how_much ) 
                             / ask_sell_how_much;  
-                        tradeOffers( offers[highest_ask_id].owner
+                        tradeOffers( 
+                            offers[highest_ask_id].owner
                             , bid_buy_how_much
                             , offers[highest_ask_id].sell_which_token
                             , msg.sender
                             , spend
-                            , offers[highest_ask_id].buy_which_token );
+                            , offers[highest_ask_id].buy_which_token 
+                                   );
+                        LogTake(
+                              bytes32(highest_ask_id)
+                            , offers[highest_ask_id].owner
+                            , offers[highest_ask_id].sell_which_token
+                            , offers[highest_ask_id].buy_which_token
+                            , msg.sender
+                            , uint128(bid_buy_how_much)
+                            , uint128(spend)
+                               );
+
 
                         offers[highest_ask_id].buy_how_much 
                             = safeSub( ask_buy_how_much , spend);
@@ -427,7 +433,16 @@ contract SimpleMarket is EventfulMarket {
                             , msg.sender
                             , ask_buy_how_much
                             , offers[highest_ask_id].buy_which_token );
-                       
+                                               
+                        LogTake(
+                              bytes32(highest_ask_id)
+                            , offers[highest_ask_id].owner
+                            , offers[highest_ask_id].sell_which_token
+                            , offers[highest_ask_id].buy_which_token
+                            , msg.sender
+                            , uint128(ask_sell_how_much)
+                            , uint128(ask_buy_how_much)
+                               );
                         offers[id].buy_how_much 
                             = safeSub( bid_buy_how_much , ask_sell_how_much);
                         
@@ -570,6 +585,15 @@ contract SimpleMarket is EventfulMarket {
             trade( offer.owner, quantity, offer.sell_which_token,
                    msg.sender, spend, offer.buy_which_token );
             deleteOffer(id);
+            LogTake(
+                bytes32(id),
+                offer.owner,
+                offer.sell_which_token,
+                offer.buy_which_token,
+                msg.sender,
+                uint128(offer.sell_how_much),
+                uint128(offer.buy_how_much) 
+            );
 
             success = true;
         } else if ( spend > 0 && quantity > 0 ) {
