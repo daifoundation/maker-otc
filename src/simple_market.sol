@@ -134,25 +134,30 @@ contract SimpleMarket is EventfulMarket {
         c = a * b;
         assert(a == 0 || c / a == b);
     }
-
     function trade( address seller, uint sell_how_much, ERC20 sell_which_token,
-                    address buyer,  uint buy_how_much,  ERC20 buy_which_token )
+                    address buyer,  uint buy_how_much,  ERC20 buy_which_token)
         internal
     {
-        var seller_paid_out = buy_which_token.transferFrom( buyer, seller, buy_how_much );
-        assert(seller_paid_out);
+        trade(seller, sell_how_much, sell_which_token,
+              buyer, buy_how_much, buy_which_token, false);
+    }
+    function trade( address seller, uint sell_how_much, ERC20 sell_which_token,
+                    address buyer,  uint buy_how_much,  ERC20 buy_which_token , 
+                    bool isOfferTrade)
+        internal
+    {
+        if(isOfferTrade){
+            //offers are matched
+            var seller_paid_out = buy_which_token.transfer( seller, buy_how_much );
+            assert(seller_paid_out);
+        }else{
+            //user simply buys offer
+            seller_paid_out = buy_which_token.transferFrom( buyer, seller, buy_how_much );
+            assert(seller_paid_out);
+        }
         var buyer_paid_out = sell_which_token.transfer( buyer, sell_how_much );
         assert(buyer_paid_out);
         Trade( sell_how_much, sell_which_token, buy_how_much, buy_which_token );
-    }
-    function tradeOffers( address seller, uint sell_how_much, ERC20 sell_which_token,
-                    address buyer,  uint buy_how_much,  ERC20 buy_which_token )
-        internal
-    {
-        var seller_paid_out = buy_which_token.transfer( seller, buy_how_much );
-        assert(seller_paid_out);
-        var buyer_paid_out = sell_which_token.transfer( buyer, sell_how_much );
-        assert(buyer_paid_out);
     }
     function insertIntoSortedList( uint id, uint user_higher_id )
     internal
@@ -170,7 +175,7 @@ contract SimpleMarket is EventfulMarket {
             assert(offers[user_higher_id].sell_which_token == offer.sell_which_token);
             assert(offers[user_higher_id].buy_which_token == offer.buy_which_token);
             //make sure offers[id] price is lower than offers[higher_offer] price
-            assert(isLtOrEq(id,user_higher_id));
+            assert(!isLtOrEq(user_higher_id,id));
 
             higher_offer_id[id] = user_higher_id;
             higher_offer_id_size[sell_which][buy_which]++;
@@ -178,7 +183,9 @@ contract SimpleMarket is EventfulMarket {
                 //offers[id] is not the lowest offer 
                 
                 lower_id = lower_offer_id[user_higher_id];
-                //make sure offer price is higher than lower_offer price
+                
+                //make sure offer price is higher than or equal 
+                //to lower_offer price
                 assert( lower_id == 0 || isLtOrEq( lower_id, id ) ); 
                 
                 if( lower_id > 0 ) {
@@ -199,18 +206,17 @@ contract SimpleMarket is EventfulMarket {
             if ( highest_id != 0 ) {
                 //offers[id] is at least the second offer that was stored
 
-                higher_offer_id[highest_id] = id;
-                
-                higher_offer_id_size[sell_which][buy_which]++;
-
                 //make sure offer price is higher than highest_offer price
                 assert( isLtOrEq( highest_id, id ) );
                 assert( offer.sell_which_token == offers[highest_id].sell_which_token);
                 assert( offer.buy_which_token == offers[highest_id].buy_which_token);
-
+                
                 lower_offer_id[id] = highest_id;
+                higher_offer_id[highest_id] = id;
+                higher_offer_id_size[sell_which][buy_which]++;
             } else {
                 //offers[id] is the first offer that is stored
+
                 lowest_offer_id[sell_which][buy_which] = id;
             }
             highest_offer_id[sell_which][buy_which] = id;
@@ -352,7 +358,7 @@ contract SimpleMarket is EventfulMarket {
         address buy_which = address(offers[id].buy_which_token);
         address sell_which = address(offers[id].sell_which_token);
         bool offer_deleted = false;
-        bool matching_done = false;      
+        bool matching_not_done = true;      
         uint highest_ask_id;
         uint spend;
         
@@ -364,7 +370,7 @@ contract SimpleMarket is EventfulMarket {
         assert(user_higher_id == 0 
                || offers[id].sell_which_token == offers[user_higher_id].sell_which_token);
 
-        while ( !matching_done 
+        while ( matching_not_done 
                && highest_offer_id[buy_which][sell_which] > 0) {
 
             highest_ask_id = highest_offer_id[buy_which][sell_which];
@@ -386,14 +392,15 @@ contract SimpleMarket is EventfulMarket {
                         
                         spend = safeMul( bid_buy_how_much, ask_buy_how_much ) 
                             / ask_sell_how_much;  
-                        tradeOffers( 
+                        trade( 
                             offers[highest_ask_id].owner
                             , bid_buy_how_much
                             , offers[highest_ask_id].sell_which_token
                             , msg.sender
                             , spend
                             , offers[highest_ask_id].buy_which_token 
-                                   );
+                            , true
+                             );
                         LogTake(
                               bytes32(highest_ask_id)
                             , offers[highest_ask_id].owner
@@ -423,16 +430,18 @@ contract SimpleMarket is EventfulMarket {
 
                         deleteOffer(id);
                         offer_deleted = true;
-                        matching_done = true;
+                        matching_not_done = false;
                     } else {
                         //asker wants to sell less than bidder wants to buy
                         
-                        tradeOffers( offers[highest_ask_id].owner
+                        trade( offers[highest_ask_id].owner
                             , ask_sell_how_much
                             , offers[highest_ask_id].sell_which_token
                             , msg.sender
                             , ask_buy_how_much
-                            , offers[highest_ask_id].buy_which_token );
+                            , offers[highest_ask_id].buy_which_token 
+                            , true
+                             );
                                                
                         LogTake(
                               bytes32(highest_ask_id)
@@ -450,17 +459,16 @@ contract SimpleMarket is EventfulMarket {
                             = safeSub( bid_sell_how_much , ask_buy_how_much);
 
                         deleteOffer(highest_ask_id);
-                        matching_done = false;
                     }
                 } else {
                     //lowest ask price is higher than current bid price
 
-                    matching_done = true;
+                    matching_not_done = false;
                 }
             } else {
                 //there is no ask offer to match
 
-                matching_done = true;
+                matching_not_done = false;
             }
         }
         if( ! offer_deleted ) {
@@ -522,7 +530,7 @@ contract SimpleMarket is EventfulMarket {
     // Make a new offer. Takes funds from the caller into market escrow.
     function offer( uint sell_how_much, ERC20 sell_which_token
                   , uint buy_how_much,  ERC20 buy_which_token)
-        /*NO exclusive!!! */
+        /*NOT synchronized!!! */
         returns (uint) 
     {
         return offer( sell_how_much, sell_which_token, buy_how_much, buy_which_token, 0 ); 
