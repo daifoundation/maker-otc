@@ -8,29 +8,37 @@ contract EventfulMarket {
                  uint buy_how_much, address indexed buy_which_token );
 
     event LogMake(
-        bytes32           id,
+        bytes32  indexed  id,
+        bytes32  indexed  pair,
         address  indexed  maker,
-        address  indexed  haveToken,
-        address  indexed  wantToken,
+        ERC20             haveToken,
+        ERC20             wantToken,
         uint128           haveAmount,
-        uint128           wantAmount
+        uint128           wantAmount,
+        uint64            timestamp
     );
 
     event LogTake(
         bytes32           id,
+        bytes32  indexed  pair,
         address  indexed  maker,
-        address  indexed  haveToken,
-        address  indexed  wantToken,
-        address           taker,
+        ERC20             haveToken,
+        ERC20             wantToken,
+        address  indexed  taker,
         uint128           takeAmount,
-        uint128           giveAmount
+        uint128           giveAmount,
+        uint64            timestamp
     );
 
     event LogKill(
-        bytes32           id,
+        bytes32  indexed  id,
+        bytes32  indexed  pair,
         address  indexed  maker,
-        address  indexed  haveToken,
-        address  indexed  wantToken
+        ERC20             haveToken,
+        ERC20             wantToken,
+        uint128           haveAmount,
+        uint128           wantAmount,
+        uint64            timestamp
     );
 }
 
@@ -161,11 +169,13 @@ contract SimpleMarket is EventfulMarket {
         ItemUpdate(id);
         LogMake(
             bytes32(id),
+            sha3(sell_which_token, buy_which_token),
             msg.sender,
             sell_which_token,
             buy_which_token,
             uint128(sell_how_much),
-            uint128(buy_how_much)
+            uint128(buy_how_much),
+            uint64(now)
         );
     }
 
@@ -198,12 +208,14 @@ contract SimpleMarket is EventfulMarket {
             ItemUpdate(id);
             LogTake(
                 bytes32(id),
+                sha3(offer.sell_which_token, offer.buy_which_token),
                 offer.owner,
                 offer.sell_which_token,
                 offer.buy_which_token,
                 msg.sender,
                 uint128(offer.sell_how_much),
-                uint128(offer.buy_how_much)
+                uint128(offer.buy_how_much),
+                uint64(now)
             );
 
             success = true;
@@ -218,12 +230,14 @@ contract SimpleMarket is EventfulMarket {
             ItemUpdate(id);
             LogTake(
                 bytes32(id),
+                sha3(offer.sell_which_token, offer.buy_which_token),
                 offer.owner,
                 offer.sell_which_token,
                 offer.buy_which_token,
                 msg.sender,
                 uint128(quantity),
-                uint128(spend)
+                uint128(spend),
+                uint64(now)
             );
 
             success = true;
@@ -249,9 +263,13 @@ contract SimpleMarket is EventfulMarket {
         ItemUpdate(id);
         LogKill(
             bytes32(id),
+            sha3(offer.sell_which_token, offer.buy_which_token),
             offer.owner,
-            uint128(offer.sell_which_token),
-            uint128(offer.buy_which_token)
+            offer.sell_which_token,
+            offer.buy_which_token,
+            uint128(offer.sell_how_much),
+            uint128(offer.buy_how_much),
+            uint64(now)
         );
 
         success = true;
