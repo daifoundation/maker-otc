@@ -48,6 +48,10 @@ contract SimpleMarket is EventfulMarket {
         if (!x) throw;
     }
 
+    function SimpleMarket(){
+        contractOwner = msg.sender;
+    }
+
     struct OfferInfo {
         uint     sell_how_much;
         ERC20    sell_which_token;
@@ -56,7 +60,9 @@ contract SimpleMarket is EventfulMarket {
         address  owner;
         bool     active;
     }
-
+    
+    address contractOwner;
+    
     mapping (uint => OfferInfo) public offers;
 
     mapping( uint => uint ) public lower_offer_id;
@@ -71,6 +77,26 @@ contract SimpleMarket is EventfulMarket {
 
     uint public last_offer_id;
 
+    bool buy_enabled = false;
+
+    function isBuyEnabled() returns (bool){
+        return buy_enabled;
+    }
+
+    function enableBuy() returns (bool){
+        if(contractOwner == msg.sender){
+            buy_enabled = true;
+        }
+        return buy_enabled;
+    }
+
+    function disableBuy() returns (bool){
+        if(contractOwner == msg.sender){
+            buy_enabled = false;
+        }
+        return !buy_enabled;
+    }
+
     function next_id() internal returns (uint) {
         last_offer_id++; return last_offer_id;
     }
@@ -78,47 +104,58 @@ contract SimpleMarket is EventfulMarket {
     modifier can_offer {
         _;
     }
+
     modifier can_buy(uint id) {
         assert(isActive(id));
         _;
     }
+
     modifier can_cancel(uint id) {
         assert(isActive(id));
         assert(getOwner(id) == msg.sender);
         _;
     }
+
     function isActive(uint id) constant returns (bool active) {
         return offers[id].active;
     }
+
     function getOwner(uint id) constant returns (address owner) {
         return offers[id].owner;
     }
+
     function getOffer( uint id ) constant returns (uint, ERC20, uint, ERC20) {
       var offer = offers[id];
       return (offer.sell_how_much, offer.sell_which_token,
               offer.buy_how_much, offer.buy_which_token);
     }
+
     function getHighestOffer(ERC20 sell_token, ERC20 buy_token) constant returns(uint) {
         address buy_which = address(buy_token);
         address sell_which = address(sell_token);
         return highest_offer_id[sell_which][buy_which];
     }
+
     function getLowestOffer(ERC20 sell_token, ERC20 buy_token) constant returns(uint) {
         address buy_which = address(buy_token);
         address sell_which = address(sell_token);
         return lowest_offer_id[sell_which][buy_which];
     }
+
     function getLowerOfferId(uint id) constant returns(uint) {
         return lower_offer_id[id];
     }
+
     function getHigherOfferId(uint id) constant returns(uint) {
         return higher_offer_id[id];
     }
+
     function getHigherOfferIdSize(ERC20 sell_token, ERC20 buy_token) constant returns(uint) {
         address buy_which = address(buy_token);
         address sell_which = address(sell_token);
         return higher_offer_id_size[sell_which][buy_which];
     }
+
     function checkIsLtOrEq(uint lower_id, uint higher_id) constant returns(bool) {
         return isLtOrEq(lower_id, higher_id);
     }
@@ -129,11 +166,13 @@ contract SimpleMarket is EventfulMarket {
         assert(b <= a);
         return a - b;
     }
+
     // non overflowing multiplication
     function safeMul(uint a, uint b) internal returns (uint c) {
         c = a * b;
         assert(a == 0 || c / a == b);
     }
+
     function trade( address seller, uint sell_how_much, ERC20 sell_which_token,
                     address buyer,  uint buy_how_much,  ERC20 buy_which_token)
         internal
@@ -141,6 +180,7 @@ contract SimpleMarket is EventfulMarket {
         trade(seller, sell_how_much, sell_which_token,
               buyer, buy_how_much, buy_which_token, false);
     }
+
     function trade( address seller, uint sell_how_much, ERC20 sell_which_token,
                     address buyer,  uint buy_how_much,  ERC20 buy_which_token , 
                     bool isOfferTrade)
@@ -159,6 +199,7 @@ contract SimpleMarket is EventfulMarket {
         assert(buyer_paid_out);
         Trade( sell_how_much, sell_which_token, buy_how_much, buy_which_token );
     }
+
     function insertIntoSortedList( uint id, uint user_higher_id )
     internal
     {
@@ -222,8 +263,9 @@ contract SimpleMarket is EventfulMarket {
             highest_offer_id[sell_which][buy_which] = id;
         }
     }
+
     //return true if offers[lower_offer_id] has less than or equal 
-    //price as offers[higher_offer_id]
+    //price than offers[higher_offer_id]
     function isLtOrEq(uint lower_offer_id, uint higher_offer_id) 
     internal
     returns (bool)
@@ -237,6 +279,7 @@ contract SimpleMarket is EventfulMarket {
                 safeMul( higher_offer.buy_how_much
                 , lower_offer.sell_how_much ); 
     }
+
     //find the id of the next higher offer, than offers[id]
     function findWhereToInsertId(uint id)
     internal
@@ -292,6 +335,7 @@ contract SimpleMarket is EventfulMarket {
             }
         }
     }
+
     // Delete offer and remove it from the sorted list.
     function deleteOffer(uint id)
         internal
@@ -350,6 +394,7 @@ contract SimpleMarket is EventfulMarket {
     uint bid_sell_how_much;
     uint ask_buy_how_much;
     uint ask_sell_how_much;
+
     function matchOffer(uint id, uint user_higher_id)
         internal
         {
@@ -520,7 +565,12 @@ contract SimpleMarket is EventfulMarket {
     }
 
     function take(bytes32 id, uint128 maxTakeAmount) {
-        assert(buy(uint256(id), maxTakeAmount));
+        OfferInfo ask_offer = offers[uint256(id)];
+        uint spend = safeMul(maxTakeAmount, ask_offer.buy_how_much) 
+                     / ask_offer.sell_how_much;
+        assert(uint128(spend) == spend);
+        //assert(buy(uint256(id), maxTakeAmount));
+        offer( spend, ask_offer.buy_which_token, uint256(maxTakeAmount), ask_offer.sell_which_token, 0 ); 
     }
 
     function kill(bytes32 id) {
@@ -528,6 +578,7 @@ contract SimpleMarket is EventfulMarket {
     }
 
     // Make a new offer. Takes funds from the caller into market escrow.
+
     function offer( uint sell_how_much, ERC20 sell_which_token
                   , uint buy_how_much,  ERC20 buy_which_token)
         /*NOT synchronized!!! */
@@ -535,8 +586,10 @@ contract SimpleMarket is EventfulMarket {
     {
         return offer( sell_how_much, sell_which_token, buy_how_much, buy_which_token, 0 ); 
     }
+
     // Make a new offer. Takes funds from the caller into market escrow.
     // If user provides the user_higher_id of the next higher priced offer, 
+
     function offer( uint sell_how_much, ERC20 sell_which_token
                   , uint buy_how_much,  ERC20 buy_which_token
                   , uint user_higher_id)
@@ -570,11 +623,13 @@ contract SimpleMarket is EventfulMarket {
 
     // Accept given `quantity` of an offer. Transfers funds from caller to
     // offer maker, and from market to caller.
+
     function buy( uint id, uint quantity )
         can_buy(id)
         synchronized
         returns ( bool success )
     {
+        assert(buy_enabled);
         assert(uint128(quantity) == quantity);
 
         // read-only offer. Modify an offer by directly accessing offers[id]
@@ -631,6 +686,7 @@ contract SimpleMarket is EventfulMarket {
     }
 
     // Cancel an offer. Refunds offer maker.
+
     function cancel( uint id )
         can_cancel(id)
         synchronized

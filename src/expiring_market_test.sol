@@ -37,10 +37,11 @@ contract ExpiringMarketTest is DSTest {
     ERC20 dai;
     ERC20 mkr;
     TestableExpiringMarket otc;
+    bool buy_enabled;
     function setUp() {
         otc = new TestableExpiringMarket();
         user1 = new MarketTester(otc);
-
+        buy_enabled = otc.isBuyEnabled();
         dai = new DSTokenBase(10 ** 9);
         mkr = new DSTokenBase(10 ** 6);
 
@@ -79,8 +80,10 @@ contract ExpiringMarketTest is DSTest {
         assert(!otc.isActive(id));
     }
     function testBuyBeforeExpiry() {
-        var id = otc.offer( 30, mkr, 100, dai );
-        assert(user1.doBuy(id, 30));
+        if(buy_enabled){
+            var id = otc.offer( 30, mkr, 100, dai );
+            assert(user1.doBuy(id, 30));
+        }
     }
     function testFailBuyAfterExpiry() {
         var id = otc.offer( 30, mkr, 100, dai );
