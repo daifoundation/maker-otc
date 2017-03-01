@@ -41,6 +41,7 @@ contract ExpiringMarketTest is DSTest {
     function setUp() {
         otc = new TestableExpiringMarket();
         user1 = new MarketTester(otc);
+        otc.enableBuy();
         buy_enabled = otc.isBuyEnabled();
         dai = new DSTokenBase(10 ** 9);
         mkr = new DSTokenBase(10 ** 6);

@@ -79,7 +79,7 @@ contract SimpleMarket is EventfulMarket {
 
     bool buy_enabled = false;
 
-    function isBuyEnabled() returns (bool){
+    function isBuyEnabled() constant returns (bool){
         return buy_enabled;
     }
 
@@ -216,7 +216,7 @@ contract SimpleMarket is EventfulMarket {
             assert(offers[user_higher_id].sell_which_token == offer.sell_which_token);
             assert(offers[user_higher_id].buy_which_token == offer.buy_which_token);
             //make sure offers[id] price is lower than offers[higher_offer] price
-            assert(!isLtOrEq(user_higher_id,id));
+            assert( isLtOrEq(id,user_higher_id) );
 
             higher_offer_id[id] = user_higher_id;
             higher_offer_id_size[sell_which][buy_which]++;
@@ -225,9 +225,9 @@ contract SimpleMarket is EventfulMarket {
                 
                 lower_id = lower_offer_id[user_higher_id];
                 
-                //make sure offer price is higher than or equal 
+                //make sure offer price is higher than  
                 //to lower_offer price
-                assert( lower_id == 0 || isLtOrEq( lower_id, id ) ); 
+                assert( lower_id == 0 || !isLtOrEq( id, lower_id ) ); 
                 
                 if( lower_id > 0 ) {
                     higher_offer_id[lower_id] = id;
@@ -247,8 +247,8 @@ contract SimpleMarket is EventfulMarket {
             if ( highest_id != 0 ) {
                 //offers[id] is at least the second offer that was stored
 
-                //make sure offer price is higher than highest_offer price
-                assert( isLtOrEq( highest_id, id ) );
+                //make sure offer price is strictly higher than highest_offer price
+                assert( !isLtOrEq( id, highest_id ) );
                 assert( offer.sell_which_token == offers[highest_id].sell_which_token);
                 assert( offer.buy_which_token == offers[highest_id].buy_which_token);
                 
@@ -297,18 +297,18 @@ contract SimpleMarket is EventfulMarket {
         if ( higher_offer_id_size[sell_which][buy_which] > 0 ) {
             //there is at least two offers stored for token pair
 
-            if ( isLtOrEq( higher_id, id) ) {
-                //did not find any offer that has higher price than offers[id]
+            if ( !isLtOrEq( id, higher_id ) ) {
+                //did not find any offer that has higher or equal price than offers[id]
 
                 return 0;
 
             } else {
-                //offers[higher_id] is higher priced than offers[id]
+                //offers[higher_id] is higher or equal priced than offers[id]
 
-                //cycle through all offers for token pair to find first one  
-                //with lower or equal price
+                //cycle through all offers for token pair to find the id 
+                //that is the next higher or equal to offers[id]
                 while (lower_offer_id[higher_id] != 0 
-                       && !isLtOrEq( lower_offer_id[higher_id], id ) 
+                       && isLtOrEq( id, lower_offer_id[higher_id] ) 
                         ) {
 
                     higher_id = lower_offer_id[higher_id];
@@ -325,7 +325,7 @@ contract SimpleMarket is EventfulMarket {
                 return 0;
             }
             if ( isLtOrEq( id, higher_id ) ) {
-                //there is exactly one offer stored, and it IS higher than offers[id]
+                //there is exactly one offer stored, and it IS higher or equal than offers[id]
 
                 return higher_id;
             } else {
@@ -532,9 +532,9 @@ contract SimpleMarket is EventfulMarket {
 
             //insert offer into the sorted list
             if ( user_higher_id != 0
-                && !isLtOrEq( user_higher_id, id )
+                && isLtOrEq( id, user_higher_id  )
                 && ( lower_offer_id[user_higher_id] == 0
-                     || isLtOrEq( lower_offer_id[user_higher_id], id ) 
+                     || !isLtOrEq( id, lower_offer_id[user_higher_id] ) 
                ) ) {
                 //client provided valid user_higher_id
 
@@ -544,7 +544,7 @@ contract SimpleMarket is EventfulMarket {
                 //find one ourselves
                 
                 if( highest_offer_id[sell_which][buy_which] > 0
-                 && !isLtOrEq( highest_offer_id[sell_which][buy_which], id ) ) {
+                 && isLtOrEq( id, highest_offer_id[sell_which][buy_which] ) ) {
                     //user_higher_id was 0 because user did not provide one  
 
                      user_higher_id = findWhereToInsertId(id);

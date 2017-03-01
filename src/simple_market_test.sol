@@ -372,17 +372,17 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         offer_id[1] = user1.doOffer(10, dai, 1, mkr );
         offer_id[2] = user1.doOffer(12, dai, 1, mkr );
         offer_id[4] = user1.doOffer(16, dai, 1, mkr );
-        offer_id[3] = user1.doOffer(12, dai, 1, mkr , offer_id[4]);
+        offer_id[3] = user1.doOffer(12, dai, 1, mkr , offer_id[2]);
         
         assertEq( otc.getLowestOffer( dai, mkr ), offer_id[1]);
         assertEq( otc.getHighestOffer( dai, mkr ), offer_id[4]);
         assertEq( otc.getLowerOfferId(offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[2] ), offer_id[1]);
-        assertEq( otc.getLowerOfferId(offer_id[3] ), offer_id[2]);
-        assertEq( otc.getLowerOfferId(offer_id[4] ), offer_id[3]);
-        assertEq( otc.getHigherOfferId(offer_id[1] ), offer_id[2]);
-        assertEq( otc.getHigherOfferId(offer_id[2] ), offer_id[3]);
-        assertEq( otc.getHigherOfferId(offer_id[3] ), offer_id[4]);
+        assertEq( otc.getLowerOfferId(offer_id[2] ), offer_id[3]);
+        assertEq( otc.getLowerOfferId(offer_id[3] ), offer_id[1]);
+        assertEq( otc.getLowerOfferId(offer_id[4] ), offer_id[2]);
+        assertEq( otc.getHigherOfferId(offer_id[1] ), offer_id[3]);
+        assertEq( otc.getHigherOfferId(offer_id[2] ), offer_id[4]);
+        assertEq( otc.getHigherOfferId(offer_id[3] ), offer_id[2]);
         assertEq( otc.getHigherOfferId(offer_id[4] ), 0);
         assertEq( otc.getHigherOfferIdSize(dai,mkr), 3);
     }
@@ -898,31 +898,31 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         dai.transfer(user1, 3);
         user1.doApprove(otc, 3, dai );
         mkr.approve(otc, 12);
-        offer_id[1] = otc.offer( 1, mkr, 10, dai );
-        offer_id[2] = otc.offer( 10, mkr, 10, dai );
-        offer_id[3] = otc.offer( 1, mkr, 1, dai );
-        offer_id[4] = user1.doOffer( 3, dai, 3, mkr );
-        var ( sell_val, sell_token, buy_val, buy_token ) = otc.getOffer(offer_id[2]);
+        offer_id[1] = otc.offer(     1, mkr, 10, dai );
+        offer_id[2] = otc.offer(     1, mkr,  1, dai );
+        offer_id[3] = otc.offer(    10, mkr, 10, dai );
+        offer_id[4] = user1.doOffer( 3, dai,  3, mkr );
+        var ( sell_val, sell_token, buy_val, buy_token ) = otc.getOffer(offer_id[3]);
         var ( sell_val1, sell_token1, buy_val1, buy_token1 ) = otc.getOffer(offer_id[1]);
         address user1_address = address(user1);
         address my_address = address(this);
         address dai_address = address(dai);
         address mkr_address = address(mkr);
         assertEq( otc.getLowestOffer( mkr, dai ), offer_id[1]);
-        assertEq( otc.getHighestOffer( mkr, dai ), offer_id[2]);
+        assertEq( otc.getHighestOffer( mkr, dai ), offer_id[3]);
         assertEq( otc.getLowestOffer( dai, mkr ), 0);
         assertEq( otc.getHighestOffer( dai, mkr ), 0);
         assertEq( otc.getLowerOfferId( offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId( offer_id[2] ), offer_id[1]);
-        assertEq( otc.getLowerOfferId( offer_id[3] ), 0);
+        assertEq( otc.getLowerOfferId( offer_id[2] ), 0);
+        assertEq( otc.getLowerOfferId( offer_id[3] ), offer_id[1]);
         assertEq( otc.getLowerOfferId( offer_id[4] ), 0);
-        assertEq( otc.getHigherOfferId( offer_id[1] ), offer_id[2]);
+        assertEq( otc.getHigherOfferId( offer_id[1] ), offer_id[3]);
         assertEq( otc.getHigherOfferId( offer_id[2] ), 0);
         assertEq( otc.getHigherOfferId( offer_id[3] ), 0);
         assertEq( otc.getHigherOfferId( offer_id[4] ), 0);
         assertEq( otc.getHigherOfferIdSize( mkr, dai ), 1);
         assertEq( otc.getHigherOfferIdSize( dai, mkr ), 0);
-        assert( !otc.isActive(offer_id[3]) );
+        assert( !otc.isActive(offer_id[2]) );
         assert( !otc.isActive(offer_id[4]) );
         assertEq( sell_val, 8);
         assertEq( buy_val, 8);
@@ -939,6 +939,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
     function setUp() {
         otc = new SimpleMarket();
         user1 = new MarketTester(otc);
+        otc.enableBuy();
         buy_enabled = otc.isBuyEnabled();
         dai = new DSTokenBase(10 ** 9);
         mkr = new DSTokenBase(10 ** 6);
@@ -1172,6 +1173,7 @@ contract TransferTest is DSTest {
     function setUp() {
         otc = new SimpleMarket();
         user1 = new MarketTester(otc);
+        otc.enableBuy();
         buy_enabled = otc.isBuyEnabled();
 
         dai = new DSTokenBase(10 ** 9);
@@ -1359,6 +1361,7 @@ contract GasTest is DSTest {
 
     function setUp() {
         otc = new SimpleMarket();
+        otc.enableBuy();
         buy_enabled = otc.isBuyEnabled();
 
         dai = new DSTokenBase(10 ** 9);
