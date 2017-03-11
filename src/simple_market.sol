@@ -410,9 +410,11 @@ contract SimpleMarket is EventfulMarket {
         assert( id > 0 );
 
         assert( user_higher_id == 0 
+               || !offers[user_higher_id].active 
                || offers[id].buy_which_token == offers[user_higher_id].buy_which_token );
 
         assert(user_higher_id == 0 
+               || !offers[user_higher_id].active
                || offers[id].sell_which_token == offers[user_higher_id].sell_which_token);
 
         while ( matching_not_done 

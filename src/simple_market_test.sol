@@ -208,10 +208,36 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         otc = new SimpleMarket();
         user1 = new MarketTester(otc);
 
-        dai = new DSTokenBase(10 ** 9);
-        mkr = new DSTokenBase(10 ** 6);
-        dgd = new DSTokenBase(10 ** 9);
+        dai = new DSTokenBase(10 ** 32);
+        mkr = new DSTokenBase(10 ** 32);
+        dgd = new DSTokenBase(10 ** 32);
     }
+    function testErroneousUserHigherIdStillWorks(){
+        dai.transfer(user1, 10 );
+        user1.doApprove(otc, 10, dai );
+        offer_id[1] =  user1.doOffer(1,	    dai,	1,	mkr);
+        offer_id[2] =  user1.doOffer(2,     dai,	1,	mkr);
+        offer_id[3] =  user1.doOffer(4,     dai,	1,	mkr);
+        offer_id[4] =  user1.doOffer(3,	    dai,	1,	mkr, offer_id[2]);
+    }
+    function testErroneousUserHigherIdStillWorksOther(){
+        dai.transfer(user1, 11 );
+        user1.doApprove(otc, 11, dai );
+        offer_id[1] =  user1.doOffer(2,	    dai,	1,	mkr);
+        offer_id[2] =  user1.doOffer(3,     dai,	1,	mkr);
+        offer_id[3] =  user1.doOffer(5,     dai,	1,	mkr);
+        offer_id[4] =  user1.doOffer(1,	    dai,	1,	mkr, offer_id[3]);
+    }
+    function testNonExistentOffersUserHigherIdStillWorks(){
+        dai.transfer(user1, 10 );
+        user1.doApprove(otc, 10, dai );
+        uint non_existent_offer_id = 100000;
+        offer_id[1] =  user1.doOffer(1,	    dai,	1,	mkr);
+        offer_id[2] =  user1.doOffer(2,     dai,	1,	mkr);
+        offer_id[3] =  user1.doOffer(4,     dai,	1,	mkr);
+        offer_id[4] =  user1.doOffer(3,	    dai,	1,	mkr, non_existent_offer_id);
+    }
+
     function testHighestOfferWithOneOffer(){
         dai.transfer(user1, 1 );
         user1.doApprove(otc, 1, dai );
