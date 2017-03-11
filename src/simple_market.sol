@@ -532,6 +532,7 @@ contract SimpleMarket is EventfulMarket {
 
             //insert offer into the sorted list
             if ( user_higher_id != 0
+                && offers[user_higher_id].active 
                 && isLtOrEq( id, user_higher_id  )
                 && ( lower_offer_id[user_higher_id] == 0
                      || !isLtOrEq( id, lower_offer_id[user_higher_id] ) 
@@ -543,6 +544,8 @@ contract SimpleMarket is EventfulMarket {
                 //client did not provide valid user_higher_id, so we have to
                 //find one ourselves
                 
+                user_higher_id = 0;
+
                 if( highest_offer_id[sell_which][buy_which] > 0
                  && isLtOrEq( id, highest_offer_id[sell_which][buy_which] ) ) {
                     //user_higher_id was 0 because user did not provide one  
