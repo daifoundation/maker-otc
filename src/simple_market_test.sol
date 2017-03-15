@@ -212,6 +212,28 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         mkr = new DSTokenBase(10 ** 32);
         dgd = new DSTokenBase(10 ** 32);
     }
+    function testSetGetMinSellAmout(){
+        otc.setMinSellAmount(address(dai),100);
+        assertEq( otc.getMinSellAmount(address(dai)), 100);
+    }
+    function testSetGetDeleteMinSellAmout(){
+        otc.setMinSellAmount(address(dai),134);
+        assertEq( otc.getMinSellAmount(address(dai)), 134);
+        otc.deleteMinSellAmount(address(dai));
+        assertEq( otc.getMinSellAmount(address(dai)), 0);
+    }
+    function testFailOfferSellsLessThanRequired(){
+        mkr.approve(otc, 30);
+        otc.setMinSellAmount(address(mkr),31);
+        assertEq( otc.getMinSellAmount(address(mkr)), 31);
+        offer_id[1] = otc.offer( 30, mkr, 100, dai );
+    }
+    function testOfferSellsMoreThanOrEqualThanRequired(){
+        mkr.approve(otc, 30);
+        otc.setMinSellAmount(address(mkr),30);
+        assertEq( otc.getMinSellAmount(address(mkr)), 30);
+        offer_id[1] = otc.offer( 30, mkr, 100, dai );
+    }
     function testErroneousUserHigherIdStillWorks(){
         dai.transfer(user1, 10 );
         user1.doApprove(otc, 10, dai );
