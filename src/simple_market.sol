@@ -81,26 +81,26 @@ contract SimpleMarket is EventfulMarket {
 
     bool buy_enabled = false;
 
-    function setMinSellAmount(address sell_token_address, uint min_amount) 
+    function setMinSellAmount(ERC20 sell_which_token, uint min_amount) 
     returns (bool success) {
         if(contractOwner == msg.sender){
-            min_sell_amount[sell_token_address] = min_amount;
+            min_sell_amount[sell_which_token] = min_amount;
             success = true;
         } else {
             success = false;
         }
     }
     
-    function getMinSellAmount(address sell_token_address) 
+    function getMinSellAmount(ERC20 sell_which_token) 
     constant
     returns (uint) {
-        return min_sell_amount[sell_token_address];
+        return min_sell_amount[sell_which_token];
     }
 
-    function deleteMinSellAmount(address sell_token_address) 
+    function deleteMinSellAmount(ERC20 sell_which_token) 
     returns (bool success) {
         if(contractOwner == msg.sender){
-            delete min_sell_amount[sell_token_address];
+            delete min_sell_amount[sell_which_token];
             success = true;
         } else {
             success = false;
