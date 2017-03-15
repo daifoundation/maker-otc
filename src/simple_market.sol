@@ -74,10 +74,38 @@ contract SimpleMarket is EventfulMarket {
     mapping( address => mapping( address => uint ) ) public lowest_offer_id;
 
     mapping( address => mapping( address => uint ) ) public highest_offer_id;
+    
+    mapping( address => uint) public min_sell_amount;
 
     uint public last_offer_id;
 
     bool buy_enabled = false;
+
+    function setMinSellAmount(address sell_token_address, uint min_amount) 
+    returns (bool success) {
+        if(contractOwner == msg.sender){
+            min_sell_amount[sell_token_address] = min_amount;
+            success = true;
+        } else {
+            success = false;
+        }
+    }
+    
+    function getMinSellAmount(address sell_token_address) 
+    constant
+    returns (uint) {
+        return min_sell_amount[sell_token_address];
+    }
+
+    function deleteMinSellAmount(address sell_token_address) 
+    returns (bool success) {
+        if(contractOwner == msg.sender){
+            delete min_sell_amount[sell_token_address];
+            success = true;
+        } else {
+            success = false;
+        }
+    }
 
     function isBuyEnabled() constant returns (bool){
         return buy_enabled;
@@ -602,6 +630,7 @@ contract SimpleMarket is EventfulMarket {
         synchronized
         returns (uint id)
     {
+        assert(min_sell_amount[address(sell_which_token)] <= sell_how_much);
         assert(uint128(sell_how_much) == sell_how_much);
         assert(uint128(buy_how_much) == buy_how_much);
         assert(sell_how_much > 0);
