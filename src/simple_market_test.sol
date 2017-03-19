@@ -10,6 +10,21 @@ contract MarketTester {
     function MarketTester(SimpleMarket market_) {
         market = market_;
     }
+    function doSetMinSellAmount(ERC20 sell_which_token, uint min_amount)
+    returns (bool)
+    {
+        return market.setMinSellAmount(sell_which_token, min_amount);
+    }
+    function doGetMinSellAmount(ERC20 sell_which_token)
+    returns (uint)
+    {
+        return market.getMinSellAmount(sell_which_token);
+    }
+    function doDeleteMinSellAmount(ERC20 sell_which_token)
+    returns (bool)
+    {
+        return market.deleteMinSellAmount(sell_which_token);
+    }
     function doApprove(address spender, uint value, ERC20 token) {
         token.approve(spender, value);
     }
@@ -213,25 +228,31 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         dgd = new DSTokenBase(10 ** 32);
     }
     function testSetGetMinSellAmout(){
-        otc.setMinSellAmount(address(dai),100);
-        assertEq( otc.getMinSellAmount(address(dai)), 100);
+        otc.setMinSellAmount(dai,100);
+        assertEq( otc.getMinSellAmount(dai), 100);
     }
     function testSetGetDeleteMinSellAmout(){
-        otc.setMinSellAmount(address(dai),134);
-        assertEq( otc.getMinSellAmount(address(dai)), 134);
-        otc.deleteMinSellAmount(address(dai));
-        assertEq( otc.getMinSellAmount(address(dai)), 0);
+        otc.setMinSellAmount(dai,134);
+        assertEq( otc.getMinSellAmount(dai), 134);
+        otc.deleteMinSellAmount(dai);
+        assertEq( otc.getMinSellAmount(dai), 0);
     }
     function testFailOfferSellsLessThanRequired(){
         mkr.approve(otc, 30);
-        otc.setMinSellAmount(address(mkr),31);
-        assertEq( otc.getMinSellAmount(address(mkr)), 31);
+        otc.setMinSellAmount(mkr,31);
+        assertEq( otc.getMinSellAmount(mkr), 31);
         offer_id[1] = otc.offer( 30, mkr, 100, dai );
+    }
+    function testFailNonOwnerCanNotSetSellAmount(){
+        user1.doSetMinSellAmount(dai,100);
+    }
+    function testFailNonOwnerCanNotDeleteSellAmount(){
+        user1.doDeleteMinSellAmount(dai);
     }
     function testOfferSellsMoreThanOrEqualThanRequired(){
         mkr.approve(otc, 30);
-        otc.setMinSellAmount(address(mkr),30);
-        assertEq( otc.getMinSellAmount(address(mkr)), 30);
+        otc.setMinSellAmount(mkr,30);
+        assertEq( otc.getMinSellAmount(mkr), 30);
         offer_id[1] = otc.offer( 30, mkr, 100, dai );
     }
     function testErroneousUserHigherIdStillWorks(){

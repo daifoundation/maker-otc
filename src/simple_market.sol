@@ -83,12 +83,9 @@ contract SimpleMarket is EventfulMarket {
 
     function setMinSellAmount(ERC20 sell_which_token, uint min_amount) 
     returns (bool success) {
-        if(contractOwner == msg.sender){
-            min_sell_amount[sell_which_token] = min_amount;
-            success = true;
-        } else {
-            success = false;
-        }
+        assert(contractOwner == msg.sender);
+        min_sell_amount[sell_which_token] = min_amount;
+        success = true;
     }
     
     function getMinSellAmount(ERC20 sell_which_token) 
@@ -99,12 +96,9 @@ contract SimpleMarket is EventfulMarket {
 
     function deleteMinSellAmount(ERC20 sell_which_token) 
     returns (bool success) {
-        if(contractOwner == msg.sender){
-            delete min_sell_amount[sell_which_token];
-            success = true;
-        } else {
-            success = false;
-        }
+        assert(contractOwner == msg.sender);
+        delete min_sell_amount[sell_which_token];
+        success = true;
     }
 
     function isBuyEnabled() constant returns (bool){
@@ -228,7 +222,7 @@ contract SimpleMarket is EventfulMarket {
         Trade( sell_how_much, sell_which_token, buy_how_much, buy_which_token );
     }
 
-    function insertIntoSortedList( uint id, uint user_higher_id )
+    function insertIntoSortedList( uint id, uint position_id )
     internal
     {
         OfferInfo offer = offers[id];
@@ -238,20 +232,20 @@ contract SimpleMarket is EventfulMarket {
         uint highest_id;
        
 
-        if ( user_higher_id != 0 ) {
+        if ( position_id != 0 ) {
             //offers[id] is not the highest offer
             
-            assert(offers[user_higher_id].sell_which_token == offer.sell_which_token);
-            assert(offers[user_higher_id].buy_which_token == offer.buy_which_token);
+            assert(offers[position_id].sell_which_token == offer.sell_which_token);
+            assert(offers[position_id].buy_which_token == offer.buy_which_token);
             //make sure offers[id] price is lower than offers[higher_offer] price
-            assert( isLtOrEq(id,user_higher_id) );
+            assert( isLtOrEq(id,position_id) );
 
-            higher_offer_id[id] = user_higher_id;
+            higher_offer_id[id] = position_id;
             higher_offer_id_size[sell_which][buy_which]++;
-            if ( user_higher_id != lowest_offer_id[sell_which][buy_which] ) {
+            if ( position_id != lowest_offer_id[sell_which][buy_which] ) {
                 //offers[id] is not the lowest offer 
                 
-                lower_id = lower_offer_id[user_higher_id];
+                lower_id = lower_offer_id[position_id];
                 
                 //make sure offer price is higher than  
                 //to lower_offer price
@@ -261,11 +255,11 @@ contract SimpleMarket is EventfulMarket {
                     higher_offer_id[lower_id] = id;
                 }
                 lower_offer_id[id] = lower_id;
-                lower_offer_id[user_higher_id] = id;
+                lower_offer_id[position_id] = id;
             }else{
                 //offers[id] is the lowest offer
                 
-                lower_offer_id[user_higher_id] = id;
+                lower_offer_id[position_id] = id;
                 lowest_offer_id[sell_which][buy_which] = id;                
             }
         } else {
@@ -423,7 +417,7 @@ contract SimpleMarket is EventfulMarket {
     uint ask_buy_how_much;
     uint ask_sell_how_much;
 
-    function matchOffer(uint id, uint user_higher_id)
+    function matchOffer(uint id, uint position_id)
         internal
         {
 
@@ -437,13 +431,13 @@ contract SimpleMarket is EventfulMarket {
         
         assert( id > 0 );
 
-        assert( user_higher_id == 0 
-               || !offers[user_higher_id].active 
-               || offers[id].buy_which_token == offers[user_higher_id].buy_which_token );
+        assert( position_id == 0 
+               || !offers[position_id].active 
+               || offers[id].buy_which_token == offers[position_id].buy_which_token );
 
-        assert(user_higher_id == 0 
-               || !offers[user_higher_id].active
-               || offers[id].sell_which_token == offers[user_higher_id].sell_which_token);
+        assert(position_id == 0 
+               || !offers[position_id].active
+               || offers[id].sell_which_token == offers[position_id].sell_which_token);
 
         while ( matching_not_done 
                && highest_offer_id[buy_which][sell_which] > 0) {
@@ -561,28 +555,28 @@ contract SimpleMarket is EventfulMarket {
             );
 
             //insert offer into the sorted list
-            if ( user_higher_id != 0
-                && offers[user_higher_id].active 
-                && isLtOrEq( id, user_higher_id  )
-                && ( lower_offer_id[user_higher_id] == 0
-                     || !isLtOrEq( id, lower_offer_id[user_higher_id] ) 
+            if ( position_id != 0
+                && offers[position_id].active 
+                && isLtOrEq( id, position_id  )
+                && ( lower_offer_id[position_id] == 0
+                     || !isLtOrEq( id, lower_offer_id[position_id] ) 
                ) ) {
-                //client provided valid user_higher_id
+                //client provided valid position_id
 
-                insertIntoSortedList( id, user_higher_id );
+                insertIntoSortedList( id, position_id );
             } else {
-                //client did not provide valid user_higher_id, so we have to
+                //client did not provide valid position_id, so we have to
                 //find one ourselves
                 
-                user_higher_id = 0;
+                position_id = 0;
 
                 if( highest_offer_id[sell_which][buy_which] > 0
                  && isLtOrEq( id, highest_offer_id[sell_which][buy_which] ) ) {
-                    //user_higher_id was 0 because user did not provide one  
+                    //position_id was 0 because user did not provide one  
 
-                     user_higher_id = findWhereToInsertId(id);
+                     position_id = findWhereToInsertId(id);
                 }
-                insertIntoSortedList( id, user_higher_id );
+                insertIntoSortedList( id, position_id );
             }
         }
     }
@@ -621,11 +615,11 @@ contract SimpleMarket is EventfulMarket {
     }
 
     // Make a new offer. Takes funds from the caller into market escrow.
-    // If user provides the user_higher_id of the next higher priced offer, 
+    // If user provides the position_id of the next higher priced offer, 
 
     function offer( uint sell_how_much, ERC20 sell_which_token
                   , uint buy_how_much,  ERC20 buy_which_token
-                  , uint user_higher_id)
+                  , uint position_id)
         can_offer
         synchronized
         returns (uint id)
@@ -652,7 +646,7 @@ contract SimpleMarket is EventfulMarket {
         var seller_paid = sell_which_token.transferFrom( msg.sender, this, sell_how_much );
         assert(seller_paid);
         
-        matchOffer( id, user_higher_id );
+        matchOffer( id, position_id );
     }
 
     // Accept given `quantity` of an offer. Transfers funds from caller to
