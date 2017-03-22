@@ -2,7 +2,7 @@
   "kovan": {
     "otc": {
       "type": "ExpiringMarket",
-      "value": "0x5490ebdbABC74046855A3104095E71f19BE97f20"
+      "value": "0x9Ad57b0FA24B7176623c0ACc6f53E56fA15bF5Ad"
     }
   }
 }
