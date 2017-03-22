@@ -424,17 +424,15 @@ contract SimpleMarket is EventfulMarket {
     uint bid_sell_how_much;
     uint ask_buy_how_much;
     uint ask_sell_how_much;
-    address buy_which;
-    address sell_which;
-
+    bool offer_deleted;
     function matchOffer(uint id, uint position_id)
         internal
         {
 
         // read-only offer. Modify an offer by directly accessing offers[id]
-        buy_which = address(offers[id].buy_which_token);
-        sell_which = address(offers[id].sell_which_token);
-        bool offer_deleted = false;
+        address buy_which = address(offers[id].buy_which_token);
+        address sell_which = address(offers[id].sell_which_token);
+        offer_deleted = false;
         bool matching_not_done = true;      
         uint highest_ask_id;
         uint spend;
