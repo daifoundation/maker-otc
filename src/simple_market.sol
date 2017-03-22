@@ -461,6 +461,13 @@ contract SimpleMarket is EventfulMarket {
                         
                         spend = safeMul( bid_buy_how_much, ask_buy_how_much ) 
                             / ask_sell_how_much;  
+
+                        offers[highest_ask_id].buy_how_much 
+                            = safeSub( ask_buy_how_much , spend);
+
+                        offers[highest_ask_id].sell_how_much 
+                            = safeSub( ask_sell_how_much , bid_buy_how_much);
+                        
                         trade( 
                             offers[highest_ask_id].owner
                             , bid_buy_how_much
@@ -480,13 +487,6 @@ contract SimpleMarket is EventfulMarket {
                             , uint128(spend)
                                );
 
-
-                        offers[highest_ask_id].buy_how_much 
-                            = safeSub( ask_buy_how_much , spend);
-
-                        offers[highest_ask_id].sell_how_much 
-                            = safeSub( ask_sell_how_much , bid_buy_how_much);
-
                         if( ask_sell_how_much == bid_buy_how_much ){
                             //ask offer must also be deleted
 
@@ -503,6 +503,13 @@ contract SimpleMarket is EventfulMarket {
                     } else {
                         //asker wants to sell less than bidder wants to buy
                         
+                        
+                        offers[id].sell_how_much 
+                            = safeSub( bid_sell_how_much , ask_buy_how_much);
+
+                        offers[id].buy_how_much 
+                            = safeMul( offers[id].sell_how_much, bid_buy_how_much ) / bid_sell_how_much;
+
                         trade( offers[highest_ask_id].owner
                             , ask_sell_how_much
                             , offers[highest_ask_id].sell_which_token
@@ -521,11 +528,6 @@ contract SimpleMarket is EventfulMarket {
                             , uint128(ask_sell_how_much)
                             , uint128(ask_buy_how_much)
                                );
-                        offers[id].buy_how_much 
-                            = safeSub( bid_buy_how_much , ask_sell_how_much);
-                        
-                        offers[id].sell_how_much 
-                            = safeSub( bid_sell_how_much , ask_buy_how_much);
 
                         deleteOffer(highest_ask_id);
                     }

@@ -79,6 +79,11 @@ contract OrderMatchingGasTest is DSTest {
         //determine how much dai, mkr must be bought and sold 
         //to match a certain number(match_count) of offers 
     }
+    // non overflowing multiplication
+    function safeMul(uint a, uint b) internal returns (uint c) {
+        c = a * b;
+        assert(a == 0 || c / a == b);
+    }
     function insertOffer(uint sell_how_much, ERC20 sell_which_token, 
                          uint buy_how_much, ERC20 buy_which_token) 
     logs_gas 
@@ -108,9 +113,8 @@ contract OrderMatchingGasTest is DSTest {
         uint offer_count = match_order_count + 1;
 
         createOffers(offer_count);
-        dai_buy =  ( (2 * offer_count - match_order_count  + 1 ) 
-                    * match_order_count  ) / 2 ;
-        mkr_sell = match_order_count;
+        dai_buy =  safeMul( offer_count, offer_count + 1 ) / 2;
+        mkr_sell = dai_buy;
 
         insertOffer(mkr_sell, mkr, dai_buy, dai);
         assertEq( otc.getHigherOfferIdSize(dai,mkr), 0);
@@ -865,6 +869,24 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         assert( !otc.isActive(offer_id[1]) );
         assert( !otc.isActive(offer_id[2]) );
     } 
+    function testOfferMatchingOneOnOneMatchCheckOfferPriceRemainsTheSame(){
+        dai.transfer(user1, 5);
+        user1.doApprove(otc, 5, dai );
+        mkr.approve(otc, 10);
+        offer_id[1] = user1.doOffer( 5, dai, 1, mkr );
+        offer_id[2] = otc.offer( 10, mkr, 10, dai );
+        var ( sell_val, sell_token, buy_val, buy_token ) = otc.getOffer(offer_id[2]);
+
+        assertEq( otc.getLowestOffer( dai, mkr ), 0);
+        assertEq( otc.getHighestOffer( dai, mkr ), 0);
+        assertEq( otc.getHigherOfferId( offer_id[1] ), 0);
+        assertEq( otc.getLowerOfferId( offer_id[1] ), 0);
+        assertEq( otc.getHigherOfferIdSize( dai, mkr ), 0);
+        assert( !otc.isActive(offer_id[1]) );
+        //assert érice of offer_id[2] should be the same as before matching
+        assertEq( sell_val , 9);
+        assertEq( buy_val  , 9);
+    } 
     function testOfferMatchingPartialSellTwoOffers(){
         mkr.transfer(user1, 10 );
         user1.doApprove(otc, 10, mkr );
@@ -886,6 +908,25 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         assert( !otc.isActive(offer_id[2]) );
         assertEq( sell_val, 5);
         assertEq( buy_val, 5);
+    } 
+    function testOfferMatchingOneOnTwoMatchCheckOfferPriceRemainsTheSame(){
+        dai.transfer(user1, 9);
+        user1.doApprove(otc, 9, dai );
+        mkr.approve(otc, 10);
+        offer_id[1] = user1.doOffer( 5, dai, 1, mkr );
+        offer_id[1] = user1.doOffer( 4, dai, 1, mkr );
+        offer_id[2] = otc.offer( 10, mkr, 10, dai );
+        var ( sell_val, sell_token, buy_val, buy_token ) = otc.getOffer(offer_id[2]);
+
+        assertEq( otc.getLowestOffer( dai, mkr ), 0);
+        assertEq( otc.getHighestOffer( dai, mkr ), 0);
+        assertEq( otc.getHigherOfferId( offer_id[1] ), 0);
+        assertEq( otc.getLowerOfferId( offer_id[1] ), 0);
+        assertEq( otc.getHigherOfferIdSize( dai, mkr ), 0);
+        assert( !otc.isActive(offer_id[1]) );
+        //assert érice of offer_id[2] should be the same as before matching
+        assertEq( sell_val , 8);
+        assertEq( buy_val  , 8);
     } 
     function testOfferMatchingPartialBuyTwoOffers(){
         mkr.transfer(user1, 5 );
