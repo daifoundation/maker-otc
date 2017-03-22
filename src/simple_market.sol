@@ -424,14 +424,16 @@ contract SimpleMarket is EventfulMarket {
     uint bid_sell_how_much;
     uint ask_buy_how_much;
     uint ask_sell_how_much;
+    address buy_which;
+    address sell_which;
 
     function matchOffer(uint id, uint position_id)
         internal
         {
 
         // read-only offer. Modify an offer by directly accessing offers[id]
-        address buy_which = address(offers[id].buy_which_token);
-        address sell_which = address(offers[id].sell_which_token);
+        buy_which = address(offers[id].buy_which_token);
+        sell_which = address(offers[id].sell_which_token);
         bool offer_deleted = false;
         bool matching_not_done = true;      
         uint highest_ask_id;
@@ -487,6 +489,9 @@ contract SimpleMarket is EventfulMarket {
                              );
                         LogTake(
                               bytes32(highest_ask_id)
+                            , sha3(
+                                offers[highest_ask_id].sell_which_token, 
+                                offers[highest_ask_id].buy_which_token )
                             , offers[highest_ask_id].owner
                             , offers[highest_ask_id].sell_which_token
                             , offers[highest_ask_id].buy_which_token
@@ -530,6 +535,9 @@ contract SimpleMarket is EventfulMarket {
                                                
                         LogTake(
                               bytes32(highest_ask_id)
+                            , sha3(
+                                offers[highest_ask_id].sell_which_token, 
+                                offers[highest_ask_id].buy_which_token )
                             , offers[highest_ask_id].owner
                             , offers[highest_ask_id].sell_which_token
                             , offers[highest_ask_id].buy_which_token
@@ -559,6 +567,7 @@ contract SimpleMarket is EventfulMarket {
 
             LogMake(
                 bytes32(id),
+                sha3(offers[id].sell_which_token, offers[id].buy_which_token),
                 msg.sender,
                 offers[id].sell_which_token,
                 offers[id].buy_which_token,
