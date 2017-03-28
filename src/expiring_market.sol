@@ -1,13 +1,20 @@
 pragma solidity ^0.4.8;
 
+import "ds-auth/auth.sol";
+
 import "./simple_market.sol";
 
 // Simple Market with a market lifetime. When the lifetime has elapsed,
 // offers can only be cancelled (offer and buy will throw).
 
-contract ExpiringMarket is SimpleMarket {
+contract ExpiringMarket is DSAuth, SimpleMarket {
     uint public lifetime;
     uint public close_time;
+    bool public stopped;
+
+    function stop() auth {
+        stopped = true;
+    }
 
     function ExpiringMarket(uint lifetime_) {
         lifetime = lifetime_;
@@ -18,7 +25,7 @@ contract ExpiringMarket is SimpleMarket {
         return block.timestamp;
     }
     function isClosed() constant returns (bool closed) {
-        return (getTime() > close_time);
+        return stopped || (getTime() > close_time);
     }
 
     // after market lifetime has elapsed, no new offers are allowed
