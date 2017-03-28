@@ -18,6 +18,17 @@ contract EventfulMarket {
         uint64            timestamp
     );
 
+    event LogBump(
+        bytes32  indexed  id,
+        bytes32  indexed  pair,
+        address  indexed  maker,
+        ERC20             haveToken,
+        ERC20             wantToken,
+        uint128           haveAmount,
+        uint128           wantAmount,
+        uint64            timestamp
+    );
+
     event LogTake(
         bytes32           id,
         bytes32  indexed  pair,
@@ -63,6 +74,7 @@ contract SimpleMarket is EventfulMarket {
         ERC20    buy_which_token;
         address  owner;
         bool     active;
+        uint64   timestamp;
     }
 
     mapping (uint => OfferInfo) public offers;
@@ -160,6 +172,7 @@ contract SimpleMarket is EventfulMarket {
         info.buy_which_token = buy_which_token;
         info.owner = msg.sender;
         info.active = true;
+        info.timestamp = uint64(now);
         id = next_id();
         offers[id] = info;
 
@@ -176,6 +189,22 @@ contract SimpleMarket is EventfulMarket {
             uint128(sell_how_much),
             uint128(buy_how_much),
             uint64(now)
+        );
+    }
+
+    function bump(bytes32 id_)
+        can_buy(uint256(id_))
+    {
+        var id = uint256(id_);
+        LogBump(
+            id_,
+            sha3(offers[id].sell_which_token, offers[id].buy_which_token),
+            offers[id].owner,
+            offers[id].sell_which_token,
+            offers[id].buy_which_token,
+            uint128(offers[id].sell_how_much),
+            uint128(offers[id].buy_how_much),
+            offers[id].timestamp
         );
     }
 
