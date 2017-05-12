@@ -263,9 +263,9 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
                         mnd = false;
                     } else {
                         //maker(asker) wants to sell less than taker(bidder) wants to buy
-                        
-                        shm = safeSub( shm , mbu );
-                        bhm = safeMul( offers[id].sell_how_much, bhm ) / shm;
+                        var sho = shm; 
+                        shm = safeSub( shm, mbu );
+                        bhm = safeMul( shm, bhm ) / sho;
                         buy( hmi, mse );
                     }
                 } else {
