@@ -476,6 +476,7 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
         }
         LogSortedOffer(mid);
     }
+
     // set the minimum sell amount for a token
 	function setMinSellAmount(
                                 ERC20 mst  //token to assign minimum sell amount to
