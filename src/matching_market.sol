@@ -345,7 +345,7 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
         can_offer
         returns ( uint id )
     {
-        //make sure the 'sell how much' is greater than minimum required 
+        //make sure 'sell how much' is greater than minimum required 
         assert(ami[mst] <= msh);
 
         if(ema){
