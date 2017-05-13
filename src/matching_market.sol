@@ -307,7 +307,7 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
     //     * keepers should call sort(mid,pos) 
     //       to put offer in the sorted list.
     // If matching is disabled: 
-    //     * expiring market's offer() is called.
+    //     * calls expiring market's offer().
     //     * available to everyone without authorization.
     //     * no sorting is done.
 
