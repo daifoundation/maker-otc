@@ -332,6 +332,7 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
     }
 
     // Make a new offer. Takes funds from the caller into market escrow.
+    // Frontend should call only this function to create offers.
 
     function offer( 
                      uint msh   //maker (ask) sell how much
