@@ -262,7 +262,7 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
     // Make a new offer without putting it in the sorted list.
     // Takes funds from the caller into market escrow.
     // ****Available to authorized contracts only!**********
-    // Keepers should call sort(mid) to put offer in the sorted list.
+    // Keepers should call sort(mid,pos) to put offer in the sorted list.
 
     function offeru ( 
                      uint msh   //maker (ask) sell how much
@@ -304,7 +304,7 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
     //     * creates new offer without putting it in 
     //       the sorted list.
     //     * available to authorized contracts only! 
-    //     * keepers should call sort(mid) 
+    //     * keepers should call sort(mid,pos) 
     //       to put offer in the sorted list.
     // If matching is disabled: 
     //     * expiring market's offer() is called.
