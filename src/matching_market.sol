@@ -38,6 +38,12 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
     //minimum sell amount for a token to avoid dust offers
 	mapping( address => uint) public mis;
 
+    //next unsorted offer id
+	mapping( uint => uint ) public uni; 
+    
+    //first unsigned offer id
+    uint ufi;
+
     //return true if offers[loi] priced less than or equal 
     //to offers[hoi]
     function isLtOrEq(
@@ -112,6 +118,86 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
         }
     }
 
+    //put offer into the sorted list
+    function sort( 
+                    uint mid    //maker (ask) id
+                  , uint pos    //position to insert into
+                 )
+    internal
+    {
+        address mbt = address(offers[mid].buy_which_token);
+        address mst = address(offers[mid].sell_which_token);
+        uint lid; //lower maker (ask) id
+        uint hsi; //HigheSt maker (ask) Id
+
+        assert(isActive(pos));
+        assert(isActive(mid));
+       
+        if ( pos != 0 ) {
+            //offers[mid] is not the highest offer
+            
+            assert(offers[pos].sell_which_token 
+                   == offers[mid].sell_which_token);
+            
+            assert(offers[pos].buy_which_token 
+                   == offers[mid].buy_which_token);
+
+            //make sure offers[mid] price is lower i
+            //than or equal to offers[pos] price
+            assert( isLtOrEq( mid, pos ) );
+
+            hoi[mid] = pos;
+            hos[mst][mbt]++;
+            if ( pos != les[mst][mbt] ) {
+                //offers[mid] is not the lowest offer 
+                
+                lid = loi[pos];
+                
+                //make sure price of offers[mid] is higher than  
+                //price of offers[lid]
+                assert( lid == 0 || !isLtOrEq( mid, lid ) ); 
+                
+                if( lid > 0 ) {
+                    hoi[lid] = mid;
+                }
+                loi[mid] = lid;
+                loi[pos] = mid;
+            }else{
+                //offers[mid] is the lowest offer
+                
+                loi[pos] = mid;
+                les[mst][mbt] = mid;                
+            }
+        } else {
+            //offers[mid] is the highest offer
+
+            hsi = hes[mst][mbt];
+            if ( hsi != 0 ) {
+                //offers[mid] is at least the second offer that was stored
+
+                //make sure offer price is strictly higher 
+                //than highest_offer price
+                assert( !isLtOrEq( mid, hsi ) );
+
+                assert( offers[mid].sell_which_token 
+                       == offers[hsi].sell_which_token);
+                
+                assert( offers[mid].buy_which_token 
+                       == offers[hsi].buy_which_token);
+                
+                loi[mid] = hsi;
+                hoi[hsi] = mid;
+                hos[mst][mbt]++;
+            } else {
+                //offers[mid] is the first offer that is stored
+
+                les[mst][mbt] = mid;
+            }
+            hes[mst][mbt] = mid;
+        }
+        LogSortedOffer(mid);
+    }
+
     // Remove offer from the sorted list.
     function unsort(
                       uint mid    /*id of maker (ask) offer to 
@@ -123,7 +209,7 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
         address mbt = address(offers[mid].buy_which_token);
         address mst = address(offers[mid].sell_which_token);
         
-        if(hes[mst][mbt] == mid){
+        if( hes[mst][mbt] == mid ) {
             //offers[mid] is the highest offer
         
             hes[mst][mbt] = loi[mid]; 
@@ -206,7 +292,7 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
                     //maker (ask) price is lower than or equal to 
                     //taker (bid) price
 
-                    if ( msh >= tbh ){
+                    if ( msh >= tbh ) {
                         //maker (ask) wants to sell more than 
                         //taker(bid) wants to buy
                         
@@ -234,7 +320,7 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
                 yet = false;
             }
         }
-        if( ! toc ) {
+        if ( ! toc ) {
             //new offer should be created            
 
             mid = super.offer( tsh, tst, tbh, tbt );
@@ -283,6 +369,11 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
         returns (uint mid) 
     {
         mid = super.offer( msh, mst, mbh, mbt ); 
+        
+        //insert offer into the unsorted offers list
+        uni[mid] = ufi;
+        ufi = mid;
+
         LogUnsortedOffer(mid);
     }
 
@@ -356,7 +447,7 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
         //make sure 'sell how much' is greater than minimum required 
         assert(mis[mst] <= msh);
 
-        if(ema){
+        if ( ema ) {
             //matching enabled
 
             return matcho( msh, mst, mbh, mbt, pos );
@@ -379,12 +470,12 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
         can_buy(mid)
         returns ( bool success )
     {
-        if(ema){
+        if ( ema ) {
             //matching enabled
 
             assert(ebu);    //buy enabled
 
-            if(qua >= offers[mid].sell_how_much) {
+            if( qua >= offers[mid].sell_how_much ) {
                 unsort(mid);
             }
             assert( super.buy( mid, qua ) ); 
@@ -403,7 +494,7 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
         can_cancel(mid)
         returns ( bool success )
     {
-        if(ema){
+        if ( ema ) {
             //matching enabled
 
             unsort(mid);
@@ -411,82 +502,64 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
         return super.cancel(mid);
     }
 
-    //put offer into the sorted list
-    function sort( 
-                    uint mid    //maker (ask) id
-                  , uint pos    //position to insert into
-                 )
+    //insert offer into the sorted list
+    //keepers need to use this function
+    function insert(
+                      uint mid    //maker (ask) id
+                    , uint pos    //position to insert into
+                   )
+    returns(bool)
     {
-        OfferInfo offer = offers[mid];
-        address mbt = address(offer.buy_which_token);
-        address mst = address(offer.sell_which_token);
-        uint lid; //lower maker (ask) id
-        uint hsi; //HigheSt maker (ask) Id
+        address mbt = address(offers[mid].buy_which_token);
+        address mst = address(offers[mid].sell_which_token);
+        uint uid; //id to search for `mid` in unsorted offers list
+        uint pre; //previous offer's id in unsorted offers list
 
-        assert(isActive(pos));
-        assert(isActive(mid));
-       
         //make sure offers[mid] is not yet sorted
         assert( hoi[mid] == 0);
         assert( loi[mid] == 0);
         assert( les[mst][mbt] != mid);
-
-        if ( pos != 0 ) {
-            //offers[mid] is not the highest offer
-            
-            assert(offers[pos].sell_which_token == offer.sell_which_token);
-            assert(offers[pos].buy_which_token == offer.buy_which_token);
-
-            //make sure offers[mid] price is lower i
-            //than or equal to offers[pos] price
-            assert( isLtOrEq( mid, pos ) );
-
-            hoi[mid] = pos;
-            hos[mst][mbt]++;
-            if ( pos != les[mst][mbt] ) {
-                //offers[mid] is not the lowest offer 
-                
-                lid = loi[pos];
-                
-                //make sure price of offers[mid] is higher than  
-                //price of offers[lid]
-                assert( lid == 0 || !isLtOrEq( mid, lid ) ); 
-                
-                if( lid > 0 ) {
-                    hoi[lid] = mid;
-                }
-                loi[mid] = lid;
-                loi[pos] = mid;
-            }else{
-                //offers[mid] is the lowest offer
-                
-                loi[pos] = mid;
-                les[mst][mbt] = mid;                
-            }
-        } else {
-            //offers[mid] is the highest offer
-
-            hsi = hes[mst][mbt];
-            if ( hsi != 0 ) {
-                //offers[mid] is at least the second offer that was stored
-
-                //make sure offer price is strictly higher 
-                //than highest_offer price
-                assert( !isLtOrEq( mid, hsi ) );
-                assert( offer.sell_which_token == offers[hsi].sell_which_token);
-                assert( offer.buy_which_token == offers[hsi].buy_which_token);
-                
-                loi[mid] = hsi;
-                hoi[hsi] = mid;
-                hos[mst][mbt]++;
-            } else {
-                //offers[mid] is the first offer that is stored
-
-                les[mst][mbt] = mid;
-            }
-            hes[mst][mbt] = mid;
+        //make sure offers[mid] is active
+        assert(isActive(mid)); 
+        //make sure offers[pos] is active
+        assert(isActive(pos)); 
+        
+        //take offer out of list of unsorted offers
+        uid = ufi;
+        pre = 0;
+        //find `mid` in the unsorted list of offers
+        while( uid > 0 && uid != mid ) {
+            //while not found `mid`
+            pre = uid;
+            uid = uni[uid];   
         }
-        LogSortedOffer(mid);
+        if ( pre == 0 ) {
+            //uid was the first in the unsorted offers list
+
+            if ( uid == mid ) {
+                //uid was the first in unsorted offers list
+
+                ufi = uni[uid];
+                uni[uid] = 0;
+                sort( mid, pos );
+                return true;
+            }
+            //there were no offers in the unsorted list
+            return false;                
+        }else{
+            //uid was not the first the unsorted offers list
+
+            if ( uid == mid ) {
+                //uid was not the first in the list but we found mid
+
+                uni[pre] = uni[uid];
+                uni[uid] = 0;   
+                sort( mid, pos );
+                return true;
+            } 
+            //did not find mid
+            return false;
+        }
     }
 
     // set the minimum sell amount for a token
