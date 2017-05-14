@@ -66,11 +66,12 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
     internal
     returns (uint)
     {
+        assert( mid > 0 ); 
+
         address mbt = address(offers[mid].buy_which_token);
         address mst = address(offers[mid].sell_which_token);
         uint hid = hes[mst][mbt];
-        assert( mid > 0 ); 
-        
+
         if ( hid == 0 ) {
             //there are no offers stored
 
@@ -87,7 +88,7 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
             } else {
                 //offers[hid] is higher or equal priced than offers[mid]
 
-                //cycle through all offers for token pair to find the mid 
+                //cycle through all offers for token pair to find the hid 
                 //that is the next higher or equal to offers[mid]
                 while ( loi[hid] != 0 && isLtOrEq( mid, loi[hid] ) ) {
                     hid = loi[hid];
@@ -126,67 +127,50 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
         address mbt = address(offers[mid].buy_which_token);
         address mst = address(offers[mid].sell_which_token);
         uint lid; //lower maker (ask) id
+        uint hid; //higher maker (ask) id
         uint hsi; //HigheSt maker (ask) Id
 
         assert(isActive(pos));
         assert(isActive(mid));
+
         //assert `pos` is in the sorted list
         assert( hoi[pos] != 0 || loi[pos] != 0 || hes[mst][mbt] == pos);
-       
+        
+        if ( hes[mst][mbt] > 0 ){
+            //if offer will be the sedond to insert
+
+            hos[mst][mbt]++;
+        }
+        
         if ( pos != 0 ) {
             //offers[mid] is not the highest offer
             
-            assert(offers[pos].sell_which_token 
-                   == offers[mid].sell_which_token);
-            
-            assert(offers[pos].buy_which_token 
-                   == offers[mid].buy_which_token);
-
-            //make sure offers[mid] price is lower i
-            //than or equal to offers[pos] price
             assert( isLtOrEq( mid, pos ) );
 
+            lid = loi[pos];
+            loi[pos] = mid;
             hoi[mid] = pos;
-            hos[mst][mbt]++;
-            if ( loi[pos] != 0 ) {
-                //offers[mid] is not the lowest offer 
-                
-                lid = loi[pos];
-                
-                //make sure price of offers[mid] is higher than  
-                //price of offers[lid]
-                assert( !isLtOrEq( mid, lid ) ); 
-                
-                hoi[lid] = mid;
-                loi[mid] = lid;
-                loi[pos] = mid;
-            }else{
-                //offers[mid] is the lowest offer
-                
-                loi[pos] = mid;
-            }
-        } else {
+        }else{
             //offers[mid] is the highest offer
 
-            hsi = hes[mst][mbt];
-            if ( hsi != 0 ) {
-                //offers[mid] is at least the second offer that was stored
-
-                //make sure offer price is strictly higher 
-                //than highest_offer price
-                assert( !isLtOrEq( mid, hsi ) );
-
-                assert( offers[mid].sell_which_token 
-                       == offers[hsi].sell_which_token);
-                
-                assert( offers[mid].buy_which_token 
-                       == offers[hsi].buy_which_token);
-                
-                loi[mid] = hsi;
-                hoi[hsi] = mid;
-                hos[mst][mbt]++;
-            } 
+            lid = hes[mst][mbt];
             hes[mst][mbt] = mid;
+        }
+
+        assert(offers[lid].sell_which_token 
+               == offers[mid].sell_which_token);
+        
+        assert(offers[lid].buy_which_token 
+               == offers[mid].buy_which_token);
+
+
+        if ( lid != 0 ) {
+            //if lower offer does exist
+
+            assert( !isLtOrEq( mid, lid ) ); 
+            
+            hoi[lid] = mid;
+            loi[mid] = lid;
         }
         LogSortedOffer(mid);
     }
