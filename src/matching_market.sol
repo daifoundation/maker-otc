@@ -7,8 +7,8 @@ import "ds-auth/auth.sol";
 import "./expiring_market.sol";
 
 contract MatchingEvents {
-	event LogBuyEnabled(bool);
-	event LogMinSellAmount(address sell_which_token, uint min_amount);
+    event LogBuyEnabled(bool);
+    event LogMinSellAmount(address sell_which_token, uint min_amount);
     event LogMatchingEnabled(bool);
     event LogUnsortedOffer(uint mid);
     event LogSortedOffer(uint mid);
@@ -16,30 +16,30 @@ contract MatchingEvents {
 
 contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
 
-	bool public ebu = true; //buy enabled
-	bool public ema = true; /*true: enable matching, false: revert to 
+    bool public ebu = true; //buy enabled
+    bool public ema = true; /*true: enable matching, false: revert to 
                               expiring market*/
 
     //lower offer's id - sorted list of offers storing the next lower offer
-	mapping( uint => uint ) public loi; 
+    mapping( uint => uint ) public loi; 
 
     //higher offer's id - sorted list of offers storing the next higher offer
-	mapping( uint => uint ) public hoi; 
+    mapping( uint => uint ) public hoi; 
 
     //id of the highest offer for a token pair
-	mapping( address => mapping( address => uint ) ) public hes;    
+    mapping( address => mapping( address => uint ) ) public hes;    
 
     //id of the lowest offer for a token pair
-	mapping( address => mapping( address => uint ) ) public les;    
+    mapping( address => mapping( address => uint ) ) public les;    
 
     //size of `hoi` (number of keys)
-	mapping( address => mapping( address => uint ) ) public hos;
+    mapping( address => mapping( address => uint ) ) public hos;
 
     //minimum sell amount for a token to avoid dust offers
-	mapping( address => uint) public mis;
+    mapping( address => uint) public mis;
 
     //next unsorted offer id
-	mapping( uint => uint ) public uni; 
+    mapping( uint => uint ) public uni; 
     
     //first unsigned offer id
     uint ufi;
@@ -74,10 +74,10 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
         uint hid = hes[mst][mbt];
         assert( mid > 0 ); 
         
-		if ( hid == 0 ) {
+        if ( hid == 0 ) {
             //there are no offers stored
-			return 0;
-		}
+            return 0;
+        }
         if ( hos[mst][mbt] > 0 ) {
             //there are at least two offers stored for token pair
 
@@ -563,36 +563,36 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
     }
 
     // set the minimum sell amount for a token
-	function setMinSellAmount(
+    function setMinSellAmount(
                                 ERC20 mst  /*token to assign minimum 
                                              sell amount to*/
                               , uint mis_   //maker (ask) minimum sell amount 
                              )
-	auth
-	returns (bool suc) {
-		mis[mst] = mis_;
-		LogMinSellAmount(mst, mis_);
-		suc = true; //success
-	}
+    auth
+    returns (bool suc) {
+        mis[mst] = mis_;
+        LogMinSellAmount(mst, mis_);
+        suc = true; //success
+    }
 
-	function getMinSellAmount(
+    function getMinSellAmount(
                               ERC20 mst /*token for which minimum 
                                           sell amount is queried*/
                              )
-	constant
-	returns (uint) {
-		return mis[mst];
-	}
+    constant
+    returns (uint) {
+        return mis[mst];
+    }
 
-	function isBuyEnabled() constant returns (bool){
-		return ebu;
-	}
+    function isBuyEnabled() constant returns (bool){
+        return ebu;
+    }
 
-	function setBuyEnabled(bool ebu_) auth returns (bool){
-		ebu = ebu_;
-		LogBuyEnabled(ebu);
-		return ebu;
-	}
+    function setBuyEnabled(bool ebu_) auth returns (bool){
+        ebu = ebu_;
+        LogBuyEnabled(ebu);
+        return ebu;
+    }
 
     function setMatchingEnabled(bool ema_) auth returns (bool) {
         ema = ema_;
