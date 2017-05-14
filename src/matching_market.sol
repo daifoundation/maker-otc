@@ -1,9 +1,5 @@
 pragma solidity ^0.4.8;
 
-import "erc20/erc20.sol";
-
-import "ds-auth/auth.sol";
-
 import "./expiring_market.sol";
 
 contract MatchingEvents {
@@ -14,7 +10,7 @@ contract MatchingEvents {
     event LogSortedOffer(uint mid);
 }
 
-contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
+contract MatchingMarket is MatchingEvents, ExpiringMarket {
 
     bool public ebu = true; //buy enabled
     bool public ema = true; /*true: enable matching, false: revert to 
@@ -41,6 +37,8 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
     //first unsigned offer id
     uint ufi;
 
+    function MatchingMarket(uint lifetime_) ExpiringMarket(lifetime_){
+    }
     //return true if offers[loi] priced less than or equal 
     //to offers[hoi]
     function isLtOrEq(
