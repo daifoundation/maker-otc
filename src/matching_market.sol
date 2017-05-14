@@ -178,9 +178,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
                       uint mid    /*id of maker (ask) offer to 
                                     remove from sorted list*/
                    )
-        internal
-        returns (bool)
-        {
+    internal
+    returns (bool)
+    {
         address mbt = address(offers[mid].buy_which_token);
         address mst = address(offers[mid].sell_which_token);
 
@@ -227,9 +227,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
                     , ERC20 tbt  //taker(bid) buy which token
                     , uint pos   //position id
                    )
-        internal
-        returns(uint mid)
-        {
+    internal
+    returns(uint mid)
+    {
 
         toc = false;        //taker offer should be created
         bool yet = true;    //matching not done yet
@@ -328,15 +328,15 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     // Keepers should call insert(mid,pos) to put offer in the sorted list.
 
     function offeru ( 
-                     uint msh   //maker (ask) sell how much
-                   , ERC20 mst  //maker (ask) sell which token
-                   , uint mbh   //maker (ask) buy how much
-                   , ERC20 mbt  //maker (ask) buy which token
-                  )
-        auth
-        internal
-        /*NOT synchronized!!! */
-        returns (uint mid) 
+                       uint msh   //maker (ask) sell how much
+                     , ERC20 mst  //maker (ask) sell which token
+                     , uint mbh   //maker (ask) buy how much
+                     , ERC20 mbt  //maker (ask) buy which token
+                    )
+    auth
+    internal
+    /*NOT synchronized!!! */
+    returns (uint mid) 
     {
         mid = super.offer( msh, mst, mbh, mbt ); 
         
@@ -385,8 +385,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
                    , uint mbh   //maker (ask) buy how much
                    , ERC20 mbt  //maker (ask) buy which token
                   )
-        /*NOT synchronized!!! */
-        returns (uint mid) 
+    /*NOT synchronized!!! */
+    returns (uint mid) 
     {
         if( ema ) {
             //matching enabled
@@ -410,9 +410,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
                    , uint pos   /*position to insert offer, 
                                   0 should be used if unknown*/
                   )
-        /*NOT synchronized!!! */
-        can_offer
-        returns ( uint mid )
+    /*NOT synchronized!!! */
+    can_offer
+    returns ( uint mid )
     {
         //make sure 'sell how much' is greater than minimum required 
         assert(mis[mst] <= msh);
@@ -436,9 +436,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
                                       is to be bought*/
                  , uint qua         //quantity of token to buy
                 )
-        /*NOT synchronized!!! */
-        can_buy(mid)
-        returns ( bool success )
+    /*NOT synchronized!!! */
+    can_buy(mid)
+    returns ( bool success )
     {
         if ( ema ) {
             //matching enabled
@@ -464,9 +464,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     // Cancel an offer. Refunds offer maker.
 
     function cancel( uint mid )
-        /*NOT synchronized!!! */
-        can_cancel(mid)
-        returns ( bool success )
+    /*NOT synchronized!!! */
+    can_cancel(mid)
+    returns ( bool success )
     {
         if ( ema ) {
             //matching enabled
