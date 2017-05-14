@@ -8,7 +8,7 @@ import "./expiring_market.sol";
 
 contract MatchingEvents {
     event LogBuyEnabled(bool);
-    event LogMinSellAmount(address sell_which_token, uint min_amount);
+    event LogMinSell(address sell_which_token, uint min_amount);
     event LogMatchingEnabled(bool);
     event LogUnsortedOffer(uint mid);
     event LogSortedOffer(uint mid);
@@ -28,9 +28,6 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
 
     //id of the highest offer for a token pair
     mapping( address => mapping( address => uint ) ) public hes;    
-
-    //id of the lowest offer for a token pair
-    mapping( address => mapping( address => uint ) ) public les;    
 
     //size of `hoi` (number of keys)
     mapping( address => mapping( address => uint ) ) public hos;
@@ -76,6 +73,7 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
         
         if ( hid == 0 ) {
             //there are no offers stored
+
             return 0;
         }
         if ( hos[mst][mbt] > 0 ) {
@@ -100,7 +98,7 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
         } else {
             //there is maximum one offer stored
 
-            if ( les[mst][mbt] == 0 ) {
+            if ( hes[mst][mbt] == 0 ) {
                 //there is no offer stored yet
                 
                 return 0;
@@ -132,6 +130,8 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
 
         assert(isActive(pos));
         assert(isActive(mid));
+        //assert `pos` is in the sorted list
+        assert( hoi[pos] != 0 || loi[pos] != 0 || hes[mst][mbt] == pos);
        
         if ( pos != 0 ) {
             //offers[mid] is not the highest offer
@@ -148,25 +148,22 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
 
             hoi[mid] = pos;
             hos[mst][mbt]++;
-            if ( pos != les[mst][mbt] ) {
+            if ( loi[pos] != 0 ) {
                 //offers[mid] is not the lowest offer 
                 
                 lid = loi[pos];
                 
                 //make sure price of offers[mid] is higher than  
                 //price of offers[lid]
-                assert( lid == 0 || !isLtOrEq( mid, lid ) ); 
+                assert( !isLtOrEq( mid, lid ) ); 
                 
-                if( lid > 0 ) {
-                    hoi[lid] = mid;
-                }
+                hoi[lid] = mid;
                 loi[mid] = lid;
                 loi[pos] = mid;
             }else{
                 //offers[mid] is the lowest offer
                 
                 loi[pos] = mid;
-                les[mst][mbt] = mid;                
             }
         } else {
             //offers[mid] is the highest offer
@@ -188,11 +185,7 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
                 loi[mid] = hsi;
                 hoi[hsi] = mid;
                 hos[mst][mbt]++;
-            } else {
-                //offers[mid] is the first offer that is stored
-
-                les[mst][mbt] = mid;
-            }
+            } 
             hes[mst][mbt] = mid;
         }
         LogSortedOffer(mid);
@@ -208,41 +201,36 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
         {
         address mbt = address(offers[mid].buy_which_token);
         address mst = address(offers[mid].sell_which_token);
+
+        //assert mid is in the sorted list
+        assert( hoi[mid] != 0 || loi[mid] != 0 || hes[mst][mbt] == mid);
         
-        if( hes[mst][mbt] == mid ) {
-            //offers[mid] is the highest offer
-        
-            hes[mst][mbt] = loi[mid]; 
-            delete hoi[ loi[mid] ];
-            delete loi[mid];
-            if ( hos[mst][mbt] > 0 ) {
-                //there is at least one offer left
-        
-                hos[mst][mbt]--;
-            } else {
-                //offer was the last offer 
-        
-                les[mst][mbt] = 0;
-            }
-        } else if( les[mst][mbt] == mid ) {
-            //offers[mid] is the lowest offer
-        
-            les[mst][mbt] = hoi[mid]; 
-            delete loi[ hoi[mid] ];
-            delete hoi[mid];
-            hos[mst][mbt]--;
-        } else {
-            //offers[mid] is between the highest and the lowest offer
+        if ( mid != hes[mst][mbt] ) {
+            // offers[mid] is not the highest offer
 
             loi[ hoi[mid] ] = loi[mid];
+        }else{
+            //offers[mid] is the highest offer
+
+            hes[mst][mbt] = loi[mid];
+        }
+
+        if ( loi[mid] != 0 ) {
+            //offers[mid] is not the lowest offer
+
             hoi[ loi[mid] ] = hoi[mid];
-            delete loi[mid];
-            delete hoi[mid];
+        }
+       
+        if ( hos[mst][mbt] > 0 ) {
+            //size of `hes` is greater than 0
+
             hos[mst][mbt]--;
         }
-        
+        delete loi[mid];
+        delete hoi[mid];
         return true;
     }
+
     //these variables are global only because of solidity local variable limit
     uint mbh;   //maker(ask) offer wants to buy this much token
     uint msh;   //maker(ask) offer wants to sell this much token
@@ -355,7 +343,7 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
     // Make a new offer without putting it in the sorted list.
     // Takes funds from the caller into market escrow.
     // ****Available to authorized contracts only!**********
-    // Keepers should call sort(mid,pos) to put offer in the sorted list.
+    // Keepers should call insert(mid,pos) to put offer in the sorted list.
 
     function offeru ( 
                      uint msh   //maker (ask) sell how much
@@ -402,7 +390,7 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
     //     * creates new offer without putting it in 
     //       the sorted list.
     //     * available to authorized contracts only! 
-    //     * keepers should call sort(mid,pos) 
+    //     * keepers should call insert(mid,pos) 
     //       to put offer in the sorted list.
     // If matching is disabled: 
     //     * calls expiring market's offer().
@@ -442,7 +430,7 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
                   )
         /*NOT synchronized!!! */
         can_offer
-        returns ( uint id )
+        returns ( uint mid )
     {
         //make sure 'sell how much' is greater than minimum required 
         assert(mis[mst] <= msh);
@@ -450,11 +438,11 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
         if ( ema ) {
             //matching enabled
 
-            return matcho( msh, mst, mbh, mbt, pos );
+            mid = matcho( msh, mst, mbh, mbt, pos );
         }else{
             //revert to expiring market
 
-            id = super.offer( msh, mst, mbh, mbt );
+            mid = super.offer( msh, mst, mbh, mbt );
         }
     }
 
@@ -473,9 +461,13 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
         if ( ema ) {
             //matching enabled
 
-            assert(ebu);    //buy enabled
+            //buy enabled
+            assert(ebu);    
 
             if( qua >= offers[mid].sell_how_much ) {
+                //offers[mid] must be removed from
+                //sorted list because all of it is bought
+
                 unsort(mid);
             }
             assert( super.buy( mid, qua ) ); 
@@ -518,18 +510,19 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
         //make sure offers[mid] is not yet sorted
         assert( hoi[mid] == 0);
         assert( loi[mid] == 0);
-        assert( les[mst][mbt] != mid);
-        //make sure offers[mid] is active
+        assert( hes[mst][mbt] != mid);
+
         assert(isActive(mid)); 
-        //make sure offers[pos] is active
         assert(isActive(pos)); 
         
         //take offer out of list of unsorted offers
         uid = ufi;
         pre = 0;
+
         //find `mid` in the unsorted list of offers
         while( uid > 0 && uid != mid ) {
             //while not found `mid`
+
             pre = uid;
             uid = uni[uid];   
         }
@@ -563,7 +556,7 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
     }
 
     // set the minimum sell amount for a token
-    function setMinSellAmount(
+    function setMinSell(
                                 ERC20 mst  /*token to assign minimum 
                                              sell amount to*/
                               , uint mis_   //maker (ask) minimum sell amount 
@@ -571,11 +564,11 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
     auth
     returns (bool suc) {
         mis[mst] = mis_;
-        LogMinSellAmount(mst, mis_);
+        LogMinSell(mst, mis_);
         suc = true; //success
     }
 
-    function getMinSellAmount(
+    function getMinSell(
                               ERC20 mst /*token for which minimum 
                                           sell amount is queried*/
                              )
