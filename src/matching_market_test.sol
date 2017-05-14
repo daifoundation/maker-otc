@@ -34,10 +34,10 @@ contract MarketTester {
     }
     function doOffer( uint sell_how_much, ERC20 sell_which_token
                     , uint buy_how_much,  ERC20 buy_which_token
-                    , uint user_higher_id )
+                    , uint pos )
     returns (uint) {
         return market.offer( sell_how_much, sell_which_token
-                  , buy_how_much, buy_which_token, user_higher_id);
+                  , buy_how_much, buy_which_token, pos);
     }
     function doCancel(uint id) returns (bool _success) {
         return market.cancel(id);
@@ -89,11 +89,11 @@ contract OrderMatchingGasTest is DSTest {
     //insert single offer
     function insertOffer(uint sell_how_much, ERC20 sell_which_token, 
                          uint buy_how_much, ERC20 buy_which_token, 
-                         uint user_higher_id) 
+                         uint pos) 
     logs_gas 
     returns(bool _success) {
         otc.offer( sell_how_much, sell_which_token, 
-                  buy_how_much, buy_which_token, user_higher_id);
+                  buy_how_much, buy_which_token, pos);
     }
     //creates offer_count number of offers of increasing price
     function createOffers(uint offer_count) {
