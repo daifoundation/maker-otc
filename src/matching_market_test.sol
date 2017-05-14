@@ -3,22 +3,22 @@ pragma solidity ^0.4.8;
 import "ds-test/test.sol";
 import "ds-token/base.sol";
 
-import "./simple_market.sol";
+import "./matching_market.sol";
 
 contract MarketTester {
-    SimpleMarket market;
-    function MarketTester(SimpleMarket market_) {
+    MatchingMarket market;
+    function MarketTester(MatchingMarket  market_) {
         market = market_;
     }
     function doSetMinSellAmount(ERC20 sell_which_token, uint min_amount)
     returns (bool)
     {
-        return market.setMinSellAmount(sell_which_token, min_amount);
+        return market.setMinSell(sell_which_token, min_amount);
     }
     function doGetMinSellAmount(ERC20 sell_which_token)
     returns (uint)
     {
-        return market.getMinSellAmount(sell_which_token);
+        return market.getMinSell(sell_which_token);
     }
     function doApprove(address spender, uint value, ERC20 token) {
         token.approve(spender, value);
@@ -30,7 +30,7 @@ contract MarketTester {
                     , uint buy_how_much,  ERC20 buy_which_token )
     returns (uint) {
         return market.offer( sell_how_much, sell_which_token
-                  , buy_how_much, buy_which_token);
+                  , buy_how_much, buy_which_token, 0);
     }
     function doOffer( uint sell_how_much, ERC20 sell_which_token
                     , uint buy_how_much,  ERC20 buy_which_token
@@ -43,7 +43,7 @@ contract MarketTester {
         return market.cancel(id);
     }
     function getMarket() 
-    returns (SimpleMarket)
+    returns (MatchingMarket)
     {
         return market;
     }
@@ -53,14 +53,14 @@ contract OrderMatchingGasTest is DSTest {
     ERC20 dai;
     ERC20 mkr;
     ERC20 dgd;
-    SimpleMarket otc;
+    MatchingMarket otc;
     uint offer_count = 200;
     mapping( uint => uint ) offer;
     mapping( uint => uint ) dai_to_buy;
     mapping( uint => uint ) mkr_to_sell;
     uint [] match_count = [1,5,10,15,20,50,100];
     function setUp() {
-        otc = new SimpleMarket();
+        otc = new MatchingMarket(50000);
         user1 = new MarketTester(otc);
 
         dai = new DSTokenBase(10 ** 9);
@@ -112,7 +112,7 @@ contract OrderMatchingGasTest is DSTest {
         mkr_sell = dai_buy;
 
         insertOffer(mkr_sell, mkr, dai_buy, dai);
-        assertEq( otc.getHigherOfferIdSize(dai,mkr), 0);
+        assertEq( otc.hos(dai,mkr), 0);
     }
     /*Test the gas usage of inserting one offer.
     
@@ -123,7 +123,7 @@ contract OrderMatchingGasTest is DSTest {
     function execOrderInsertGasTest(uint offer_index) {
         createOffers(offer_index + 1);
         insertOffer(offer_index+1, dai, 1, mkr);
-        assertEq( otc.getHigherOfferIdSize(dai,mkr), 
+        assertEq( otc.hos(dai,mkr), 
                  offer_index + 1);
     }
     function testGasMatchOneOrder() {
@@ -208,7 +208,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
     ERC20 dai;
     ERC20 mkr;
     ERC20 dgd;
-    SimpleMarket otc;
+    MatchingMarket otc;
     mapping( uint => uint ) offer_id;
     uint buy_val;
     uint sell_val;
@@ -219,7 +219,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
     ERC20 sell_token1;
     ERC20 buy_token1;
     function setUp() {
-        otc = new SimpleMarket();
+        otc = new MatchingMarket(50000);
         user1 = new MarketTester(otc);
 
         dai = new DSTokenBase(10 ** 32);
@@ -227,32 +227,23 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         dgd = new DSTokenBase(10 ** 32);
     }
     function testSetGetMinSellAmout(){
-        otc.setMinSellAmount(dai,100);
-        assertEq( otc.getMinSellAmount(dai), 100);
-    }
-    function testSetGetDeleteMinSellAmout(){
-        otc.setMinSellAmount(dai,134);
-        assertEq( otc.getMinSellAmount(dai), 134);
-        otc.deleteMinSellAmount(dai);
-        assertEq( otc.getMinSellAmount(dai), 0);
+        otc.setMinSell(dai,100);
+        assertEq( otc.getMinSell(dai), 100);
     }
     function testFailOfferSellsLessThanRequired(){
         mkr.approve(otc, 30);
-        otc.setMinSellAmount(mkr,31);
-        assertEq( otc.getMinSellAmount(mkr), 31);
-        offer_id[1] = otc.offer( 30, mkr, 100, dai );
+        otc.setMinSell(mkr,31);
+        assertEq( otc.getMinSell(mkr), 31);
+        offer_id[1] = otc.offer( 30, mkr, 100, dai, 0 );
     }
     function testFailNonOwnerCanNotSetSellAmount(){
         user1.doSetMinSellAmount(dai,100);
     }
-    function testFailNonOwnerCanNotDeleteSellAmount(){
-        user1.doDeleteMinSellAmount(dai);
-    }
     function testOfferSellsMoreThanOrEqualThanRequired(){
         mkr.approve(otc, 30);
-        otc.setMinSellAmount(mkr,30);
-        assertEq( otc.getMinSellAmount(mkr), 30);
-        offer_id[1] = otc.offer( 30, mkr, 100, dai );
+        otc.setMinSell(mkr,30);
+        assertEq( otc.getMinSell(mkr), 30);
+        offer_id[1] = otc.offer( 30, mkr, 100, dai, 0 );
     }
     function testErroneousUserHigherIdStillWorks(){
         dai.transfer(user1, 10 );
@@ -285,22 +276,20 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         user1.doApprove(otc, 1, dai );
         offer_id[1] = user1.doOffer(1, dai, 1, mkr );
         
-        assertEq( otc.getLowestOffer( dai, mkr ), offer_id[1]);
-        assertEq( otc.getHighestOffer( dai, mkr ), offer_id[1]);
-        assertEq( otc.getHigherOfferId(offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[1] ), 0);
-        assertEq( otc.getHigherOfferIdSize(dai,mkr), 0);
+        assertEq( otc.hes( dai, mkr ), offer_id[1]);
+        assertEq( otc.hoi(offer_id[1] ), 0);
+        assertEq( otc.loi(offer_id[1] ), 0);
+        assertEq( otc.hos(dai,mkr), 0);
     }
     function testHighestOfferWithOneOfferWithUserprovidedId(){
         dai.transfer(user1, 1 );
         user1.doApprove(otc, 1, dai );
         offer_id[1] = user1.doOffer(1, dai, 1, mkr , 0);
         
-        assertEq( otc.getLowestOffer( dai, mkr ), offer_id[1]);
-        assertEq( otc.getHighestOffer( dai, mkr ), offer_id[1]);
-        assertEq( otc.getHigherOfferId(offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[1] ), 0);
-        assertEq( otc.getHigherOfferIdSize(dai,mkr), 0);
+        assertEq( otc.hes( dai, mkr ), offer_id[1]);
+        assertEq( otc.hoi(offer_id[1] ), 0);
+        assertEq( otc.loi(offer_id[1] ), 0);
+        assertEq( otc.hos(dai,mkr), 0);
     }
     function testHighestOfferWithTwoOffers(){
         dai.transfer(user1, 25 );
@@ -308,13 +297,12 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         offer_id[1] = user1.doOffer(10, dai, 1, mkr );
         offer_id[2] = user1.doOffer(15, dai, 1, mkr );
         
-        assertEq( otc.getLowestOffer( dai, mkr ), offer_id[1]);
-        assertEq( otc.getHighestOffer( dai, mkr ), offer_id[2]);
-        assertEq( otc.getLowerOfferId(offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[2] ), offer_id[1]);
-        assertEq( otc.getHigherOfferId(offer_id[1] ), offer_id[2]);
-        assertEq( otc.getHigherOfferId(offer_id[2] ), 0);
-        assertEq( otc.getHigherOfferIdSize(dai,mkr), 1);
+        assertEq( otc.hes( dai, mkr ), offer_id[2]);
+        assertEq( otc.loi(offer_id[1] ), 0);
+        assertEq( otc.loi(offer_id[2] ), offer_id[1]);
+        assertEq( otc.hoi(offer_id[1] ), offer_id[2]);
+        assertEq( otc.hoi(offer_id[2] ), 0);
+        assertEq( otc.hos(dai,mkr), 1);
     }
     function testHighestOfferWithTwoOffersWithUserprovidedId(){
         dai.transfer(user1, 25 );
@@ -322,13 +310,12 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         offer_id[2] = user1.doOffer(15, dai, 1, mkr );
         offer_id[1] = user1.doOffer(10, dai, 1, mkr, offer_id[2] );
         
-        assertEq( otc.getLowestOffer( dai, mkr ), offer_id[1]);
-        assertEq( otc.getHighestOffer( dai, mkr ), offer_id[2]);
-        assertEq( otc.getLowerOfferId(offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[2] ), offer_id[1]);
-        assertEq( otc.getHigherOfferId(offer_id[1] ), offer_id[2]);
-        assertEq( otc.getHigherOfferId(offer_id[2] ), 0);
-        assertEq( otc.getHigherOfferIdSize(dai,mkr), 1);
+        assertEq( otc.hes( dai, mkr ), offer_id[2]);
+        assertEq( otc.loi(offer_id[1] ), 0);
+        assertEq( otc.loi(offer_id[2] ), offer_id[1]);
+        assertEq( otc.hoi(offer_id[1] ), offer_id[2]);
+        assertEq( otc.hoi(offer_id[2] ), 0);
+        assertEq( otc.hos(dai,mkr), 1);
     }
     function testHighestOfferWithThreeOffers(){
         dai.transfer(user1, 37 );
@@ -337,15 +324,14 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         offer_id[2] = user1.doOffer(12, dai, 1, mkr );
         offer_id[3] = user1.doOffer(15, dai, 1, mkr );
         
-        assertEq( otc.getLowestOffer( dai, mkr ), offer_id[1]);
-        assertEq( otc.getHighestOffer( dai, mkr ), offer_id[3]);
-        assertEq( otc.getLowerOfferId(offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[2] ), offer_id[1]);
-        assertEq( otc.getLowerOfferId(offer_id[3] ), offer_id[2]);
-        assertEq( otc.getHigherOfferId(offer_id[1] ), offer_id[2]);
-        assertEq( otc.getHigherOfferId(offer_id[2] ), offer_id[3]);
-        assertEq( otc.getHigherOfferId(offer_id[3] ), 0);
-        assertEq( otc.getHigherOfferIdSize(dai,mkr), 2);
+        assertEq( otc.hes( dai, mkr ), offer_id[3]);
+        assertEq( otc.loi(offer_id[1] ), 0);
+        assertEq( otc.loi(offer_id[2] ), offer_id[1]);
+        assertEq( otc.loi(offer_id[3] ), offer_id[2]);
+        assertEq( otc.hoi(offer_id[1] ), offer_id[2]);
+        assertEq( otc.hoi(offer_id[2] ), offer_id[3]);
+        assertEq( otc.hoi(offer_id[3] ), 0);
+        assertEq( otc.hos(dai,mkr), 2);
     }
     function testHighestOfferWithThreeOffersMixed(){
         dai.transfer(user1, 37 );
@@ -354,15 +340,14 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         offer_id[2] = user1.doOffer(15, dai, 1, mkr );
         offer_id[3] = user1.doOffer(12, dai, 1, mkr );
         
-        assertEq( otc.getLowestOffer( dai, mkr ), offer_id[1]);
-        assertEq( otc.getHighestOffer( dai, mkr ), offer_id[2]);
-        assertEq( otc.getLowerOfferId(offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[2] ), offer_id[3]);
-        assertEq( otc.getLowerOfferId(offer_id[3] ), offer_id[1]);
-        assertEq( otc.getHigherOfferId(offer_id[1] ), offer_id[3]);
-        assertEq( otc.getHigherOfferId(offer_id[2] ), 0);
-        assertEq( otc.getHigherOfferId(offer_id[3] ), offer_id[2]);
-        assertEq( otc.getHigherOfferIdSize(dai,mkr), 2);
+        assertEq( otc.hes( dai, mkr ), offer_id[2]);
+        assertEq( otc.loi(offer_id[1] ), 0);
+        assertEq( otc.loi(offer_id[2] ), offer_id[3]);
+        assertEq( otc.loi(offer_id[3] ), offer_id[1]);
+        assertEq( otc.hoi(offer_id[1] ), offer_id[3]);
+        assertEq( otc.hoi(offer_id[2] ), 0);
+        assertEq( otc.hoi(offer_id[3] ), offer_id[2]);
+        assertEq( otc.hos(dai,mkr), 2);
     }
     function testHighestOfferWithThreeOffersMixedWithUserProvidedId(){
         dai.transfer(user1, 37 );
@@ -371,15 +356,14 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         offer_id[2] = user1.doOffer(15, dai, 1, mkr );
         offer_id[3] = user1.doOffer(12, dai, 1, mkr,offer_id[2] );
         
-        assertEq( otc.getLowestOffer( dai, mkr ), offer_id[1]);
-        assertEq( otc.getHighestOffer( dai, mkr ), offer_id[2]);
-        assertEq( otc.getLowerOfferId(offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[2] ), offer_id[3]);
-        assertEq( otc.getLowerOfferId(offer_id[3] ), offer_id[1]);
-        assertEq( otc.getHigherOfferId(offer_id[1] ), offer_id[3]);
-        assertEq( otc.getHigherOfferId(offer_id[2] ), 0);
-        assertEq( otc.getHigherOfferId(offer_id[3] ), offer_id[2]);
-        assertEq( otc.getHigherOfferIdSize(dai,mkr), 2);
+        assertEq( otc.hes( dai, mkr ), offer_id[2]);
+        assertEq( otc.loi(offer_id[1] ), 0);
+        assertEq( otc.loi(offer_id[2] ), offer_id[3]);
+        assertEq( otc.loi(offer_id[3] ), offer_id[1]);
+        assertEq( otc.hoi(offer_id[1] ), offer_id[3]);
+        assertEq( otc.hoi(offer_id[2] ), 0);
+        assertEq( otc.hoi(offer_id[3] ), offer_id[2]);
+        assertEq( otc.hos(dai,mkr), 2);
     }
     function testHighestOfferWithFourOffersDeleteBetween(){
         dai.transfer(user1, 53 );
@@ -389,30 +373,28 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         offer_id[3] = user1.doOffer(15, dai, 1, mkr );
         offer_id[4] = user1.doOffer(16, dai, 1, mkr );
         
-        assertEq( otc.getLowestOffer( dai, mkr ), offer_id[1]);
-        assertEq( otc.getHighestOffer( dai, mkr ), offer_id[4]);
-        assertEq( otc.getLowerOfferId(offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[2] ), offer_id[1]);
-        assertEq( otc.getLowerOfferId(offer_id[3] ), offer_id[2]);
-        assertEq( otc.getLowerOfferId(offer_id[4] ), offer_id[3]);
-        assertEq( otc.getHigherOfferId(offer_id[1] ), offer_id[2]);
-        assertEq( otc.getHigherOfferId(offer_id[2] ), offer_id[3]);
-        assertEq( otc.getHigherOfferId(offer_id[3] ), offer_id[4]);
-        assertEq( otc.getHigherOfferId(offer_id[4] ), 0);
-        assertEq( otc.getHigherOfferIdSize(dai,mkr), 3);
+        assertEq( otc.hes( dai, mkr ), offer_id[4]);
+        assertEq( otc.loi(offer_id[1] ), 0);
+        assertEq( otc.loi(offer_id[2] ), offer_id[1]);
+        assertEq( otc.loi(offer_id[3] ), offer_id[2]);
+        assertEq( otc.loi(offer_id[4] ), offer_id[3]);
+        assertEq( otc.hoi(offer_id[1] ), offer_id[2]);
+        assertEq( otc.hoi(offer_id[2] ), offer_id[3]);
+        assertEq( otc.hoi(offer_id[3] ), offer_id[4]);
+        assertEq( otc.hoi(offer_id[4] ), 0);
+        assertEq( otc.hos(dai,mkr), 3);
 
         user1.doCancel(offer_id[3]);
-        assertEq( otc.getLowestOffer( dai, mkr ), offer_id[1]);
-        assertEq( otc.getHighestOffer( dai, mkr ), offer_id[4]);
-        assertEq( otc.getLowerOfferId(offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[2] ), offer_id[1]);
-        assertEq( otc.getLowerOfferId(offer_id[3] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[4] ), offer_id[2]);
-        assertEq( otc.getHigherOfferId(offer_id[1] ), offer_id[2]);
-        assertEq( otc.getHigherOfferId(offer_id[2] ), offer_id[4]);
-        assertEq( otc.getHigherOfferId(offer_id[3] ), 0);
-        assertEq( otc.getHigherOfferId(offer_id[4] ), 0);
-        assertEq( otc.getHigherOfferIdSize(dai,mkr), 2);
+        assertEq( otc.hes( dai, mkr ), offer_id[4]);
+        assertEq( otc.loi(offer_id[1] ), 0);
+        assertEq( otc.loi(offer_id[2] ), offer_id[1]);
+        assertEq( otc.loi(offer_id[3] ), 0);
+        assertEq( otc.loi(offer_id[4] ), offer_id[2]);
+        assertEq( otc.hoi(offer_id[1] ), offer_id[2]);
+        assertEq( otc.hoi(offer_id[2] ), offer_id[4]);
+        assertEq( otc.hoi(offer_id[3] ), 0);
+        assertEq( otc.hoi(offer_id[4] ), 0);
+        assertEq( otc.hos(dai,mkr), 2);
     }
     function testHighestOfferWithFourOffersWithUserprovidedId(){
         dai.transfer(user1, 53 );
@@ -422,17 +404,16 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         offer_id[2] = user1.doOffer(12, dai, 1, mkr, offer_id[3] );
         offer_id[1] = user1.doOffer(10, dai, 1, mkr, offer_id[2]);
         
-        assertEq( otc.getLowestOffer( dai, mkr ), offer_id[1]);
-        assertEq( otc.getHighestOffer( dai, mkr ), offer_id[4]);
-        assertEq( otc.getLowerOfferId(offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[2] ), offer_id[1]);
-        assertEq( otc.getLowerOfferId(offer_id[3] ), offer_id[2]);
-        assertEq( otc.getLowerOfferId(offer_id[4] ), offer_id[3]);
-        assertEq( otc.getHigherOfferId(offer_id[1] ), offer_id[2]);
-        assertEq( otc.getHigherOfferId(offer_id[2] ), offer_id[3]);
-        assertEq( otc.getHigherOfferId(offer_id[3] ), offer_id[4]);
-        assertEq( otc.getHigherOfferId(offer_id[4] ), 0);
-        assertEq( otc.getHigherOfferIdSize(dai,mkr), 3);
+        assertEq( otc.hes( dai, mkr ), offer_id[4]);
+        assertEq( otc.loi(offer_id[1] ), 0);
+        assertEq( otc.loi(offer_id[2] ), offer_id[1]);
+        assertEq( otc.loi(offer_id[3] ), offer_id[2]);
+        assertEq( otc.loi(offer_id[4] ), offer_id[3]);
+        assertEq( otc.hoi(offer_id[1] ), offer_id[2]);
+        assertEq( otc.hoi(offer_id[2] ), offer_id[3]);
+        assertEq( otc.hoi(offer_id[3] ), offer_id[4]);
+        assertEq( otc.hoi(offer_id[4] ), 0);
+        assertEq( otc.hos(dai,mkr), 3);
     }
     function testHighestOfferWithFourOffersTwoSamePriceUserProvidedId(){
         dai.transfer(user1, 50 );
@@ -442,17 +423,16 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         offer_id[4] = user1.doOffer(16, dai, 1, mkr );
         offer_id[3] = user1.doOffer(12, dai, 1, mkr , offer_id[2]);
         
-        assertEq( otc.getLowestOffer( dai, mkr ), offer_id[1]);
-        assertEq( otc.getHighestOffer( dai, mkr ), offer_id[4]);
-        assertEq( otc.getLowerOfferId(offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[2] ), offer_id[3]);
-        assertEq( otc.getLowerOfferId(offer_id[3] ), offer_id[1]);
-        assertEq( otc.getLowerOfferId(offer_id[4] ), offer_id[2]);
-        assertEq( otc.getHigherOfferId(offer_id[1] ), offer_id[3]);
-        assertEq( otc.getHigherOfferId(offer_id[2] ), offer_id[4]);
-        assertEq( otc.getHigherOfferId(offer_id[3] ), offer_id[2]);
-        assertEq( otc.getHigherOfferId(offer_id[4] ), 0);
-        assertEq( otc.getHigherOfferIdSize(dai,mkr), 3);
+        assertEq( otc.hes( dai, mkr ), offer_id[4]);
+        assertEq( otc.loi(offer_id[1] ), 0);
+        assertEq( otc.loi(offer_id[2] ), offer_id[3]);
+        assertEq( otc.loi(offer_id[3] ), offer_id[1]);
+        assertEq( otc.loi(offer_id[4] ), offer_id[2]);
+        assertEq( otc.hoi(offer_id[1] ), offer_id[3]);
+        assertEq( otc.hoi(offer_id[2] ), offer_id[4]);
+        assertEq( otc.hoi(offer_id[3] ), offer_id[2]);
+        assertEq( otc.hoi(offer_id[4] ), 0);
+        assertEq( otc.hos(dai,mkr), 3);
     }
     function testHighestOfferWithTwoOffersDeletedLowest(){
         dai.transfer(user1, 22 );
@@ -461,13 +441,12 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         offer_id[2] = user1.doOffer(12, dai, 1, mkr );
         user1.doCancel(offer_id[1]);
         
-        assertEq( otc.getLowestOffer( dai, mkr ), offer_id[2]);
-        assertEq( otc.getHighestOffer( dai, mkr ), offer_id[2]);
-        assertEq( otc.getLowerOfferId(offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[2] ), 0);
-        assertEq( otc.getHigherOfferId(offer_id[1] ), 0);
-        assertEq( otc.getHigherOfferId(offer_id[2] ), 0);
-        assertEq( otc.getHigherOfferIdSize(dai,mkr), 0);
+        assertEq( otc.hes( dai, mkr ), offer_id[2]);
+        assertEq( otc.loi(offer_id[1] ), 0);
+        assertEq( otc.loi(offer_id[2] ), 0);
+        assertEq( otc.hoi(offer_id[1] ), 0);
+        assertEq( otc.hoi(offer_id[2] ), 0);
+        assertEq( otc.hos(dai,mkr), 0);
         assert( !otc.isActive( offer_id[1] ) ); 
     }
     function testHighestOfferWithTwoOffersDeletedHighest(){
@@ -477,13 +456,12 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         offer_id[2] = user1.doOffer(12, dai, 1, mkr );
         user1.doCancel(offer_id[2]);
 
-        assertEq( otc.getLowestOffer( dai, mkr ), offer_id[1]);
-        assertEq( otc.getHighestOffer( dai, mkr ), offer_id[1]);
-        assertEq( otc.getLowerOfferId(offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[2] ), 0);
-        assertEq( otc.getHigherOfferId(offer_id[1] ), 0);
-        assertEq( otc.getHigherOfferId(offer_id[2] ), 0);
-        assertEq( otc.getHigherOfferIdSize(dai,mkr), 0);
+        assertEq( otc.hes( dai, mkr ), offer_id[1]);
+        assertEq( otc.loi(offer_id[1] ), 0);
+        assertEq( otc.loi(offer_id[2] ), 0);
+        assertEq( otc.hoi(offer_id[1] ), 0);
+        assertEq( otc.hoi(offer_id[2] ), 0);
+        assertEq( otc.hos(dai,mkr), 0);
         assert( !otc.isActive( offer_id[2] ) ); 
     }
     function testHighestOfferWithThreeOffersDeletedLowest(){
@@ -493,15 +471,14 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         offer_id[2] = user1.doOffer(12, dai, 1, mkr );
         offer_id[3] = user1.doOffer(14, dai, 1, mkr );
         user1.doCancel(offer_id[1]);
-        assertEq( otc.getLowestOffer( dai, mkr ), offer_id[2]);
-        assertEq( otc.getHighestOffer( dai, mkr ), offer_id[3]);
-        assertEq( otc.getLowerOfferId(offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[2] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[3] ), offer_id[2]);
-        assertEq( otc.getHigherOfferId(offer_id[1] ), 0);
-        assertEq( otc.getHigherOfferId(offer_id[2] ), offer_id[3]);
-        assertEq( otc.getHigherOfferId(offer_id[3] ), 0);
-        assertEq( otc.getHigherOfferIdSize(dai,mkr), 1);
+        assertEq( otc.hes( dai, mkr ), offer_id[3]);
+        assertEq( otc.loi(offer_id[1] ), 0);
+        assertEq( otc.loi(offer_id[2] ), 0);
+        assertEq( otc.loi(offer_id[3] ), offer_id[2]);
+        assertEq( otc.hoi(offer_id[1] ), 0);
+        assertEq( otc.hoi(offer_id[2] ), offer_id[3]);
+        assertEq( otc.hoi(offer_id[3] ), 0);
+        assertEq( otc.hos(dai,mkr), 1);
         assert( !otc.isActive( offer_id[1] ) ); 
     }
     function testHighestOfferWithThreeOffersDeletedHighest(){
@@ -511,15 +488,14 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         offer_id[2] = user1.doOffer(12, dai, 1, mkr );
         offer_id[3] = user1.doOffer(14, dai, 1, mkr );
         user1.doCancel(offer_id[3]);
-        assertEq( otc.getLowestOffer( dai, mkr ), offer_id[1]);
-        assertEq( otc.getHighestOffer( dai, mkr ), offer_id[2]);
-        assertEq( otc.getLowerOfferId(offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[2] ), offer_id[1]);
-        assertEq( otc.getLowerOfferId(offer_id[3] ), 0);
-        assertEq( otc.getHigherOfferId(offer_id[1] ), offer_id[2]);
-        assertEq( otc.getHigherOfferId(offer_id[2] ), 0);
-        assertEq( otc.getHigherOfferId(offer_id[3] ), 0);
-        assertEq( otc.getHigherOfferIdSize(dai,mkr), 1);
+        assertEq( otc.hes( dai, mkr ), offer_id[2]);
+        assertEq( otc.loi(offer_id[1] ), 0);
+        assertEq( otc.loi(offer_id[2] ), offer_id[1]);
+        assertEq( otc.loi(offer_id[3] ), 0);
+        assertEq( otc.hoi(offer_id[1] ), offer_id[2]);
+        assertEq( otc.hoi(offer_id[2] ), 0);
+        assertEq( otc.hoi(offer_id[3] ), 0);
+        assertEq( otc.hos(dai,mkr), 1);
         assert( !otc.isActive( offer_id[3] ) ); 
 
         expectEventsExact(otc);
@@ -533,16 +509,14 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         user1.doApprove(otc, 2, dai );
         offer_id[1] = user1.doOffer(1, dai, 1, dgd );
         offer_id[2] = user1.doOffer(1, dai, 1, mkr );
-        assertEq( otc.getLowestOffer( dai, dgd ), offer_id[1]);
-        assertEq( otc.getHighestOffer( dai, dgd ), offer_id[1]);
-        assertEq( otc.getLowestOffer( dai, mkr ), offer_id[2]);
-        assertEq( otc.getHighestOffer( dai, mkr ), offer_id[2]);
-        assertEq( otc.getHigherOfferId(offer_id[1] ), 0);
-        assertEq( otc.getHigherOfferId(offer_id[2] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[2] ), 0);
-        assertEq( otc.getHigherOfferIdSize(dai,dgd), 0);
-        assertEq( otc.getHigherOfferIdSize(dai,mkr), 0);
+        assertEq( otc.hes( dai, dgd ), offer_id[1]);
+        assertEq( otc.hes( dai, mkr ), offer_id[2]);
+        assertEq( otc.hoi(offer_id[1] ), 0);
+        assertEq( otc.hoi(offer_id[2] ), 0);
+        assertEq( otc.loi(offer_id[1] ), 0);
+        assertEq( otc.loi(offer_id[2] ), 0);
+        assertEq( otc.hos(dai,dgd), 0);
+        assertEq( otc.hos(dai,mkr), 0);
     }
     function testHighestOfferWithFourOffersWithDifferentTokens(){
         dai.transfer(user1, 55 );
@@ -552,20 +526,18 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         offer_id[3] = user1.doOffer(16, dai, 1, dgd );
         offer_id[4] = user1.doOffer(17, dai, 1, dgd );
 
-        assertEq( otc.getLowestOffer( dai, mkr ), offer_id[1]);
-        assertEq( otc.getHighestOffer( dai, mkr ), offer_id[2]);
-        assertEq( otc.getLowestOffer( dai, dgd ), offer_id[3]);
-        assertEq( otc.getHighestOffer( dai, dgd ), offer_id[4]);
-        assertEq( otc.getHigherOfferId(offer_id[1] ), offer_id[2]);
-        assertEq( otc.getHigherOfferId(offer_id[2] ), 0);
-        assertEq( otc.getHigherOfferId(offer_id[3] ), offer_id[4]);
-        assertEq( otc.getHigherOfferId(offer_id[4] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[2] ), offer_id[1]);
-        assertEq( otc.getLowerOfferId(offer_id[3] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[4] ), offer_id[3]);
-        assertEq( otc.getHigherOfferIdSize(dai,mkr), 1);
-        assertEq( otc.getHigherOfferIdSize(dai,dgd), 1);
+        assertEq( otc.hes( dai, mkr ), offer_id[2]);
+        assertEq( otc.hes( dai, dgd ), offer_id[4]);
+        assertEq( otc.hoi(offer_id[1] ), offer_id[2]);
+        assertEq( otc.hoi(offer_id[2] ), 0);
+        assertEq( otc.hoi(offer_id[3] ), offer_id[4]);
+        assertEq( otc.hoi(offer_id[4] ), 0);
+        assertEq( otc.loi(offer_id[1] ), 0);
+        assertEq( otc.loi(offer_id[2] ), offer_id[1]);
+        assertEq( otc.loi(offer_id[3] ), 0);
+        assertEq( otc.loi(offer_id[4] ), offer_id[3]);
+        assertEq( otc.hos(dai,mkr), 1);
+        assertEq( otc.hos(dai,dgd), 1);
     }
     function testHighestOfferWithSixOffersWithDifferentTokens(){
         dai.transfer(user1, 88 );
@@ -577,24 +549,22 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         offer_id[5] = user1.doOffer(17, dai, 1, dgd );
         offer_id[6] = user1.doOffer(18, dai, 1, dgd );
 
-        assertEq( otc.getLowestOffer( dai, mkr ), offer_id[1]);
-        assertEq( otc.getHighestOffer( dai, mkr ), offer_id[3]);
-        assertEq( otc.getLowestOffer( dai, dgd ), offer_id[4]);
-        assertEq( otc.getHighestOffer( dai, dgd ), offer_id[6]);
-        assertEq( otc.getHigherOfferId(offer_id[1] ), offer_id[2]);
-        assertEq( otc.getHigherOfferId(offer_id[2] ), offer_id[3]);
-        assertEq( otc.getHigherOfferId(offer_id[3] ), 0);
-        assertEq( otc.getHigherOfferId(offer_id[4] ), offer_id[5]);
-        assertEq( otc.getHigherOfferId(offer_id[5] ), offer_id[6]);
-        assertEq( otc.getHigherOfferId(offer_id[6] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[2] ), offer_id[1]);
-        assertEq( otc.getLowerOfferId(offer_id[3] ), offer_id[2]);
-        assertEq( otc.getLowerOfferId(offer_id[4] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[5] ), offer_id[4]);
-        assertEq( otc.getLowerOfferId(offer_id[6] ), offer_id[5]);
-        assertEq( otc.getHigherOfferIdSize(dai,mkr), 2);
-        assertEq( otc.getHigherOfferIdSize(dai,dgd), 2);
+        assertEq( otc.hes( dai, mkr ), offer_id[3]);
+        assertEq( otc.hes( dai, dgd ), offer_id[6]);
+        assertEq( otc.hoi(offer_id[1] ), offer_id[2]);
+        assertEq( otc.hoi(offer_id[2] ), offer_id[3]);
+        assertEq( otc.hoi(offer_id[3] ), 0);
+        assertEq( otc.hoi(offer_id[4] ), offer_id[5]);
+        assertEq( otc.hoi(offer_id[5] ), offer_id[6]);
+        assertEq( otc.hoi(offer_id[6] ), 0);
+        assertEq( otc.loi(offer_id[1] ), 0);
+        assertEq( otc.loi(offer_id[2] ), offer_id[1]);
+        assertEq( otc.loi(offer_id[3] ), offer_id[2]);
+        assertEq( otc.loi(offer_id[4] ), 0);
+        assertEq( otc.loi(offer_id[5] ), offer_id[4]);
+        assertEq( otc.loi(offer_id[6] ), offer_id[5]);
+        assertEq( otc.hos(dai,mkr), 2);
+        assertEq( otc.hos(dai,dgd), 2);
     }
     function testHighestOfferWithEightOffersWithDifferentTokens(){
         dai.transfer(user1, 106 );
@@ -608,28 +578,26 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         offer_id[7] = user1.doOffer(15, dai, 1, dgd );
         offer_id[8] = user1.doOffer(16, dai, 1, dgd );
 
-        assertEq( otc.getLowestOffer( dai, mkr ), offer_id[1]);
-        assertEq( otc.getHighestOffer( dai, mkr ), offer_id[4]);
-        assertEq( otc.getLowestOffer( dai, dgd ), offer_id[5]);
-        assertEq( otc.getHighestOffer( dai, dgd ), offer_id[8]);
-        assertEq( otc.getHigherOfferId( offer_id[1] ), offer_id[2]);
-        assertEq( otc.getHigherOfferId( offer_id[2] ), offer_id[3]);
-        assertEq( otc.getHigherOfferId( offer_id[3] ), offer_id[4]);
-        assertEq( otc.getHigherOfferId( offer_id[4] ), 0);
-        assertEq( otc.getHigherOfferId( offer_id[5] ), offer_id[6]);
-        assertEq( otc.getHigherOfferId( offer_id[6] ), offer_id[7]);
-        assertEq( otc.getHigherOfferId( offer_id[7] ), offer_id[8]);
-        assertEq( otc.getHigherOfferId( offer_id[8] ), 0);
-        assertEq( otc.getLowerOfferId( offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId( offer_id[2] ), offer_id[1]);
-        assertEq( otc.getLowerOfferId( offer_id[3] ), offer_id[2]);
-        assertEq( otc.getLowerOfferId( offer_id[4] ), offer_id[3]);
-        assertEq( otc.getLowerOfferId( offer_id[5] ), 0);
-        assertEq( otc.getLowerOfferId( offer_id[6] ), offer_id[5]);
-        assertEq( otc.getLowerOfferId( offer_id[7] ), offer_id[6]);
-        assertEq( otc.getLowerOfferId( offer_id[8] ), offer_id[7]);
-        assertEq( otc.getHigherOfferIdSize(dai,mkr), 3);
-        assertEq( otc.getHigherOfferIdSize(dai,dgd), 3);
+        assertEq( otc.hes( dai, mkr ), offer_id[4]);
+        assertEq( otc.hes( dai, dgd ), offer_id[8]);
+        assertEq( otc.hoi( offer_id[1] ), offer_id[2]);
+        assertEq( otc.hoi( offer_id[2] ), offer_id[3]);
+        assertEq( otc.hoi( offer_id[3] ), offer_id[4]);
+        assertEq( otc.hoi( offer_id[4] ), 0);
+        assertEq( otc.hoi( offer_id[5] ), offer_id[6]);
+        assertEq( otc.hoi( offer_id[6] ), offer_id[7]);
+        assertEq( otc.hoi( offer_id[7] ), offer_id[8]);
+        assertEq( otc.hoi( offer_id[8] ), 0);
+        assertEq( otc.loi( offer_id[1] ), 0);
+        assertEq( otc.loi( offer_id[2] ), offer_id[1]);
+        assertEq( otc.loi( offer_id[3] ), offer_id[2]);
+        assertEq( otc.loi( offer_id[4] ), offer_id[3]);
+        assertEq( otc.loi( offer_id[5] ), 0);
+        assertEq( otc.loi( offer_id[6] ), offer_id[5]);
+        assertEq( otc.loi( offer_id[7] ), offer_id[6]);
+        assertEq( otc.loi( offer_id[8] ), offer_id[7]);
+        assertEq( otc.hos(dai,mkr), 3);
+        assertEq( otc.hos(dai,dgd), 3);
     }
     function testHighestOfferWithFourOffersWithDifferentTokensLowHighDeleted(){
         dai.transfer(user1, 29 );
@@ -641,20 +609,18 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         offer_id[4] = user1.doOffer(9, dai, 1, dgd );
         user1.doCancel( offer_id[3] );
 
-        assertEq( otc.getLowestOffer( dai, mkr ), offer_id[2]);
-        assertEq( otc.getHighestOffer( dai, mkr ), offer_id[2]);
-        assertEq( otc.getLowestOffer( dai, dgd ), offer_id[4]);
-        assertEq( otc.getHighestOffer( dai, dgd ), offer_id[4]);
-        assertEq( otc.getHigherOfferId(offer_id[1] ), 0);
-        assertEq( otc.getHigherOfferId(offer_id[2] ), 0);
-        assertEq( otc.getHigherOfferId(offer_id[3] ), 0);
-        assertEq( otc.getHigherOfferId(offer_id[4] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[2] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[3] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[4] ), 0);
-        assertEq( otc.getHigherOfferIdSize(dai,mkr), 0);
-        assertEq( otc.getHigherOfferIdSize(dai,dgd), 0);
+        assertEq( otc.hes( dai, mkr ), offer_id[2]);
+        assertEq( otc.hes( dai, dgd ), offer_id[4]);
+        assertEq( otc.hoi(offer_id[1] ), 0);
+        assertEq( otc.hoi(offer_id[2] ), 0);
+        assertEq( otc.hoi(offer_id[3] ), 0);
+        assertEq( otc.hoi(offer_id[4] ), 0);
+        assertEq( otc.loi(offer_id[1] ), 0);
+        assertEq( otc.loi(offer_id[2] ), 0);
+        assertEq( otc.loi(offer_id[3] ), 0);
+        assertEq( otc.loi(offer_id[4] ), 0);
+        assertEq( otc.hos(dai,mkr), 0);
+        assertEq( otc.hos(dai,dgd), 0);
         assert( !otc.isActive( offer_id[1] ) );
         assert( !otc.isActive( offer_id[3] ) );
     }
@@ -667,20 +633,18 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         offer_id[3] = user1.doOffer(8, dai, 1, dgd );
         offer_id[4] = user1.doOffer(9, dai, 1, dgd );
         user1.doCancel(offer_id[4]);
-        assertEq( otc.getLowestOffer( dai, mkr ), offer_id[1]);
-        assertEq( otc.getHighestOffer( dai, mkr ), offer_id[1]);
-        assertEq( otc.getLowestOffer( dai, dgd ), offer_id[3]);
-        assertEq( otc.getHighestOffer( dai, dgd ), offer_id[3]);
-        assertEq( otc.getHigherOfferId(offer_id[1] ), 0);
-        assertEq( otc.getHigherOfferId(offer_id[2] ), 0);
-        assertEq( otc.getHigherOfferId(offer_id[3] ), 0);
-        assertEq( otc.getHigherOfferId(offer_id[4] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[2] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[3] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[4] ), 0);
-        assertEq( otc.getHigherOfferIdSize(dai,mkr), 0);
-        assertEq( otc.getHigherOfferIdSize(dai,dgd), 0);
+        assertEq( otc.hes( dai, mkr ), offer_id[1]);
+        assertEq( otc.hes( dai, dgd ), offer_id[3]);
+        assertEq( otc.hoi(offer_id[1] ), 0);
+        assertEq( otc.hoi(offer_id[2] ), 0);
+        assertEq( otc.hoi(offer_id[3] ), 0);
+        assertEq( otc.hoi(offer_id[4] ), 0);
+        assertEq( otc.loi(offer_id[1] ), 0);
+        assertEq( otc.loi(offer_id[2] ), 0);
+        assertEq( otc.loi(offer_id[3] ), 0);
+        assertEq( otc.loi(offer_id[4] ), 0);
+        assertEq( otc.hos(dai,mkr), 0);
+        assertEq( otc.hos(dai,dgd), 0);
         assert( !otc.isActive( offer_id[2] ) );
         assert( !otc.isActive( offer_id[4] ) );
     }
@@ -696,24 +660,22 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         offer_id[6] = user1.doOffer(18, dai, 1, dgd );
         user1.doCancel( offer_id[6] );
 
-        assertEq( otc.getLowestOffer( dai, mkr ), offer_id[2]);
-        assertEq( otc.getHighestOffer( dai, mkr ), offer_id[3]);
-        assertEq( otc.getLowestOffer( dai, dgd ), offer_id[4]);
-        assertEq( otc.getHighestOffer( dai, dgd ), offer_id[5]);
-        assertEq( otc.getHigherOfferId(offer_id[1] ), 0);
-        assertEq( otc.getHigherOfferId(offer_id[2] ), offer_id[3]);
-        assertEq( otc.getHigherOfferId(offer_id[3] ), 0);
-        assertEq( otc.getHigherOfferId(offer_id[4] ), offer_id[5]);
-        assertEq( otc.getHigherOfferId(offer_id[5] ), 0);
-        assertEq( otc.getHigherOfferId(offer_id[6] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[2] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[3] ), offer_id[2]);
-        assertEq( otc.getLowerOfferId(offer_id[4] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[5] ), offer_id[4]);
-        assertEq( otc.getLowerOfferId(offer_id[6] ), 0);
-        assertEq( otc.getHigherOfferIdSize(dai,mkr), 1);
-        assertEq( otc.getHigherOfferIdSize(dai,dgd), 1);
+        assertEq( otc.hes( dai, mkr ), offer_id[3]);
+        assertEq( otc.hes( dai, dgd ), offer_id[5]);
+        assertEq( otc.hoi(offer_id[1] ), 0);
+        assertEq( otc.hoi(offer_id[2] ), offer_id[3]);
+        assertEq( otc.hoi(offer_id[3] ), 0);
+        assertEq( otc.hoi(offer_id[4] ), offer_id[5]);
+        assertEq( otc.hoi(offer_id[5] ), 0);
+        assertEq( otc.hoi(offer_id[6] ), 0);
+        assertEq( otc.loi(offer_id[1] ), 0);
+        assertEq( otc.loi(offer_id[2] ), 0);
+        assertEq( otc.loi(offer_id[3] ), offer_id[2]);
+        assertEq( otc.loi(offer_id[4] ), 0);
+        assertEq( otc.loi(offer_id[5] ), offer_id[4]);
+        assertEq( otc.loi(offer_id[6] ), 0);
+        assertEq( otc.hos(dai,mkr), 1);
+        assertEq( otc.hos(dai,dgd), 1);
         assert( !otc.isActive( offer_id[1] ) );
         assert( !otc.isActive( offer_id[6] ) );
     }
@@ -729,24 +691,22 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         offer_id[6] = user1.doOffer(18, dai, 1, dgd );
         user1.doCancel( offer_id[4] );
 
-        assertEq( otc.getLowestOffer( dai, mkr ), offer_id[1]);
-        assertEq( otc.getHighestOffer( dai, mkr ), offer_id[2]);
-        assertEq( otc.getLowestOffer( dai, dgd ), offer_id[5]);
-        assertEq( otc.getHighestOffer( dai, dgd ), offer_id[6]);
-        assertEq( otc.getHigherOfferId(offer_id[1] ), offer_id[2]);
-        assertEq( otc.getHigherOfferId(offer_id[2] ), 0);
-        assertEq( otc.getHigherOfferId(offer_id[3] ), 0);
-        assertEq( otc.getHigherOfferId(offer_id[4] ), 0);
-        assertEq( otc.getHigherOfferId(offer_id[5] ), offer_id[6]);
-        assertEq( otc.getHigherOfferId(offer_id[6] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[2] ), offer_id[1]);
-        assertEq( otc.getLowerOfferId(offer_id[3] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[4] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[5] ), 0);
-        assertEq( otc.getLowerOfferId(offer_id[6] ), offer_id[5]);
-        assertEq( otc.getHigherOfferIdSize(dai,mkr), 1);
-        assertEq( otc.getHigherOfferIdSize(dai,dgd), 1);
+        assertEq( otc.hes( dai, mkr ), offer_id[2]);
+        assertEq( otc.hes( dai, dgd ), offer_id[6]);
+        assertEq( otc.hoi(offer_id[1] ), offer_id[2]);
+        assertEq( otc.hoi(offer_id[2] ), 0);
+        assertEq( otc.hoi(offer_id[3] ), 0);
+        assertEq( otc.hoi(offer_id[4] ), 0);
+        assertEq( otc.hoi(offer_id[5] ), offer_id[6]);
+        assertEq( otc.hoi(offer_id[6] ), 0);
+        assertEq( otc.loi(offer_id[1] ), 0);
+        assertEq( otc.loi(offer_id[2] ), offer_id[1]);
+        assertEq( otc.loi(offer_id[3] ), 0);
+        assertEq( otc.loi(offer_id[4] ), 0);
+        assertEq( otc.loi(offer_id[5] ), 0);
+        assertEq( otc.loi(offer_id[6] ), offer_id[5]);
+        assertEq( otc.hos(dai,mkr), 1);
+        assertEq( otc.hos(dai,dgd), 1);
         assert( !otc.isActive( offer_id[3] ) );
         assert( !otc.isActive( offer_id[4] ) );
     }
@@ -755,7 +715,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         user1.doApprove(otc, 13, dai );
         mkr.approve(otc, 11);
         offer_id[1] = user1.doOffer(13, dai, 1, mkr );
-        offer_id[2] = otc.offer(11, mkr, 1, dgd , offer_id[1]);
+        offer_id[2] = otc.offer(11, mkr, 1, dgd , offer_id[1] );
     }
     function testOfferMatchOneOnOneSendAmounts() {
         dai.transfer(user1, 100);
@@ -767,7 +727,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         var user1_mkr_balance_before = mkr.balanceOf(user1);
         var user1_dai_balance_before = dai.balanceOf(user1);
 
-        offer_id[1] = otc.offer( 30, mkr, 100, dai );
+        offer_id[1] = otc.offer( 30, mkr, 100, dai, 0 );
         offer_id[2] = user1.doOffer( 100, dai, 30, mkr);
         var my_mkr_balance_after = mkr.balanceOf(this);
         var my_dai_balance_after = dai.balanceOf(this);
@@ -794,7 +754,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         var user1_mkr_balance_before = mkr.balanceOf(user1);
         var user1_dai_balance_before = dai.balanceOf(user1);
 
-        offer_id[1] = otc.offer( 200, mkr, 500, dai );
+        offer_id[1] = otc.offer( 200, mkr, 500, dai, 0 );
         offer_id[2] = user1.doOffer( 50, dai, 20, mkr);
         var my_mkr_balance_after = mkr.balanceOf(this);
         var my_dai_balance_after = dai.balanceOf(this);
@@ -826,7 +786,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         var user1_mkr_balance_before = mkr.balanceOf(user1);
         var user1_dai_balance_before = dai.balanceOf(user1);
 
-        offer_id[1] = otc.offer( 200, mkr, 500, dai );
+        offer_id[1] = otc.offer( 200, mkr, 500, dai, 0 );
         offer_id[2] = user1.doOffer( 2000, dai, 800, mkr);
         var my_mkr_balance_after = mkr.balanceOf(this);
         var my_dai_balance_after = dai.balanceOf(this);
@@ -854,13 +814,12 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         user1.doApprove(otc, 1, dai );
         mkr.approve(otc, 1);
         offer_id[1] = user1.doOffer( 1, dai, 1, mkr );
-        offer_id[2] = otc.offer( 1, mkr, 1, dai );
+        offer_id[2] = otc.offer( 1, mkr, 1, dai, 0 );
 
-        assertEq( otc.getLowestOffer( dai, mkr ), 0);
-        assertEq( otc.getHighestOffer( dai, mkr ), 0);
-        assertEq( otc.getHigherOfferId( offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId( offer_id[1] ), 0);
-        assertEq( otc.getHigherOfferIdSize( dai, mkr ), 0);
+        assertEq( otc.hes( dai, mkr ), 0);
+        assertEq( otc.hoi( offer_id[1] ), 0);
+        assertEq( otc.loi( offer_id[1] ), 0);
+        assertEq( otc.hos( dai, mkr ), 0);
         assert( !otc.isActive(offer_id[1]) );
         assert( !otc.isActive(offer_id[2]) );
     } 
@@ -869,14 +828,13 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         user1.doApprove(otc, 5, dai );
         mkr.approve(otc, 10);
         offer_id[1] = user1.doOffer( 5, dai, 1, mkr );
-        offer_id[2] = otc.offer( 10, mkr, 10, dai );
+        offer_id[2] = otc.offer( 10, mkr, 10, dai, 0 );
         var ( sell_val, sell_token, buy_val, buy_token ) = otc.getOffer(offer_id[2]);
 
-        assertEq( otc.getLowestOffer( dai, mkr ), 0);
-        assertEq( otc.getHighestOffer( dai, mkr ), 0);
-        assertEq( otc.getHigherOfferId( offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId( offer_id[1] ), 0);
-        assertEq( otc.getHigherOfferIdSize( dai, mkr ), 0);
+        assertEq( otc.hes( dai, mkr ), 0);
+        assertEq( otc.hoi( offer_id[1] ), 0);
+        assertEq( otc.loi( offer_id[1] ), 0);
+        assertEq( otc.hos( dai, mkr ), 0);
         assert( !otc.isActive(offer_id[1]) );
         //assert érice of offer_id[2] should be the same as before matching
         assertEq( sell_val , 9);
@@ -887,19 +845,17 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         user1.doApprove(otc, 10, mkr );
         dai.approve(otc, 5);
         offer_id[1] = user1.doOffer( 10, mkr, 10, dai );
-        offer_id[2] = otc.offer( 5, dai, 5, mkr );
+        offer_id[2] = otc.offer( 5, dai, 5, mkr, 0 );
         var ( sell_val, sell_token, buy_val, buy_token ) = otc.getOffer(offer_id[1]);
 
-        assertEq( otc.getLowestOffer( dai, mkr ), 0);
-        assertEq( otc.getHighestOffer( dai, mkr ), 0);
-        assertEq( otc.getLowestOffer( mkr, dai ), offer_id[1]);
-        assertEq( otc.getHighestOffer( mkr, dai ), offer_id[1]);
-        assertEq( otc.getLowerOfferId( offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId( offer_id[2] ), 0);
-        assertEq( otc.getHigherOfferId( offer_id[1] ), 0);
-        assertEq( otc.getHigherOfferId( offer_id[2] ), 0);
-        assertEq( otc.getHigherOfferIdSize( mkr, dai ), 0);
-        assertEq( otc.getHigherOfferIdSize( dai, mkr ), 0);
+        assertEq( otc.hes( dai, mkr ), 0);
+        assertEq( otc.hes( mkr, dai ), offer_id[1]);
+        assertEq( otc.loi( offer_id[1] ), 0);
+        assertEq( otc.loi( offer_id[2] ), 0);
+        assertEq( otc.hoi( offer_id[1] ), 0);
+        assertEq( otc.hoi( offer_id[2] ), 0);
+        assertEq( otc.hos( mkr, dai ), 0);
+        assertEq( otc.hos( dai, mkr ), 0);
         assert( !otc.isActive(offer_id[2]) );
         assertEq( sell_val, 5);
         assertEq( buy_val, 5);
@@ -910,14 +866,13 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         mkr.approve(otc, 10);
         offer_id[1] = user1.doOffer( 5, dai, 1, mkr );
         offer_id[1] = user1.doOffer( 4, dai, 1, mkr );
-        offer_id[2] = otc.offer( 10, mkr, 10, dai );
+        offer_id[2] = otc.offer( 10, mkr, 10, dai, 0 );
         var ( sell_val, sell_token, buy_val, buy_token ) = otc.getOffer(offer_id[2]);
 
-        assertEq( otc.getLowestOffer( dai, mkr ), 0);
-        assertEq( otc.getHighestOffer( dai, mkr ), 0);
-        assertEq( otc.getHigherOfferId( offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId( offer_id[1] ), 0);
-        assertEq( otc.getHigherOfferIdSize( dai, mkr ), 0);
+        assertEq( otc.hes( dai, mkr ), 0);
+        assertEq( otc.hoi( offer_id[1] ), 0);
+        assertEq( otc.loi( offer_id[1] ), 0);
+        assertEq( otc.hos( dai, mkr ), 0);
         assert( !otc.isActive(offer_id[1]) );
         //assert érice of offer_id[2] should be the same as before matching
         assertEq( sell_val , 8);
@@ -928,19 +883,17 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         user1.doApprove(otc, 5, mkr );
         dai.approve(otc, 10);
         offer_id[1] = user1.doOffer( 5, mkr, 5, dai );
-        offer_id[2] = otc.offer( 10, dai, 10, mkr );
+        offer_id[2] = otc.offer( 10, dai, 10, mkr, 0 );
         var ( sell_val, sell_token, buy_val, buy_token ) = otc.getOffer(offer_id[2]);
 
-        assertEq( otc.getLowestOffer( dai, mkr ), offer_id[2]);
-        assertEq( otc.getHighestOffer( dai, mkr ), offer_id[2]);
-        assertEq( otc.getLowestOffer( mkr, dai ), 0);
-        assertEq( otc.getHighestOffer( mkr, dai ), 0);
-        assertEq( otc.getLowerOfferId( offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId( offer_id[2] ), 0);
-        assertEq( otc.getHigherOfferId( offer_id[1] ), 0);
-        assertEq( otc.getHigherOfferId( offer_id[2] ), 0);
-        assertEq( otc.getHigherOfferIdSize( mkr, dai ), 0);
-        assertEq( otc.getHigherOfferIdSize( dai, mkr ), 0);
+        assertEq( otc.hes( dai, mkr ), offer_id[2]);
+        assertEq( otc.hes( mkr, dai ), 0);
+        assertEq( otc.loi( offer_id[1] ), 0);
+        assertEq( otc.loi( offer_id[2] ), 0);
+        assertEq( otc.hoi( offer_id[1] ), 0);
+        assertEq( otc.hoi( offer_id[2] ), 0);
+        assertEq( otc.hos( mkr, dai ), 0);
+        assertEq( otc.hos( dai, mkr ), 0);
         assert( !otc.isActive(offer_id[1]) );
         assertEq( sell_val, 5);
         assertEq( buy_val, 5);
@@ -951,20 +904,18 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         dai.approve(otc, 1);
         offer_id[1] = user1.doOffer( 5, mkr, 10, dai );
         offer_id[2] = user1.doOffer( 10, mkr, 10, dai );
-        offer_id[3] = otc.offer( 1, dai, 1, mkr );
+        offer_id[3] = otc.offer( 1, dai, 1, mkr, 0 );
         var ( sell_val, sell_token, buy_val, buy_token ) = otc.getOffer(offer_id[1]);
         var ( sell_val1, sell_token1, buy_val1, buy_token1 ) = otc.getOffer(offer_id[2]);
 
-        assertEq( otc.getLowestOffer( mkr, dai ), offer_id[1]);
-        assertEq( otc.getHighestOffer( mkr, dai ), offer_id[2]);
-        assertEq( otc.getLowestOffer( dai, mkr ), 0);
-        assertEq( otc.getHighestOffer( dai, mkr ), 0);
-        assertEq( otc.getLowerOfferId( offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId( offer_id[2] ), offer_id[1]);
-        assertEq( otc.getHigherOfferId( offer_id[1] ), offer_id[2]);
-        assertEq( otc.getHigherOfferId( offer_id[2] ), 0);
-        assertEq( otc.getHigherOfferIdSize( mkr, dai ), 1);
-        assertEq( otc.getHigherOfferIdSize( dai, mkr ), 0);
+        assertEq( otc.hes( mkr, dai ), offer_id[2]);
+        assertEq( otc.hes( dai, mkr ), 0);
+        assertEq( otc.loi( offer_id[1] ), 0);
+        assertEq( otc.loi( offer_id[2] ), offer_id[1]);
+        assertEq( otc.hoi( offer_id[1] ), offer_id[2]);
+        assertEq( otc.hoi( offer_id[2] ), 0);
+        assertEq( otc.hos( mkr, dai ), 1);
+        assertEq( otc.hos( dai, mkr ), 0);
         assert( !otc.isActive(offer_id[3]) );
         assertEq( sell_val, 5);
         assertEq( buy_val, 10);
@@ -977,22 +928,20 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         dai.approve(otc, 10);
         offer_id[1] = user1.doOffer( 5, mkr, 10, dai );
         offer_id[2] = user1.doOffer( 1, mkr, 1, dai );
-        offer_id[3] = otc.offer( 10, dai, 10, mkr );
+        offer_id[3] = otc.offer( 10, dai, 10, mkr, 0 );
         var ( sell_val, sell_token, buy_val, buy_token ) = otc.getOffer(offer_id[1]);
         var ( sell_val1, sell_token1, buy_val1, buy_token1 ) = otc.getOffer(offer_id[3]);
 
-        assertEq( otc.getLowestOffer( mkr, dai ), offer_id[1]);
-        assertEq( otc.getHighestOffer( mkr, dai ), offer_id[1]);
-        assertEq( otc.getLowestOffer( dai, mkr ), offer_id[3]);
-        assertEq( otc.getHighestOffer( dai, mkr ), offer_id[3]);
-        assertEq( otc.getLowerOfferId( offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId( offer_id[2] ), 0);
-        assertEq( otc.getLowerOfferId( offer_id[3] ), 0);
-        assertEq( otc.getHigherOfferId( offer_id[1] ), 0);
-        assertEq( otc.getHigherOfferId( offer_id[2] ), 0);
-        assertEq( otc.getHigherOfferId( offer_id[3] ), 0);
-        assertEq( otc.getHigherOfferIdSize( mkr, dai ), 0);
-        assertEq( otc.getHigherOfferIdSize( dai, mkr ), 0);
+        assertEq( otc.hes( mkr, dai ), offer_id[1]);
+        assertEq( otc.hes( dai, mkr ), offer_id[3]);
+        assertEq( otc.loi( offer_id[1] ), 0);
+        assertEq( otc.loi( offer_id[2] ), 0);
+        assertEq( otc.loi( offer_id[3] ), 0);
+        assertEq( otc.hoi( offer_id[1] ), 0);
+        assertEq( otc.hoi( offer_id[2] ), 0);
+        assertEq( otc.hoi( offer_id[3] ), 0);
+        assertEq( otc.hos( mkr, dai ), 0);
+        assertEq( otc.hos( dai, mkr ), 0);
         assert( !otc.isActive(offer_id[2]) );
         assertEq( sell_val, 5);
         assertEq( buy_val, 10);
@@ -1003,9 +952,9 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         dai.transfer(user1, 3);
         user1.doApprove(otc, 3, dai );
         mkr.approve(otc, 12);
-        offer_id[1] = otc.offer(     1, mkr, 10, dai );
-        offer_id[2] = otc.offer(     1, mkr,  1, dai );
-        offer_id[3] = otc.offer(    10, mkr, 10, dai );
+        offer_id[1] = otc.offer(     1, mkr, 10, dai, 0 );
+        offer_id[2] = otc.offer(     1, mkr,  1, dai, 0 );
+        offer_id[3] = otc.offer(    10, mkr, 10, dai, 0 );
         offer_id[4] = user1.doOffer( 3, dai,  3, mkr );
         var ( sell_val, sell_token, buy_val, buy_token ) = otc.getOffer(offer_id[3]);
         var ( sell_val1, sell_token1, buy_val1, buy_token1 ) = otc.getOffer(offer_id[1]);
@@ -1013,20 +962,18 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         address my_address = address(this);
         address dai_address = address(dai);
         address mkr_address = address(mkr);
-        assertEq( otc.getLowestOffer( mkr, dai ), offer_id[1]);
-        assertEq( otc.getHighestOffer( mkr, dai ), offer_id[3]);
-        assertEq( otc.getLowestOffer( dai, mkr ), 0);
-        assertEq( otc.getHighestOffer( dai, mkr ), 0);
-        assertEq( otc.getLowerOfferId( offer_id[1] ), 0);
-        assertEq( otc.getLowerOfferId( offer_id[2] ), 0);
-        assertEq( otc.getLowerOfferId( offer_id[3] ), offer_id[1]);
-        assertEq( otc.getLowerOfferId( offer_id[4] ), 0);
-        assertEq( otc.getHigherOfferId( offer_id[1] ), offer_id[3]);
-        assertEq( otc.getHigherOfferId( offer_id[2] ), 0);
-        assertEq( otc.getHigherOfferId( offer_id[3] ), 0);
-        assertEq( otc.getHigherOfferId( offer_id[4] ), 0);
-        assertEq( otc.getHigherOfferIdSize( mkr, dai ), 1);
-        assertEq( otc.getHigherOfferIdSize( dai, mkr ), 0);
+        assertEq( otc.hes( mkr, dai ), offer_id[3]);
+        assertEq( otc.hes( dai, mkr ), 0);
+        assertEq( otc.loi( offer_id[1] ), 0);
+        assertEq( otc.loi( offer_id[2] ), 0);
+        assertEq( otc.loi( offer_id[3] ), offer_id[1]);
+        assertEq( otc.loi( offer_id[4] ), 0);
+        assertEq( otc.hoi( offer_id[1] ), offer_id[3]);
+        assertEq( otc.hoi( offer_id[2] ), 0);
+        assertEq( otc.hoi( offer_id[3] ), 0);
+        assertEq( otc.hoi( offer_id[4] ), 0);
+        assertEq( otc.hos( mkr, dai ), 1);
+        assertEq( otc.hos( dai, mkr ), 0);
         assert( !otc.isActive(offer_id[2]) );
         assert( !otc.isActive(offer_id[4]) );
         assertEq( sell_val, 8);
@@ -1037,220 +984,3 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
 }
 
 
-contract OfferTransferTest is TransferTest {
-    function testOfferTransfersFromSeller() {
-        var balance_before = mkr.balanceOf(this);
-        var id = otc.offer( 30, mkr, 100, dai );
-        var balance_after = mkr.balanceOf(this);
-
-        assertEq(balance_before - balance_after, 30);
-    }
-    function testOfferTransfersToMarket() {
-        var balance_before = mkr.balanceOf(otc);
-        var id = otc.offer( 30, mkr, 100, dai );
-        var balance_after = mkr.balanceOf(otc);
-
-        assertEq(balance_after - balance_before, 30);
-    }
-}
-
-contract BuyTransferTest is TransferTest {
-    function testBuyTransfersFromBuyer() {
-        if(buy_enabled){
-            var id = otc.offer( 30, mkr, 100, dai );
-
-            var balance_before = dai.balanceOf(user1);
-            user1.doBuy(id, 30);
-            var balance_after = dai.balanceOf(user1);
-
-            assertEq(balance_before - balance_after, 100);
-        }
-    }
-    function testBuyTransfersToSeller() {
-        if(buy_enabled){
-            var id = otc.offer( 30, mkr, 100, dai );
-
-            var balance_before = dai.balanceOf(this);
-            user1.doBuy(id, 30);
-            var balance_after = dai.balanceOf(this);
-
-            assertEq(balance_after - balance_before, 100);
-        }
-    }
-    function testBuyTransfersFromMarket() {
-        if(buy_enabled){
-            var id = otc.offer( 30, mkr, 100, dai );
-
-            var balance_before = mkr.balanceOf(otc);
-            user1.doBuy(id, 30);
-            var balance_after = mkr.balanceOf(otc);
-
-            assertEq(balance_before - balance_after, 30);
-        }
-    }
-    function testBuyTransfersToBuyer() {
-        if(buy_enabled){
-            var id = otc.offer( 30, mkr, 100, dai );
-
-            var balance_before = mkr.balanceOf(user1);
-            user1.doBuy(id, 30);
-            var balance_after = mkr.balanceOf(user1);
-
-            assertEq(balance_after - balance_before, 30);
-        }
-    }
-}
-
-contract PartialBuyTransferTest is TransferTest {
-    function testBuyTransfersFromBuyer() {
-        if(buy_enabled){
-            var id = otc.offer( 30, mkr, 100, dai );
-
-            var balance_before = dai.balanceOf(user1);
-            user1.doBuy(id, 15);
-            var balance_after = dai.balanceOf(user1);
-
-            assertEq(balance_before - balance_after, 50);
-        }
-    }
-    function testBuyTransfersToSeller() {
-        if(buy_enabled){
-            var id = otc.offer( 30, mkr, 100, dai );
-
-            var balance_before = dai.balanceOf(this);
-            user1.doBuy(id, 15);
-            var balance_after = dai.balanceOf(this);
-
-            assertEq(balance_after - balance_before, 50);
-        }
-    }
-    function testBuyTransfersFromMarket() {
-        if(buy_enabled){
-            var id = otc.offer( 30, mkr, 100, dai );
-
-            var balance_before = mkr.balanceOf(otc);
-            user1.doBuy(id, 15);
-            var balance_after = mkr.balanceOf(otc);
-
-            assertEq(balance_before - balance_after, 15);
-        }
-    }
-    function testBuyTransfersToBuyer() {
-        if(buy_enabled){
-            var id = otc.offer( 30, mkr, 100, dai );
-
-            var balance_before = mkr.balanceOf(user1);
-            user1.doBuy(id, 15);
-            var balance_after = mkr.balanceOf(user1);
-
-            assertEq(balance_after - balance_before, 15);
-        }
-    }
-    function testBuyOddTransfersFromBuyer() {
-        if(buy_enabled){
-            var id = otc.offer( 30, mkr, 100, dai );
-
-            var balance_before = dai.balanceOf(user1);
-            user1.doBuy(id, 17);
-            var balance_after = dai.balanceOf(user1);
-
-            assertEq(balance_before - balance_after, 56);
-        }
-    }
-}
-
-contract CancelTransferTest is TransferTest {
-    function testCancelTransfersFromMarket() {
-        var id = otc.offer( 30, mkr, 100, dai );
-
-        var balance_before = mkr.balanceOf(otc);
-        otc.cancel(id);
-        var balance_after = mkr.balanceOf(otc);
-
-        assertEq(balance_before - balance_after, 30);
-    }
-    function testCancelTransfersToSeller() {
-        var id = otc.offer( 30, mkr, 100, dai );
-
-        var balance_before = mkr.balanceOf(this);
-        otc.cancel(id);
-        var balance_after = mkr.balanceOf(this);
-
-        assertEq(balance_after - balance_before, 30);
-    }
-    function testCancelPartialTransfersFromMarket() {
-        if(buy_enabled){
-            var id = otc.offer( 30, mkr, 100, dai );
-            user1.doBuy(id, 15);
-
-            var balance_before = mkr.balanceOf(otc);
-            otc.cancel(id);
-            var balance_after = mkr.balanceOf(otc);
-
-            assertEq(balance_before - balance_after, 15);
-        }
-    }
-    function testCancelPartialTransfersToSeller() {
-        if(buy_enabled){
-            var id = otc.offer( 30, mkr, 100, dai );
-            user1.doBuy(id, 15);
-
-            var balance_before = mkr.balanceOf(this);
-            otc.cancel(id);
-            var balance_after = mkr.balanceOf(this);
-
-            assertEq(balance_after - balance_before, 15);
-        }
-    }
-}
-
-contract GasTest is DSTest {
-    ERC20 dai;
-    ERC20 mkr;
-    SimpleMarket otc;
-    bool buy_enabled;
-    uint id;
-
-    function setUp() {
-        otc = new SimpleMarket();
-        otc.enableBuy();
-        buy_enabled = otc.isBuyEnabled();
-
-        dai = new DSTokenBase(10 ** 9);
-        mkr = new DSTokenBase(10 ** 6);
-
-        mkr.approve(otc, 60);
-        dai.approve(otc, 100);
-
-        id = otc.offer( 30, mkr, 100, dai );
-    }
-    function testNewMarket()
-        logs_gas
-    {
-        new SimpleMarket();
-    }
-    function testNewOffer()
-        logs_gas
-    {
-        otc.offer( 30, mkr, 100, dai );
-    }
-    function testBuy()
-        logs_gas
-    {
-        if(buy_enabled){
-            otc.buy(id, 30);
-        }
-    }
-    function testBuyPartial()
-        logs_gas
-    {
-        if(buy_enabled){
-            otc.buy(id, 15);
-        }
-    }
-    function testCancel()
-        logs_gas
-    {
-        otc.cancel(id);
-    }
-}
