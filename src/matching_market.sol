@@ -132,7 +132,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         assert( isActive(mid) );
 
         //assert `pos` is in the sorted list
-        assert( pos == 0 || hoi[pos] != 0 || loi[pos] != 0 || hes[mst][mbt] == pos);
+        assert( pos == 0 || hoi[pos] != 0 || loi[pos] != 0 || hes[mst][mbt] == pos );
         
         if ( hes[mst][mbt] > 0 ){
             //if offer will be the sedond to insert
@@ -155,11 +155,11 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
             hes[mst][mbt] = mid;
         }
 
-        assert(lid == 0 || offers[lid].sell_which_token 
-               == offers[mid].sell_which_token);
+        assert( lid == 0 || offers[lid].sell_which_token 
+               == offers[mid].sell_which_token );
         
-        assert(lid == 0 || offers[lid].buy_which_token 
-               == offers[mid].buy_which_token);
+        assert( lid == 0 || offers[lid].buy_which_token 
+               == offers[mid].buy_which_token );
 
 
         if ( lid != 0 ) {
@@ -185,7 +185,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         address mst = address(offers[mid].sell_which_token);
 
         //assert mid is in the sorted list
-        assert( hoi[mid] != 0 || loi[mid] != 0 || hes[mst][mbt] == mid);
+        assert( hoi[mid] != 0 || loi[mid] != 0 || hes[mst][mbt] == mid );
         
         if ( mid != hes[mst][mbt] ) {
             // offers[mid] is not the highest offer
@@ -415,7 +415,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     returns ( uint mid )
     {
         //make sure 'sell how much' is greater than minimum required 
-        assert(mis[mst] <= msh);
+        assert( mis[mst] <= msh );
 
         if ( ema ) {
             //matching enabled
@@ -490,12 +490,12 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         uint pre; //previous offer's id in unsorted offers list
 
         //make sure offers[mid] is not yet sorted
-        assert( hoi[mid] == 0);
-        assert( loi[mid] == 0);
-        assert( hes[mst][mbt] != mid);
+        assert( hoi[mid] == 0 );
+        assert( loi[mid] == 0 );
+        assert( hes[mst][mbt] != mid );
 
-        assert(isActive(mid)); 
-        assert( pos == 0 || isActive(pos)); 
+        assert( isActive(mid) ); 
+        assert( pos == 0 || isActive(pos) ); 
         
         //take offer out of list of unsorted offers
         uid = ufi;
