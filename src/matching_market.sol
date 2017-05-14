@@ -34,7 +34,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     //next unsorted offer id
     mapping( uint => uint ) public uni; 
     
-    //first unsigned offer id
+    //first unsorted offer id
     uint ufi;
 
     function MatchingMarket(uint lifetime_) ExpiringMarket(lifetime_){
@@ -300,7 +300,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
             //insert offer into the sorted list
             if ( pos != 0
                 && isActive(pos) 
-                && isLtOrEq( mid, pos  )
+                && isLtOrEq( mid, pos )
                 && ( loi[pos] == 0 || !isLtOrEq( mid, loi[pos] ) 
                ) ) {
                 //client provided valid position

@@ -58,7 +58,7 @@ contract OrderMatchingGasTest is DSTest {
     mapping( uint => uint ) offer;
     mapping( uint => uint ) dai_to_buy;
     mapping( uint => uint ) mkr_to_sell;
-    uint [] match_count = [1,5,10,15,20,50,100];
+    uint [] match_count = [1,5,10,15,20,25,30,50,100];
     function setUp() {
         otc = new MatchingMarket(50000);
         user1 = new MarketTester(otc);
@@ -129,78 +129,107 @@ contract OrderMatchingGasTest is DSTest {
     function testGasMatchOneOrder() {
         var match_order_count = match_count[0]; // 1 
         execOrderMatchingGasTest(match_order_count);
+        assert(false);
     }
     function testGasMatchFiveOrders() {
         var match_order_count = match_count[1]; // 5 
         execOrderMatchingGasTest(match_order_count);
+        assert(false);
     }
     function testGasMatchTenOrders() {
         var match_order_count = match_count[2]; // 10 
         execOrderMatchingGasTest(match_order_count);
+        assert(false);
     }
     function testGasMatchFifteenOrders() {
         var match_order_count = match_count[3]; // 15 
         execOrderMatchingGasTest(match_order_count);
+        assert(false);
     }
     function testGasMatchTwentyOrders() {
         var match_order_count = match_count[4]; // 20 
         execOrderMatchingGasTest(match_order_count);
+        assert(false);
+    }
+    function testGasMatchTwentyfiveOrders() {
+        var match_order_count = match_count[5]; // 25 
+        execOrderMatchingGasTest(match_order_count);
+        assert(false);
+    }
+    function testGasMatchThirtyOrders() {
+        var match_order_count = match_count[6]; // 30 
+        execOrderMatchingGasTest(match_order_count);
+        assert(false);
     }
     function testGasMatchFiftyOrders() {
-        var match_order_count = match_count[5]; // 50 
+        var match_order_count = match_count[7]; // 50 
         execOrderMatchingGasTest(match_order_count);
+        assert(false);
     }
     function testGasMatchHundredOrders() {
-        var match_order_count = match_count[6]; // 100 
+        var match_order_count = match_count[8]; // 100 
         execOrderMatchingGasTest(match_order_count);
+        assert(false);
     }
     function testGasMakeOfferInsertAsFirstNoFrontendAid(){
         uint offer_index = 1 - 1;
         execOrderInsertGasTest(offer_index);
+        assert(false);
     }
     function testGasMakeOfferInsertAsFirstWithFrontendAid(){
         uint offer_index = 1 - 1;
         execOrderInsertGasTest(offer_index);
+        assert(false);
     }
     function testGasMakeOfferInsertAsTenthNoFrontendAid(){
         uint offer_index = 10 - 1;
         execOrderInsertGasTest(offer_index);
+        assert(false);
     }
     function testGasMakeOfferInsertAsTenthWithFrontendAid(){
         uint offer_index = 10 - 1;
         execOrderInsertGasTest(offer_index);
+        assert(false);
     }
     function testGasMakeOfferInsertAsTwentiethNoFrontendAid(){
         uint offer_index = 20 - 1;
         execOrderInsertGasTest(offer_index);
+        assert(false);
     }
     function testGasMakeOfferInsertAsTwentiethWithFrontendAid(){
         uint offer_index = 20 - 1;
         execOrderInsertGasTest(offer_index);
+        assert(false);
     }
     function testGasMakeOfferInsertAsFiftiethNoFrontendAid(){
         uint offer_index = 50 - 1;
         execOrderInsertGasTest(offer_index);
+        assert(false);
     }
     function testGasMakeOfferInsertAsFiftiethWithFrontendAid(){
         uint offer_index = 50 - 1;
         execOrderInsertGasTest(offer_index);
+        assert(false);
     }
     function testGasMakeOfferInsertAsHundredthNoFrontendAid(){
         uint offer_index = 100 - 1;
         execOrderInsertGasTest(offer_index);
+        assert(false);
     }
     function testGasMakeOfferInsertAsHundredthWithFrontendAid(){
         uint offer_index = 100 - 1;
         execOrderInsertGasTest(offer_index);
+        assert(false);
     }
     function testGasMakeOfferInsertAsTwohundredthNoFrontendAid(){
         uint offer_index = 200 -1;
         execOrderInsertGasTest(offer_index);
+        assert(false);
     }
     function testGasMakeOfferInsertAsTwohundredthWithFrontendAid(){
         uint offer_index = 200 -1;
         execOrderInsertGasTest(offer_index);
+        assert(false);
     }
 }
 contract OrderMatchingTest is DSTest, EventfulMarket {
