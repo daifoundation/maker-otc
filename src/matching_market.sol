@@ -16,8 +16,9 @@ contract MatchingEvents {
 
 contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
 
-	bool public bue = true; //buy enabled
-	bool public ema = true; //enable matching, if false revert to expiring market
+	bool public ebu = true; //buy enabled
+	bool public ema = true; /*true: enable matching, false: revert to 
+                              expiring market*/
 
     //lower offer's id - sorted list of offers storing the next lower offer
 	mapping( uint => uint ) public loi; 
@@ -26,16 +27,16 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
 	mapping( uint => uint ) public hoi; 
 
     //id of the highest offer for a token pair
-	mapping( address => mapping( address => uint ) ) public big;    
+	mapping( address => mapping( address => uint ) ) public hes;    
 
     //id of the lowest offer for a token pair
-	mapping( address => mapping( address => uint ) ) public low;    
+	mapping( address => mapping( address => uint ) ) public les;    
 
     //size of `hoi` (number of keys)
 	mapping( address => mapping( address => uint ) ) public hos;
 
-    //the minimum sell amount for a token to avoid dust offers
-	mapping( address => uint) public ami;
+    //minimum sell amount for a token to avoid dust offers
+	mapping( address => uint) public mis;
 
     //return true if offers[loi] priced less than or equal 
     //to offers[hoi]
@@ -64,7 +65,7 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
     {
         address mbt = address(offers[mid].buy_which_token);
         address mst = address(offers[mid].sell_which_token);
-        uint hid = big[mst][mbt];
+        uint hid = hes[mst][mbt];
         assert( mid > 0 ); 
         
 		if ( hid == 0 ) {
@@ -75,7 +76,8 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
             //there are at least two offers stored for token pair
 
             if ( !isLtOrEq( mid, hid ) ) {
-                //did not find any offers that have higher or equal price than offers[mid]
+                //did not find any offers that 
+                //have higher or equal price than offers[mid]
 
                 return 0;
             } else {
@@ -92,7 +94,7 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
         } else {
             //there is maximum one offer stored
 
-            if ( low[mst][mbt] == 0 ) {
+            if ( les[mst][mbt] == 0 ) {
                 //there is no offer stored yet
                 
                 return 0;
@@ -112,7 +114,8 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
 
     // Remove offer from the sorted list.
     function unsort(
-                      uint mid    //id of maker (ask) offer to remove from sorted list
+                      uint mid    /*id of maker (ask) offer to 
+                                    remove from sorted list*/
                    )
         internal
         returns (bool)
@@ -120,10 +123,10 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
         address mbt = address(offers[mid].buy_which_token);
         address mst = address(offers[mid].sell_which_token);
         
-        if(big[mst][mbt] == mid){
+        if(hes[mst][mbt] == mid){
             //offers[mid] is the highest offer
         
-            big[mst][mbt] = loi[mid]; 
+            hes[mst][mbt] = loi[mid]; 
             delete hoi[ loi[mid] ];
             delete loi[mid];
             if ( hos[mst][mbt] > 0 ) {
@@ -133,12 +136,12 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
             } else {
                 //offer was the last offer 
         
-                low[mst][mbt] = 0;
+                les[mst][mbt] = 0;
             }
-        } else if( low[mst][mbt] == mid ) {
+        } else if( les[mst][mbt] == mid ) {
             //offers[mid] is the lowest offer
         
-            low[mst][mbt] = hoi[mid]; 
+            les[mst][mbt] = hoi[mid]; 
             delete loi[ hoi[mid] ];
             delete hoi[mid];
             hos[mst][mbt]--;
@@ -157,8 +160,8 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
     //these variables are global only because of solidity local variable limit
     uint mbh;   //maker(ask) offer wants to buy this much token
     uint msh;   //maker(ask) offer wants to sell this much token
-    bool tno;   /*if true, taker(bid) offer should not be 
-                  created, because it was matched */
+    bool toc;   /*if true, taker(bid) offer should not be 
+                  created, because it was already matched */
 
     //match offers with taker(bid) offer, and execute token transactions
     function matcho( 
@@ -172,10 +175,10 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
         returns(uint mid)
         {
 
-        tno = false;        //taker offer should be created
-        bool ndy = true;    //matching not done yet
-        uint mhi;           //highest maker (ask) id
-        uint tss;           //taker (bid) sell how much saved    
+        toc = false;        //taker offer should be created
+        bool yet = true;    //matching not done yet
+        uint mes;           //highest maker (ask) id
+        uint tas;           //taker (bid) sell how much saved    
         
         //offers[pos] should buy the same token as taker 
         assert( pos == 0 
@@ -187,47 +190,51 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
                || !isActive(pos) 
                || tst == offers[pos].sell_which_token);
 
-        while ( ndy && big[tbt][tst] > 0) {
+        while ( yet && hes[tbt][tst] > 0) {
             //matching is not done yet and there is at 
             //least one offer stored for token pair
 
-            mhi = big[tbt][tst]; //store highest maker (ask) offer's id
+            mes = hes[tbt][tst]; //store highest maker (ask) offer's id
 
-            if ( mhi > 0 ) {
+            if ( mes > 0 ) {
                 //there is at least one maker (ask) offer stored 
                 
-                mbh = offers[mhi].buy_how_much;
-                msh = offers[mhi].sell_how_much;
+                mbh = offers[mes].buy_how_much;
+                msh = offers[mes].sell_how_much;
 
                 if ( safeMul( mbh , tbh ) <= safeMul( tsh , msh ) ) {
-                    //maker (ask) price is lower than or equal to taker (bid) price
+                    //maker (ask) price is lower than or equal to 
+                    //taker (bid) price
 
                     if ( msh >= tbh ){
-                        //maker (ask) wants to sell more than taker(bid) wants to buy
+                        //maker (ask) wants to sell more than 
+                        //taker(bid) wants to buy
                         
-                        buy( mhi, tbh );
-                        tno = true;
-                        ndy = false;
+                        buy( mes, tbh );
+                        toc = true;
+                        yet = false;
                     } else {
-                        //maker(ask) wants to sell less than taker(bid) wants to buy
+                        //maker(ask) wants to sell less than 
+                        //taker(bid) wants to buy
 
-                        tss = tsh; 
+                        tas = tsh; 
                         tsh = safeSub( tsh, mbh );
-                        tbh = safeMul( tsh, tbh ) / tss;
-                        buy( mhi, msh );
+                        tbh = safeMul( tsh, tbh ) / tas;
+                        buy( mes, msh );
                     }
                 } else {
-                    //lowest maker (ask) price is higher than current taker (bid) price
+                    //lowest maker (ask) price is higher than 
+                    //current taker (bid) price
 
-                    ndy = false;
+                    yet = false;
                 }
             } else {
                 //there is no maker (ask) offer to match
 
-                ndy = false;
+                yet = false;
             }
         }
-        if( ! tno ) {
+        if( ! toc ) {
             //new offer should be created            
 
             mid = super.offer( tsh, tst, tbh, tbt );
@@ -236,7 +243,7 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
             
             //insert offer into the sorted list
             if ( pos != 0
-                && offers[pos].active 
+                && isActive(pos) 
                 && isLtOrEq( mid, pos  )
                 && ( loi[pos] == 0 || !isLtOrEq( mid, loi[pos] ) 
                ) ) {
@@ -245,11 +252,11 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
                 sort( mid, pos );
             } else {
                 //client did not provide valid position, 
-                //so we have to find it ourselves
+                //so we have to find it 
                 
                 pos = 0;
 
-                if( big[tst][tbt] > 0 && isLtOrEq( mid, big[tst][tbt] ) ) {
+                if( hes[tst][tbt] > 0 && isLtOrEq( mid, hes[tst][tbt] ) ) {
                     //pos was 0 because user did not provide one  
 
                      pos = find(mid);
@@ -339,14 +346,15 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
                    , ERC20 mst  //maker (ask) sell which token
                    , uint mbh   //maker (ask) buy how much
                    , ERC20 mbt  //maker (ask) buy which token
-                   , uint pos   //position to insert offer, 0 should be used if unknown
+                   , uint pos   /*position to insert offer, 
+                                  0 should be used if unknown*/
                   )
         /*NOT synchronized!!! */
         can_offer
         returns ( uint id )
     {
         //make sure 'sell how much' is greater than minimum required 
-        assert(ami[mst] <= msh);
+        assert(mis[mst] <= msh);
 
         if(ema){
             //matching enabled
@@ -363,7 +371,8 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
     // offer maker, and from market to caller.
 
     function buy( 
-                   uint mid         //maker (ask) offer's id that is to be bought
+                   uint mid         /*maker (ask) offer's id that 
+                                      is to be bought*/
                  , uint qua         //quantity of token to buy
                 )
         /*NOT synchronized!!! */
@@ -373,7 +382,7 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
         if(ema){
             //matching enabled
 
-            assert(bue);    //buy enabled
+            assert(ebu);    //buy enabled
 
             if(qua >= offers[mid].sell_how_much) {
                 unsort(mid);
@@ -420,7 +429,7 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
         //make sure offers[mid] is not yet sorted
         assert( hoi[mid] == 0);
         assert( loi[mid] == 0);
-        assert( low[mst][mbt] != mid);
+        assert( les[mst][mbt] != mid);
 
         if ( pos != 0 ) {
             //offers[mid] is not the highest offer
@@ -428,12 +437,13 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
             assert(offers[pos].sell_which_token == offer.sell_which_token);
             assert(offers[pos].buy_which_token == offer.buy_which_token);
 
-            //make sure offers[mid] price is lower than or equal to offers[pos] price
+            //make sure offers[mid] price is lower i
+            //than or equal to offers[pos] price
             assert( isLtOrEq( mid, pos ) );
 
             hoi[mid] = pos;
             hos[mst][mbt]++;
-            if ( pos != low[mst][mbt] ) {
+            if ( pos != les[mst][mbt] ) {
                 //offers[mid] is not the lowest offer 
                 
                 lid = loi[pos];
@@ -451,16 +461,17 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
                 //offers[mid] is the lowest offer
                 
                 loi[pos] = mid;
-                low[mst][mbt] = mid;                
+                les[mst][mbt] = mid;                
             }
         } else {
             //offers[mid] is the highest offer
 
-            hsi = big[mst][mbt];
+            hsi = hes[mst][mbt];
             if ( hsi != 0 ) {
                 //offers[mid] is at least the second offer that was stored
 
-                //make sure offer price is strictly higher than highest_offer price
+                //make sure offer price is strictly higher 
+                //than highest_offer price
                 assert( !isLtOrEq( mid, hsi ) );
                 assert( offer.sell_which_token == offers[hsi].sell_which_token);
                 assert( offer.buy_which_token == offers[hsi].buy_which_token);
@@ -471,41 +482,43 @@ contract MatchingMarket is DSAuth, MatchingEvents, ExpiringMarket {
             } else {
                 //offers[mid] is the first offer that is stored
 
-                low[mst][mbt] = mid;
+                les[mst][mbt] = mid;
             }
-            big[mst][mbt] = mid;
+            hes[mst][mbt] = mid;
         }
         LogSortedOffer(mid);
     }
 
     // set the minimum sell amount for a token
 	function setMinSellAmount(
-                                ERC20 mst  //token to assign minimum sell amount to
-                              , uint msa   //maker (ask) minimum sell amount 
+                                ERC20 mst  /*token to assign minimum 
+                                             sell amount to*/
+                              , uint mis_   //maker (ask) minimum sell amount 
                              )
 	auth
 	returns (bool suc) {
-		ami[mst] = msa;
-		LogMinSellAmount(mst, msa);
+		mis[mst] = mis_;
+		LogMinSellAmount(mst, mis_);
 		suc = true; //success
 	}
 
 	function getMinSellAmount(
-                              ERC20 mst //token for which minimum sell amount is queried
+                              ERC20 mst /*token for which minimum 
+                                          sell amount is queried*/
                              )
 	constant
 	returns (uint) {
-		return ami[mst];
+		return mis[mst];
 	}
 
 	function isBuyEnabled() constant returns (bool){
-		return bue;
+		return ebu;
 	}
 
-	function setBuyEnabled(bool bue_) auth returns (bool){
-		bue = bue_;
-		LogBuyEnabled(bue);
-		return bue;
+	function setBuyEnabled(bool ebu_) auth returns (bool){
+		ebu = ebu_;
+		LogBuyEnabled(ebu);
+		return ebu;
 	}
 
     function setMatchingEnabled(bool ema_) auth returns (bool) {
