@@ -84,7 +84,7 @@ contract OrderMatchingGasTest is DSTest {
     logs_gas 
     returns(bool _success) {
         otc.offer( sell_how_much, sell_which_token, 
-                  buy_how_much, buy_which_token);
+                  buy_how_much, buy_which_token, 0);
     }
     //insert single offer
     function insertOffer(uint sell_how_much, ERC20 sell_which_token, 
@@ -222,9 +222,9 @@ contract OrderMatchingTest is DSTest, EventfulMarket {
         otc = new MatchingMarket(50000);
         user1 = new MarketTester(otc);
 
-        dai = new DSTokenBase(10 ** 32);
-        mkr = new DSTokenBase(10 ** 32);
-        dgd = new DSTokenBase(10 ** 32);
+        dai = new DSTokenBase(10 ** 9);
+        mkr = new DSTokenBase(10 ** 6);
+        dgd = new DSTokenBase(10 ** 9);
     }
     function testSetGetMinSellAmout(){
         otc.setMinSell(dai,100);

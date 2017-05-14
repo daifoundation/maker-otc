@@ -128,11 +128,11 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         uint hid; //higher maker (ask) id
         uint hsi; //HigheSt maker (ask) Id
 
-        assert(isActive(pos));
-        assert(isActive(mid));
+        assert( pos == 0 || isActive(pos) );
+        assert( isActive(mid) );
 
         //assert `pos` is in the sorted list
-        assert( hoi[pos] != 0 || loi[pos] != 0 || hes[mst][mbt] == pos);
+        assert( pos == 0 || hoi[pos] != 0 || loi[pos] != 0 || hes[mst][mbt] == pos);
         
         if ( hes[mst][mbt] > 0 ){
             //if offer will be the sedond to insert
@@ -155,10 +155,10 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
             hes[mst][mbt] = mid;
         }
 
-        assert(offers[lid].sell_which_token 
+        assert(lid == 0 || offers[lid].sell_which_token 
                == offers[mid].sell_which_token);
         
-        assert(offers[lid].buy_which_token 
+        assert(lid == 0 || offers[lid].buy_which_token 
                == offers[mid].buy_which_token);
 
 
@@ -495,7 +495,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         assert( hes[mst][mbt] != mid);
 
         assert(isActive(mid)); 
-        assert(isActive(pos)); 
+        assert( pos == 0 || isActive(pos)); 
         
         //take offer out of list of unsorted offers
         uid = ufi;
