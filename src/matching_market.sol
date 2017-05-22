@@ -135,7 +135,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         assert( pos == 0 || hoi[pos] != 0 || loi[pos] != 0 || hes[mst][mbt] == pos );
         
         if ( hes[mst][mbt] > 0 ){
-            //if offer will be the sedond to insert
+            //if offer will be the second to insert
 
             hos[mst][mbt]++;
         }
@@ -573,6 +573,22 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         ema = ema_;
         LogMatchingEnabled(ema);
         return true;
+    }
+
+    function getHighestOffer(ERC20 sell_token, ERC20 buy_token) constant returns(uint) {
+        return hes[sell_token][buy_token];
+    }
+
+    function getLowerOfferId(uint mid) constant returns(uint) {
+        return loi[mid];
+    }
+
+    function getHigherOfferId(uint mid) constant returns(uint) {
+        return hoi[mid];
+    }
+
+    function getHigherOfferIdSize(ERC20 sell_token, ERC20 buy_token) constant returns(uint) {
+        return hos[sell_token][buy_token];
     }
 
 }
