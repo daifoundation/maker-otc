@@ -70,11 +70,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         address mst = address(offers[mid].sell_which_token);
         uint hid = hes[mst][mbt];
 
-        if ( hid == 0 ) {
-            //there are no offers stored
-
-            return 0;
-        }
         if ( hos[mst][mbt] > 0 ) {
             //there are at least two offers stored for token pair
 
@@ -126,16 +121,32 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         address mst = address(offers[mid].sell_which_token);
         uint lid; //lower maker (ask) id
         uint hid; //higher maker (ask) id
-        uint hsi; //HigheSt maker (ask) Id
+        uint hsi; //highest maker (ask) id
 
-        assert( pos == 0 || isActive(pos) );
         assert( isActive(mid) );
 
-        //assert `pos` is in the sorted list
+        if ( pos == 0
+            || !isActive(pos) 
+            || !isLtOrEq( mid, pos )
+            || ( loi[pos] != 0 && isLtOrEq( mid, loi[pos] ) ) 
+           ) {
+               //client did not provide valid position, 
+               //so we have to find it 
+               pos = 0;
+
+               if( hes[mst][mbt] > 0 && isLtOrEq( mid, hes[mst][mbt] ) ) {
+                   //pos was 0 because user did not provide one  
+
+                   pos = find(mid);
+               }
+
+        } 
+
+        //assert `pos` is in the sorted list or is 0
         assert( pos == 0 || hoi[pos] != 0 || loi[pos] != 0 || hes[mst][mbt] == pos );
         
         if ( hes[mst][mbt] > 0 ){
-            //if offer will be the second to insert
+            //if offer will be the second to be inserted
 
             hos[mst][mbt]++;
         }
@@ -204,7 +215,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         }
        
         if ( hos[mst][mbt] > 0 ) {
-            //size of `hes` is greater than 0
+            //size of `hoi` is greater than 0
 
             hos[mst][mbt]--;
         }
@@ -221,7 +232,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
 
     //match offers with taker(bid) offer, and execute token transactions
     function matcho( 
-                      uint tsh   //taker(bid) sell How Much
+                      uint tsh   //taker(bid) sell how much
                     , ERC20 tst  //taker(bid) sell which token
                     , uint tbh   //taker(bid) buy how much
                     , ERC20 tbt  //taker(bid) buy which token
@@ -295,30 +306,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
 
             mid = super.offer( tsh, tst, tbh, tbt );
             
-            assert( mid > 0 );
-            
             //insert offer into the sorted list
-            if ( pos != 0
-                && isActive(pos) 
-                && isLtOrEq( mid, pos )
-                && ( loi[pos] == 0 || !isLtOrEq( mid, loi[pos] ) 
-               ) ) {
-                //client provided valid position
-
-                sort( mid, pos );
-            } else {
-                //client did not provide valid position, 
-                //so we have to find it 
-                
-                pos = 0;
-
-                if( hes[tst][tbt] > 0 && isLtOrEq( mid, hes[tst][tbt] ) ) {
-                    //pos was 0 because user did not provide one  
-
-                     pos = find(mid);
-                }
-                sort( mid, pos );
-            }
+            sort( mid, pos );
         }
     }
 
@@ -400,7 +389,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     }
 
     // Make a new offer. Takes funds from the caller into market escrow.
-    // Frontend should call only this function to create offers.
 
     function offer( 
                      uint msh   //maker (ask) sell how much
@@ -452,11 +440,13 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
 
                 unsort(mid);
             }
-            assert( super.buy( mid, qua ) ); 
+
+            assert( super.buy( mid, qua ) );
 
             success = true;
         }else{
             //revert to expiring market
+
             success = super.buy( mid, qua ); 
         }
     }
@@ -519,10 +509,11 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
                 sort( mid, pos );
                 return true;
             }
+
             //there were no offers in the unsorted list
             return false;                
         }else{
-            //uid was not the first the unsorted offers list
+            //uid was not the first in the unsorted offers list
 
             if ( uid == mid ) {
                 //uid was not the first in the list but we found mid
@@ -532,12 +523,17 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
                 sort( mid, pos );
                 return true;
             } 
+            
             //did not find mid
             return false;
         }
     }
 
     // set the minimum sell amount for a token
+    //    Function is used to avoid "dust offers" that have 
+    //    very small amount of tokens to sell, and it would 
+    //    cost more gas to accept the offer, than the value 
+    //    of tokens received.
     function setMinSell(
                                 ERC20 mst  /*token to assign minimum 
                                              sell amount to*/
@@ -547,9 +543,10 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     returns (bool suc) {
         mis[mst] = mis_;
         LogMinSell(mst, mis_);
-        suc = true; //success
+        suc = true; 
     }
 
+    //returns the minimum sell amount for an offer
     function getMinSell(
                               ERC20 mst /*token for which minimum 
                                           sell amount is queried*/
@@ -559,36 +556,84 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         return mis[mst];
     }
 
+    //the call of buy() function is enabled (offer sniping)?
+    //    Returns true, if users can click and buy an arbitrary offer, 
+    //    not only the lowest one. And users can buy unsorted offers as 
+    //    well. 
+    //    Returns false, if users are not allowed to buy arbitrary offers. 
     function isBuyEnabled() constant returns (bool){
         return ebu;
     }
-
+    
+    //set buy functionality enabled/disabled 
     function setBuyEnabled(bool ebu_) auth returns (bool){
         ebu = ebu_;
         LogBuyEnabled(ebu);
-        return ebu;
+        return true;
+    }
+    
+    //is otc offer matching enabled?
+    //      Returns true if offers will be matched if possible.
+    //      Returns false if contract is reverted to ExpiringMarket
+    //          and no matching is done for new offers. 
+    function isMatchingEnabled() constant returns (bool){
+        return ema;
     }
 
+    //set matching anabled/disabled
+    //    If ema_ true(default), then inserted offers are matched. 
+    //    Except the ones inserted by contracts, because those end up 
+    //    in the unsorted list of offers, that must be later sorter by
+    //    keepers using insert().
+    //    If ema_ is false then MatchingMarket is reverted to ExpiringMarket,
+    //    and matching is not done, and sorted lists are disabled.    
     function setMatchingEnabled(bool ema_) auth returns (bool) {
         ema = ema_;
         LogMatchingEnabled(ema);
         return true;
     }
 
-    function getHighestOffer(ERC20 sell_token, ERC20 buy_token) constant returns(uint) {
+    //return the best offer for a token pair
+    //    the best offer is the lowest one if its an ask, 
+    //    and highest one if its a bid offer
+    function getBestOffer(ERC20 sell_token, ERC20 buy_token) constant returns(uint) {
         return hes[sell_token][buy_token];
     }
 
-    function getLowerOfferId(uint mid) constant returns(uint) {
+    //return the next worse offer in the sorted list
+    //    the worse offer is the higher one if its an ask, 
+    //    and next lower one if its a bid offer
+    function getWorseOffer(uint mid) constant returns(uint) {
         return loi[mid];
     }
 
-    function getHigherOfferId(uint mid) constant returns(uint) {
+    //return the next better offer in the sorted list
+    //    the better offer is the lower priced one if its an ask, 
+    //    and next higher priced one if its a bid offer
+    function getBetterOffer(uint mid) constant returns(uint) {
         return hoi[mid];
     }
-
-    function getHigherOfferIdSize(ERC20 sell_token, ERC20 buy_token) constant returns(uint) {
+    
+    //return the amount of better offers for a token pair
+    function getBetterOfferSize(ERC20 sell_token, ERC20 buy_token) constant returns(uint) {
         return hos[sell_token][buy_token];
+    }
+
+    //get the first unsorted offer that was inserted by a contract
+    //    Contracts can't tell the position of the offer that is
+    //    inserted, so their offers end up in the unsorted list of offers.
+    //    Keeper can call later the insert() function to insert the offer
+    //    into the sorted list. Unsorted offers will not be matched, but 
+    //    can be bought with buy().
+    function getFirstUnsortedOffer() constant returns(uint) {
+        return ufi;
+    }
+
+    //get the next unsorted offer
+    //    Can be used to cycle through all the unsorted
+    //    offers.
+    function getNextUnsortedOffer(uint mid) constant returns(uint) {
+        return uni[mid];
     }
 
 }
