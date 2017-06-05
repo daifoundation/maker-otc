@@ -25,8 +25,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     //id of the highest offer for a token pair
     mapping( address => mapping( address => uint ) ) public hes;    
 
-    //size of `hoi` (number of keys)
-    mapping( address => mapping( address => uint ) ) public hos;
+    //number of offers stored for token pair
+    mapping( address => mapping( address => uint ) ) public nof;
 
     //minimum sell amount for a token to avoid dust offers
     mapping( address => uint) public mis;
@@ -70,7 +70,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         address mst = address(offers[mid].sell_which_token);
         uint hid = hes[mst][mbt];
 
-        if ( hos[mst][mbt] > 0 ) {
+        if ( nof[mst][mbt] > 1 ) {
             //there are at least two offers stored for token pair
 
             if ( !isLtOrEq( mid, hid ) ) {
@@ -145,12 +145,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         //assert `pos` is in the sorted list or is 0
         assert( pos == 0 || hoi[pos] != 0 || loi[pos] != 0 || hes[mst][mbt] == pos );
         
-        if ( hes[mst][mbt] > 0 ){
-            //if offer will be the second to be inserted
-
-            hos[mst][mbt]++;
-        }
-        
         if ( pos != 0 ) {
             //offers[mid] is not the highest offer
             
@@ -181,6 +175,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
             hoi[lid] = mid;
             loi[mid] = lid;
         }
+        
+        nof[mst][mbt]++;
+
         LogSortedOffer(mid);
     }
 
@@ -214,11 +211,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
             hoi[ loi[mid] ] = hoi[mid];
         }
        
-        if ( hos[mst][mbt] > 0 ) {
-            //size of `hoi` is greater than 0
+        assert ( nof[mst][mbt] > 0 ) ;
 
-            hos[mst][mbt]--;
-        }
+        nof[mst][mbt]--;
         delete loi[mid];
         delete hoi[mid];
         return true;
@@ -615,8 +610,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     }
     
     //return the amount of better offers for a token pair
-    function getBetterOfferSize(ERC20 sell_token, ERC20 buy_token) constant returns(uint) {
-        return hos[sell_token][buy_token];
+    function getOfferCount(ERC20 sell_token, ERC20 buy_token) constant returns(uint) {
+        return nof[sell_token][buy_token];
     }
 
     //get the first unsorted offer that was inserted by a contract
