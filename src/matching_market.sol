@@ -1,6 +1,7 @@
 pragma solidity ^0.4.8;
 
 import "./expiring_market.sol";
+import "ds-note/note.sol";
 
 contract MatchingEvents {
     event LogBuyEnabled(bool);
@@ -10,7 +11,7 @@ contract MatchingEvents {
     event LogSortedOffer(uint mid);
 }
 
-contract MatchingMarket is MatchingEvents, ExpiringMarket {
+contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
     bool public ebu = true; //buy enabled
     bool public ema = true; /*true: enable matching, false: revert to 
@@ -535,6 +536,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
                               , uint mis_   //maker (ask) minimum sell amount 
                              )
     auth
+    note
     returns (bool suc) {
         mis[mst] = mis_;
         LogMinSell(mst, mis_);
@@ -561,7 +563,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     }
     
     //set buy functionality enabled/disabled 
-    function setBuyEnabled(bool ebu_) auth returns (bool){
+    function setBuyEnabled(bool ebu_) auth note returns (bool){
         ebu = ebu_;
         LogBuyEnabled(ebu);
         return true;
@@ -582,7 +584,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     //    keepers using insert().
     //    If ema_ is false then MatchingMarket is reverted to ExpiringMarket,
     //    and matching is not done, and sorted lists are disabled.    
-    function setMatchingEnabled(bool ema_) auth returns (bool) {
+    function setMatchingEnabled(bool ema_) auth note returns (bool) {
         ema = ema_;
         LogMatchingEnabled(ema);
         return true;
