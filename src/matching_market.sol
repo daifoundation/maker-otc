@@ -12,17 +12,15 @@ contract MatchingEvents {
 }
 
 contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
-
     bool public buyEnabled = true;      //buy enabled
     bool public matchingEnabled = true; //true: enable matching,
                                         //false: revert to expiring market
-
     struct sortInfo {
         uint next;  //points to id of next higher offer
         uint prev;  //points to id of previous lower offer
     }
     mapping(uint => sortInfo) public rank;                      //doubly linked list of sorted offer ids               
-    mapping(address => mapping(address => uint)) public hes;    //id of the highest offer for a token pair  
+    mapping(address => mapping(address => uint)) public best;    //id of the highest offer for a token pair  
     mapping(address => mapping(address => uint)) public span;   //number of offers stored for token pair
     mapping(address => uint) public dust;                       //minimum sell amount for a token to avoid dust offers
     mapping(uint => uint) public uni;                           //next unsorted offer id
@@ -58,7 +56,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         assert( mid > 0 ); 
         address buy_which_token = address(offers[mid].buy_which_token);
         address sell_which_token = address(offers[mid].sell_which_token);
-        uint hid = hes[sell_which_token][buy_which_token];
+        uint hid = best[sell_which_token][buy_which_token];
 
         if (span[sell_which_token][buy_which_token] > 1) {
             //there are at least two offers stored for token pair
@@ -79,7 +77,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             }
         } else {
             //there is maximum one offer stored
-            if (hes[sell_which_token][buy_which_token] == 0) {
+            if (best[sell_which_token][buy_which_token] == 0) {
                 //there is no offer stored yet  
                 return 0;
             }
@@ -116,13 +114,13 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             //client did not provide valid position, 
             //so we have to find it 
             pos = 0;
-            if( hes[sell_which_token][buy_which_token] > 0 && isLtOrEq( mid, hes[sell_which_token][buy_which_token] ) ) {
+            if( best[sell_which_token][buy_which_token] > 0 && isLtOrEq( mid, best[sell_which_token][buy_which_token] ) ) {
                 //pos was 0 because user did not provide one  
                 pos = find(mid);
             }
         }
         //assert `pos` is in the sorted list or is 0
-        assert(pos == 0 || rank[pos].next != 0 || rank[pos].prev != 0 || hes[sell_which_token][buy_which_token] == pos);
+        assert(pos == 0 || rank[pos].next != 0 || rank[pos].prev != 0 || best[sell_which_token][buy_which_token] == pos);
         if (pos != 0) {
             //offers[mid] is not the highest offer
             assert(isLtOrEq( mid, pos));
@@ -131,8 +129,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             rank[mid].next = pos;
         } else {
             //offers[mid] is the highest offer
-            lid = hes[sell_which_token][buy_which_token];
-            hes[sell_which_token][buy_which_token] = mid;
+            lid = best[sell_which_token][buy_which_token];
+            best[sell_which_token][buy_which_token] = mid;
         }
         assert(lid == 0 || offers[lid].sell_which_token 
                == offers[mid].sell_which_token); 
@@ -159,14 +157,14 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         address sell_which_token = address(offers[mid].sell_which_token);
 
         //assert mid is in the sorted list
-        assert(rank[mid].next != 0 || rank[mid].prev != 0 || hes[sell_which_token][buy_which_token] == mid);
+        assert(rank[mid].next != 0 || rank[mid].prev != 0 || best[sell_which_token][buy_which_token] == mid);
     
-        if (mid != hes[sell_which_token][buy_which_token]) {
+        if (mid != best[sell_which_token][buy_which_token]) {
             // offers[mid] is not the highest offer
             rank[rank[mid].next].prev = rank[mid].prev;
         } else {
             //offers[mid] is the highest offer
-            hes[sell_which_token][buy_which_token] = rank[mid].prev;
+            best[sell_which_token][buy_which_token] = rank[mid].prev;
         }
         if (rank[mid].prev != 0) {
             //offers[mid] is not the lowest offer
@@ -210,10 +208,10 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
                || !isActive(pos) 
                || tst == offers[pos].sell_which_token);
 
-        while (yet && hes[tbt][tst] > 0) {
+        while (yet && best[tbt][tst] > 0) {
             //matching is not done yet and there is at 
             //least one offer stored for token pair
-            mes = hes[tbt][tst]; //store highest maker (ask) offer's id
+            mes = best[tbt][tst]; //store highest maker (ask) offer's id
             if (mes > 0) {
                 //there is at least one maker (ask) offer stored 
                 mbh = offers[mes].buy_how_much;
@@ -398,7 +396,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         //make sure offers[mid] is not yet sorted
         assert(rank[mid].next == 0);
         assert(rank[mid].prev == 0);
-        assert(hes[sell_which_token][buy_which_token] != mid);
+        assert(best[sell_which_token][buy_which_token] != mid);
 
         assert(isActive(mid)); 
         assert(pos == 0 || isActive(pos)); 
@@ -438,14 +436,14 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         }
     }
 
-    // set the minimum sell amount for a token
+    //set the minimum sell amount for a token
     //    Function is used to avoid "dust offers" that have 
     //    very small amount of tokens to sell, and it would 
     //    cost more gas to accept the offer, than the value 
     //    of tokens received.
     function setMinSell(
-        ERC20 sell_which_token,  //token to assign minimum sell amount to
-        uint dust_   //maker (ask) minimum sell amount 
+        ERC20 sell_which_token,     //token to assign minimum sell amount to
+        uint dust_                  //maker (ask) minimum sell amount 
     )
     auth
     note
@@ -456,16 +454,16 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     }
     //returns the minimum sell amount for an offer
     function getMinSell(
-        ERC20 sell_which_token //token for which minimum sell amount is queried
+        ERC20 sell_which_token      //token for which minimum sell amount is queried
     )
     constant
     returns(uint) {
         return dust[sell_which_token];
     }
 
-    //the call of buy() function is enabled (offer sniping)?
-    //    Returns true, if users can click and buy an arbitrary offer, 
-    //    not only the lowest one. And users can buy unsorted offers as 
+    //the call of buy() function is enabled (offer sniping)
+    //    Returns true, if users can click and buy any arbitrary offer, 
+    //    not only the lowest one. Users can also buy unsorted offers as 
     //    well. 
     //    Returns false, if users are not allowed to buy arbitrary offers. 
     function isBuyEnabled() constant returns (bool) {
@@ -482,7 +480,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     //is otc offer matching enabled?
     //      Returns true if offers will be matched if possible.
     //      Returns false if contract is reverted to ExpiringMarket
-    //          and no matching is done for new offers. 
+    //      and no matching is done for new offers. 
     function isMatchingEnabled() constant returns (bool) {
         return matchingEnabled;
     }
@@ -490,7 +488,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     //set matching anabled/disabled
     //    If matchingEnabled_ true(default), then inserted offers are matched. 
     //    Except the ones inserted by contracts, because those end up 
-    //    in the unsorted list of offers, that must be later sorter by
+    //    in the unsorted list of offers, that must be later sorted by
     //    keepers using insert().
     //    If matchingEnabled_ is false then MatchingMarket is reverted to ExpiringMarket,
     //    and matching is not done, and sorted lists are disabled.    
@@ -501,22 +499,22 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     }
 
     //return the best offer for a token pair
-    //    the best offer is the lowest one if its an ask, 
-    //    and highest one if its a bid offer
+    //      the best offer is the lowest one if its an ask, 
+    //      and highest one if its a bid offer
     function getBestOffer(ERC20 sell_token, ERC20 buy_token) constant returns(uint) {
-        return hes[sell_token][buy_token];
+        return best[sell_token][buy_token];
     }
 
     //return the next worse offer in the sorted list
-    //    the worse offer is the higher one if its an ask, 
-    //    and next lower one if its a bid offer
+    //      the worse offer is the higher one if its an ask, 
+    //      and next lower one if its a bid offer
     function getWorseOffer(uint mid) constant returns(uint) {
         return rank[mid].prev;
     }
 
     //return the next better offer in the sorted list
-    //    the better offer is the lower priced one if its an ask, 
-    //    and next higher priced one if its a bid offer
+    //      the better offer is in the lower priced one if its an ask, 
+    //      and next higher priced one if its a bid offer
     function getBetterOffer(uint mid) constant returns(uint) {
         return rank[mid].next;
     }
@@ -527,18 +525,16 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     }
 
     //get the first unsorted offer that was inserted by a contract
-    //    Contracts can't tell the position of the offer that is
-    //    inserted, so their offers end up in the unsorted list of offers.
-    //    Keeper can call later the insert() function to insert the offer
-    //    into the sorted list. Unsorted offers will not be matched, but 
-    //    can be bought with buy().
+    //      Contracts can't calculate the insertion position of their offer because it is not an O(1) operation.
+    //      Their offers end up in the unsorted list of offers.
+    //      Keepers can calculate the insertion position offchain and pass it to the insert() function to insert
+    //      the unsorted offer into the sorted list. Unsorted offers will not be matched, but can be bought with buy().
     function getFirstUnsortedOffer() constant returns(uint) {
         return ufi;
     }
 
     //get the next unsorted offer
-    //    Can be used to cycle through all the unsorted
-    //    offers.
+    //      Can be used to cycle through all the unsorted offers.
     function getNextUnsortedOffer(uint mid) constant returns(uint) {
         return uni[mid];
     }
