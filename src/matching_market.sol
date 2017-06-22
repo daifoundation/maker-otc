@@ -4,9 +4,9 @@ import "./expiring_market.sol";
 import "ds-note/note.sol";
 
 contract MatchingEvents {
-    event LogBuyEnabled(bool);
+    event LogBuyEnabled(bool isEnabled);
     event LogMinSell(address sell_which_token, uint min_amount);
-    event LogMatchingEnabled(bool);
+    event LogMatchingEnabled(bool isEnabled);
     event LogUnsortedOffer(uint id);
     event LogSortedOffer(uint id);
 }
