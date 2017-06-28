@@ -191,10 +191,10 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     internal
     returns (uint id)
     {
-        isMatched = false;        //taker offer should be created
+        isMatched = false;  //taker offer should be created
         bool yet = true;    //matching not done yet
         uint mes;           //highest maker (ask) id
-        uint tas;           //taker (bid) sell how much saved    
+        uint tab;           //taker (bid) buy how much saved  
         
         //offers[pos] should buy the same token as taker 
         assert(pos == 0 
@@ -220,15 +220,15 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
                     if (sell_how_much >= tbh) {
                         //maker (ask) wants to sell more than 
                         //taker(bid) wants to buy
-                        buy(mes, tbh);
                         isMatched = true;
                         yet = false;
+                        buy(mes, tbh);
                     } else {
                         //maker(ask) wants to sell less than 
                         //taker(bid) wants to buy
-                        tas = tsh; 
-                        tsh = safeSub(tsh, buy_how_much);
-                        tbh = safeMul(tsh, tbh) / tas;
+                        tab = tbh; 
+                        tbh = safeSub(tbh, sell_how_much);
+                        tsh = safeMul(tbh, tsh) / tab;
                         buy(mes, sell_how_much);
                     }
                 } else {
