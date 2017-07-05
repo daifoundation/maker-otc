@@ -35,38 +35,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         _;
     }
 
-    //returns true if token is succesfully added to whitelist
-    function addTokenWhitelist(
-        bytes baseToken,
-        bytes quoteToken
-    )
-    public
-    auth
-    returns (bool)
-    {
-        if (baseToken.length == 0 || quoteToken.length == 0) {
-            throw;  //invalid token name(s)
-        }
-        _menu[baseToken][quoteToken] = true;
-        return true;
-    }
-
-    //returns true if token is successfully removed from whitelist
-    function remTokenWhitelist(
-        bytes baseToken,
-        bytes quoteToken
-    )
-    public
-    auth
-    returns (bool)
-    {
-        if (baseToken.length == 0 || quoteToken.length == 0) {
-            throw;  //invalid token name(s)
-        }
-        delete _menu[baseToken][quoteToken];
-        return true;
-    }
-
     function MatchingMarket(uint lifetime) ExpiringMarket(lifetime) {
     }
     //return true if offers[low] priced less than or equal to offers[high]
@@ -312,6 +280,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     }
 
     // ---- Public entrypoints ---- //
+
     function make(
         ERC20    haveToken,
         ERC20    wantToken,
@@ -470,6 +439,57 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             return false;
         }
     }
+
+    //returns true if token is succesfully added to whitelist
+    //  Function is used to add a token pair to the whitelist
+    //  All incoming offers are checked against the whitelist.
+    function addTokenPairWhitelist(
+        bytes baseToken,
+        bytes quoteToken
+    )
+    public
+    auth
+    returns (bool)
+    {
+        if (baseToken.length == 0 || quoteToken.length == 0) {
+            throw;  //invalid token name(s)
+        }
+        _menu[baseToken][quoteToken] = true;
+        return true;
+    }
+
+    //returns true if token is successfully removed from whitelist
+    //  Function is used to remove a token pair from the whitelist.
+    //  All incoming offers are checked against the whitelist.
+    function remTokenPairWhitelist(
+        bytes baseToken,
+        bytes quoteToken
+    )
+    public
+    auth
+    returns (bool)
+    {
+        if (baseToken.length == 0 || quoteToken.length == 0) {
+            throw;  //invalid token name(s)
+        }
+        delete _menu[baseToken][quoteToken];
+        return true;
+    }
+
+    function isTokenPairWhitelisted(
+        bytes quoteToken,
+        bytes baseToken
+    )
+    public
+    returns (bool)
+    {
+        if (_menu[baseToken][quoteToken] || _menu[quoteToken][baseToken]) {
+            return true;
+        }
+        return false;
+    }
+
+
 
     //set the minimum sell amount for a token
     //    Function is used to avoid "dust offers" that have 
