@@ -24,12 +24,12 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     mapping(address => mapping(address => uint)) public _span;  //number of offers stored for token pair
     mapping(address => uint) public _dust;                      //minimum sell amount for a token to avoid dust offers
     mapping(uint => uint) public _near;                         //next unsorted offer id
-    mapping(bytes => mapping(bytes => bool)) _menu;             //whitelist tracking which token pairs can be traded
+    mapping(bytes32 => bool) _menu;                             //whitelist tracking which token pairs can be traded
     uint _head;                                                 //first unsorted offer id
 
     //check if token pair is enabled
     modifier isWhitelist(bytes buy_which_token, bytes sell_which_token) {
-        if(!(_menu[buy_which_token][sell_which_token] || _menu[sell_which_token][buy_which_token])) {
+        if (!(_menu[sha3(buy_which_token, sell_which_token)] || _menu[sha3(sell_which_token, buy_which_token)])) {
             throw;  //token pair is not in whitelist
         }   
         _;
@@ -113,7 +113,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint hsi; //highest maker (ask) id
 
         assert(isActive(id));
-        if ( pos == 0
+        if (pos == 0
             || !isActive(pos) 
             || !isLtOrEq(id, pos)
             || (_rank[pos].prev != 0 && isLtOrEq(id, _rank[pos].prev)) 
@@ -121,7 +121,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             //client did not provide valid position, 
             //so we have to find it 
             pos = 0;
-            if( _best[sell_which_token][buy_which_token] > 0 && isLtOrEq(id, _best[sell_which_token][buy_which_token])) {
+            if (_best[sell_which_token][buy_which_token] > 0 && isLtOrEq(id, _best[sell_which_token][buy_which_token])) {
                 //pos was 0 because user did not provide one  
                 pos = find(id);
             }
@@ -144,7 +144,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         assert(lid == 0 || offers[lid].buy_which_token 
                == offers[id].buy_which_token);
 
-        if ( lid != 0 ) {
+        if (lid != 0) {
             //if lower offer does exist
             assert(!isLtOrEq(id, lid)); 
             _rank[lid].next = id;
@@ -454,7 +454,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         if (baseToken.length == 0 || quoteToken.length == 0) {
             throw;  //invalid token name(s)
         }
-        _menu[baseToken][quoteToken] = true;
+        _menu[sha3(baseToken, quoteToken)] = true;
         return true;
     }
 
@@ -472,7 +472,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         if (baseToken.length == 0 || quoteToken.length == 0) {
             throw;  //invalid token name(s)
         }
-        delete _menu[baseToken][quoteToken];
+        delete _menu[sha3(baseToken, quoteToken)];
         return true;
     }
 
@@ -483,7 +483,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     public
     returns (bool)
     {
-        if (_menu[baseToken][quoteToken] || _menu[quoteToken][baseToken]) {
+        if (_menu[sha3(baseToken, quoteToken)] || _menu[sha3(quoteToken, baseToken)]) {
             return true;
         }
         return false;
