@@ -14,7 +14,7 @@ contract MatchingEvents {
 contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     bool public _buyEnabled = true;      //buy enabled
     bool public _matchingEnabled = true; //true: enable matching,
-                                        //false: revert to expiring market
+                                         //false: revert to expiring market
     struct sortInfo {
         uint next;  //points to id of next higher offer
         uint prev;  //points to id of previous lower offer
@@ -24,15 +24,47 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     mapping(address => mapping(address => uint)) public _span;  //number of offers stored for token pair
     mapping(address => uint) public _dust;                      //minimum sell amount for a token to avoid dust offers
     mapping(uint => uint) public _near;                         //next unsorted offer id
-    mapping(bytes => mapping(bytes => uint)) public _menu;      //whitelist tracking which token pairs can be traded
+    mapping(bytes => mapping(bytes => bool)) _menu;             //whitelist tracking which token pairs can be traded
     uint _head;                                                 //first unsorted offer id
 
     //check if token pair is enabled
-    modifer isWhitelist(bytes buy_which_token, bytes sell_which_token) {
-        if(!_menu[sell_which_token][buy_which_token] && !_menu[buy_which_token][sell_which_token]) {
-            throw;  //token pair is not on whitelist
+    modifier isWhitelist(bytes buy_which_token, bytes sell_which_token) {
+        if(!(_menu[buy_which_token][sell_which_token] || _menu[sell_which_token][buy_which_token])) {
+            throw;  //token pair is not in whitelist
         }   
         _;
+    }
+
+    //returns true if token is succesfully added to whitelist
+    function addTokenWhitelist(
+        bytes baseToken,
+        bytes quoteToken
+    )
+    public
+    auth
+    returns (bool)
+    {
+        if (baseToken.length == 0 || quoteToken.length == 0) {
+            throw;  //invalid token name(s)
+        }
+        _menu[baseToken][quoteToken] = true;
+        return true;
+    }
+
+    //returns true if token is successfully removed from whitelist
+    function remTokenWhitelist(
+        bytes baseToken,
+        bytes quoteToken
+    )
+    public
+    auth
+    returns (bool)
+    {
+        if (baseToken.length == 0 || quoteToken.length == 0) {
+            throw;  //invalid token name(s)
+        }
+        delete _menu[baseToken][quoteToken];
+        return true;
     }
 
     function MatchingMarket(uint lifetime) ExpiringMarket(lifetime) {
@@ -41,7 +73,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     function isLtOrEq(
         uint low,   //lower priced offer's id
         uint high   //higher priced offer's id
-    ) 
+    )
     internal
     returns (bool)
     {
