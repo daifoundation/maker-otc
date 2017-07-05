@@ -19,12 +19,21 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint next;  //points to id of next higher offer
         uint prev;  //points to id of previous lower offer
     }
-    mapping(uint => sortInfo) public _rank;                      //doubly linked list of sorted offer ids               
-    mapping(address => mapping(address => uint)) public _best;   //id of the highest offer for a token pair  
-    mapping(address => mapping(address => uint)) public _span;   //number of offers stored for token pair
-    mapping(address => uint) public _dust;                       //minimum sell amount for a token to avoid dust offers
-    mapping(uint => uint) public _near;                          //next unsorted offer id
-    uint _head;                                                  //first unsorted offer id
+    mapping(uint => sortInfo) public _rank;                     //doubly linked list of sorted offer ids               
+    mapping(address => mapping(address => uint)) public _best;  //id of the highest offer for a token pair  
+    mapping(address => mapping(address => uint)) public _span;  //number of offers stored for token pair
+    mapping(address => uint) public _dust;                      //minimum sell amount for a token to avoid dust offers
+    mapping(uint => uint) public _near;                         //next unsorted offer id
+    mapping(bytes => mapping(bytes => uint)) public _menu;      //whitelist tracking which token pairs can be traded
+    uint _head;                                                 //first unsorted offer id
+
+    //check if token pair is enabled
+    modifer isWhitelist(bytes buy_which_token, bytes sell_which_token) {
+        if(!_menu[sell_which_token][buy_which_token] && !_menu[buy_which_token][sell_which_token]) {
+            throw;  //token pair is not on whitelist
+        }   
+        _;
+    }
 
     function MatchingMarket(uint lifetime) ExpiringMarket(lifetime) {
     }
