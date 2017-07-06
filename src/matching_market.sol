@@ -9,6 +9,8 @@ contract MatchingEvents {
     event LogMatchingEnabled(bool isEnabled);
     event LogUnsortedOffer(uint id);
     event LogSortedOffer(uint id);
+    event LogAddTokenPairWhitelist(bytes baseToken, bytes quoteToken);
+    event LogRemTokenPairWhitelist(bytes baseToken, bytes quoteToken);
 }
 
 contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
@@ -24,7 +26,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     mapping(address => mapping(address => uint)) public _span;  //number of offers stored for token pair
     mapping(address => uint) public _dust;                      //minimum sell amount for a token to avoid dust offers
     mapping(uint => uint) public _near;                         //next unsorted offer id
-    mapping(bytes32 => bool) _menu;                             //whitelist tracking which token pairs can be traded
+    mapping(bytes32 => bool) public _menu;                      //whitelist tracking which token pairs can be traded
     uint _head;                                                 //first unsorted offer id
 
     //check if token pair is enabled
@@ -455,6 +457,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             throw;  //invalid token name(s)
         }
         _menu[sha3(baseToken, quoteToken)] = true;
+        LogAddTokenPairWhitelist(baseToken, quoteToken);
         return true;
     }
 
@@ -473,6 +476,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             throw;  //invalid token name(s)
         }
         delete _menu[sha3(baseToken, quoteToken)];
+        LogRemTokenPairWhitelist(baseToken, quoteToken);
         return true;
     }
 
