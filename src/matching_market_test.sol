@@ -1196,34 +1196,33 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(buy_val1, 10);
     }
     function testAddTokenPairToWhitelist() {
-        bytes memory baseToken;
-        bytes memory quoteToken;
-        baseToken = "MKR";
-        quoteToken = "W-ETH";
+        ERC20 baseToken = mkr;
+        ERC20 quoteToken = dai;
         assert(otc.addTokenPairWhitelist(baseToken, quoteToken));
     }
     function testIsTokenPairWhitelisted() {
-        bytes memory baseToken;
-        bytes memory quoteToken;
-        baseToken = "MKR";
-        quoteToken = "W-ETH";
+        ERC20 baseToken = mkr;
+        ERC20 quoteToken = dai;
         assert(otc.addTokenPairWhitelist(baseToken, quoteToken));
         assert(otc.isTokenPairWhitelisted(baseToken, quoteToken));
     }
-    function testRemTokenPairFromWhitelist() {
-        bytes memory baseToken;
-        bytes memory quoteToken;
-        baseToken = "MKR";
-        quoteToken = "W-ETH";
+    function testRemTokenPairFromWhitelistSuccess() {
+        ERC20 baseToken = mkr;
+        ERC20 quoteToken = dai;
         assert(otc.addTokenPairWhitelist(baseToken, quoteToken));
         assert(otc.remTokenPairWhitelist(baseToken, quoteToken));
         assert(!otc.isTokenPairWhitelisted(baseToken, quoteToken));
     }
-    function testIsTokenpairWhitelisted2() {
-        bytes memory baseToken;
-        bytes memory quoteToken;
-        baseToken = "MKR";
-        quoteToken = "W-ETH";
+    function testIsTokenPairWhitelisted2() {
+        ERC20 baseToken = mkr;
+        ERC20 quoteToken = dai;
         assert(!otc.isTokenPairWhitelisted(baseToken, quoteToken));
     }
 }
+
+    //TODO
+    //1. add isWhitelist modifier with arguments to order matching functions. (both oasis and contract).
+    //    - offeru() - entrypoint for other contracts
+    //    - make() --> offer() 
+    //2. do existing tests need to be modified? - probably need to add "addTokenPairWhitelist() to most tests executing orders"
+    //3. What if I pass an address as ERC20 that's not actually pointing to an ERC20 contract?

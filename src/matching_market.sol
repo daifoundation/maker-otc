@@ -9,8 +9,8 @@ contract MatchingEvents {
     event LogMatchingEnabled(bool isEnabled);
     event LogUnsortedOffer(uint id);
     event LogSortedOffer(uint id);
-    event LogAddTokenPairWhitelist(bytes baseToken, bytes quoteToken);
-    event LogRemTokenPairWhitelist(bytes baseToken, bytes quoteToken);
+    event LogAddTokenPairWhitelist(ERC20 baseToken, ERC20 quoteToken);
+    event LogRemTokenPairWhitelist(ERC20 baseToken, ERC20 quoteToken);
 }
 
 contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
@@ -30,7 +30,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     uint _head;                                                 //first unsorted offer id
 
     //check if token pair is enabled
-    modifier isWhitelist(bytes buy_which_token, bytes sell_which_token) {
+    modifier isWhitelist(ERC20 buy_which_token, ERC20 sell_which_token) {
         if (!(_menu[sha3(buy_which_token, sell_which_token)] || _menu[sha3(sell_which_token, buy_which_token)])) {
             throw;  //token pair is not in whitelist
         }   
@@ -288,7 +288,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         ERC20    wantToken,
         uint128  haveAmount,
         uint128  wantAmount
-    ) returns (bytes32 id) {
+    ) 
+    returns (bytes32 id) {
         return bytes32(offer(haveAmount, haveToken, wantAmount, wantToken));
     }
 
@@ -312,14 +313,14 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     //     * calls expiring market's offer().
     //     * available to everyone without authorization.
     //     * no sorting is done.
-
+    /*NOT synchronized!!! */
     function offer( 
         uint sell_how_much,                   //maker (ask) sell how much
         ERC20 sell_which_token,     //maker (ask) sell which token
         uint buy_how_much,                   //maker (ask) buy how much
         ERC20 buy_which_token       //maker (ask) buy which token
     )
-    /*NOT synchronized!!! */
+    isWhitelist(sell_which_token, buy_which_token)
     returns (uint id) 
     {
         if(_matchingEnabled) {
@@ -331,6 +332,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         } 
     }
     // Make a new offer. Takes funds from the caller into market escrow.
+    /*NOT synchronized!!! */
     function offer( 
         uint sell_how_much,                   //maker (ask) sell how much
         ERC20 sell_which_token,     //maker (ask) sell which token
@@ -338,7 +340,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         ERC20 buy_which_token,      //maker (ask) buy which token
         uint pos                    //position to insert offer, 0 should be used if unknown
     )
-    /*NOT synchronized!!! */
+    isWhitelist(sell_which_token, buy_which_token)
     can_offer
     returns (uint id)
     {
@@ -446,15 +448,15 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     //  Function is used to add a token pair to the whitelist
     //  All incoming offers are checked against the whitelist.
     function addTokenPairWhitelist(
-        bytes baseToken,
-        bytes quoteToken
+        ERC20 baseToken,
+        ERC20 quoteToken
     )
     public
     auth
     returns (bool)
     {
-        if (baseToken.length == 0 || quoteToken.length == 0) {
-            throw;  //invalid token name(s)
+        if (address(baseToken) == 0x0 || address(quoteToken) == 0x0) {
+            throw;  //invalid ERC20 token address
         }
         _menu[sha3(baseToken, quoteToken)] = true;
         LogAddTokenPairWhitelist(baseToken, quoteToken);
@@ -465,15 +467,15 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     //  Function is used to remove a token pair from the whitelist.
     //  All incoming offers are checked against the whitelist.
     function remTokenPairWhitelist(
-        bytes baseToken,
-        bytes quoteToken
+        ERC20 baseToken,
+        ERC20 quoteToken
     )
     public
     auth
     returns (bool)
     {
-        if (baseToken.length == 0 || quoteToken.length == 0) {
-            throw;  //invalid token name(s)
+        if (address(baseToken) == 0x0 || address(quoteToken) == 0x0) {
+            throw;  //invalid ERC20 token address
         }
         if (!_menu[sha3(baseToken, quoteToken)]) {
             throw;  //whitelist does not contain token pair
@@ -484,20 +486,14 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     }
 
     function isTokenPairWhitelisted(
-        bytes baseToken,
-        bytes quoteToken
+        ERC20 baseToken,
+        ERC20 quoteToken
     )
     public
     returns (bool)
     {
-        if (_menu[sha3(baseToken, quoteToken)] || _menu[sha3(quoteToken, baseToken)]) {
-            return true;
-        }
-        return false;
-        //return (_menu[sha3(baseToken, quoteToken)] || _menu[sha3(quoteToken, baseToken)]);
+        return (_menu[sha3(baseToken, quoteToken)] || _menu[sha3(quoteToken, baseToken)]);
     }
-
-
 
     //set the minimum sell amount for a token
     //    Function is used to avoid "dust offers" that have 
