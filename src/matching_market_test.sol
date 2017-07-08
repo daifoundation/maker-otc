@@ -1194,5 +1194,36 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(buy_val, 8);
         assertEq(sell_val1, 1);
         assertEq(buy_val1, 10);
-    } 
+    }
+    function testAddTokenPairToWhitelist() {
+        bytes memory baseToken;
+        bytes memory quoteToken;
+        baseToken = "MKR";
+        quoteToken = "W-ETH";
+        assert(otc.addTokenPairWhitelist(baseToken, quoteToken));
+    }
+    function testIsTokenPairWhitelisted() {
+        bytes memory baseToken;
+        bytes memory quoteToken;
+        baseToken = "MKR";
+        quoteToken = "W-ETH";
+        assert(otc.addTokenPairWhitelist(baseToken, quoteToken));
+        assert(otc.isTokenPairWhitelisted(baseToken, quoteToken));
+    }
+    function testRemTokenPairFromWhitelist() {
+        bytes memory baseToken;
+        bytes memory quoteToken;
+        baseToken = "MKR";
+        quoteToken = "W-ETH";
+        assert(otc.addTokenPairWhitelist(baseToken, quoteToken));
+        assert(otc.remTokenPairWhitelist(baseToken, quoteToken));
+        assert(!otc.isTokenPairWhitelisted(baseToken, quoteToken));
+    }
+    function testIsTokenpairWhitelisted2() {
+        bytes memory baseToken;
+        bytes memory quoteToken;
+        baseToken = "MKR";
+        quoteToken = "W-ETH";
+        assert(!otc.isTokenPairWhitelisted(baseToken, quoteToken));
+    }
 }

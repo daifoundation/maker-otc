@@ -458,7 +458,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         }
         _menu[sha3(baseToken, quoteToken)] = true;
         LogAddTokenPairWhitelist(baseToken, quoteToken);
-        return true;
+        return _menu[sha3(baseToken, quoteToken)];
     }
 
     //returns true if token is successfully removed from whitelist
@@ -475,14 +475,17 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         if (baseToken.length == 0 || quoteToken.length == 0) {
             throw;  //invalid token name(s)
         }
+        if (!_menu[sha3(baseToken, quoteToken)]) {
+            throw;  //whitelist does not contain token pair
+        }
         delete _menu[sha3(baseToken, quoteToken)];
         LogRemTokenPairWhitelist(baseToken, quoteToken);
         return true;
     }
 
     function isTokenPairWhitelisted(
-        bytes quoteToken,
-        bytes baseToken
+        bytes baseToken,
+        bytes quoteToken
     )
     public
     returns (bool)
@@ -491,6 +494,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             return true;
         }
         return false;
+        //return (_menu[sha3(baseToken, quoteToken)] || _menu[sha3(quoteToken, baseToken)]);
     }
 
 
