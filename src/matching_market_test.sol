@@ -97,10 +97,11 @@ contract OrderMatchingGasTest is DSTest {
     uint [] match_count = [1,5,10,15,20,25,30,50,100];
     function setUp() {
         otc = new MatchingMarket(50000);
-        user1 = new MarketTester(otc);
         dai = new DSTokenBase(10 ** 9);
         mkr = new DSTokenBase(10 ** 6);
         dgd = new DSTokenBase(10 ** 9);
+        otc.addTokenPairWhitelist(dai, mkr);
+        user1 = new MarketTester(otc);
         dai.transfer(user1, 10 ** 6 );
         user1.doApprove(otc, 10 ** 6 / 2, dai );
         mkr.approve(otc, 10 ** 6);
@@ -157,12 +158,11 @@ contract OrderMatchingGasTest is DSTest {
     function execOrderInsertGasTest(uint offer_index, bool frontend_aid) {
         createOffers(offer_index + 1);
         if (frontend_aid) { 
-            insertOffer(1, dai, 1, mkr , 1);
+            insertOffer(1, dai, 1, mkr, 1);
         } else {
             insertOffer(1, dai, 1, mkr);
         }
-        assertEq(otc.getOfferCount(dai,mkr), 
-                 offer_index + 2);
+        assertEq(otc.getOfferCount(dai,mkr), offer_index + 2);
     }
     function testGasMatchOneOrder() {
         var match_order_count = match_count[0]; // 1 
@@ -286,18 +286,19 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     ERC20 sell_token1;
     ERC20 buy_token1;
     function setUp() {
-        otc = new MatchingMarket(50000);
-        user1 = new MarketTester(otc);
-
         dai = new DSTokenBase(10 ** 9);
         mkr = new DSTokenBase(10 ** 6);
         dgd = new DSTokenBase(10 ** 9);
+        otc = new MatchingMarket(50000);
+        otc.addTokenPairWhitelist(dai, mkr);
+        otc.addTokenPairWhitelist(dgd, dai);
+        user1 = new MarketTester(otc);
     }
     function testGetFirstNextUnsortedOfferOneOffer() {
         mkr.approve(otc, 30);
         offer_id[1] = otc.offer(30, mkr, 100, dai);
-        assertEq( otc.getFirstUnsortedOffer(), offer_id[1]);
-        assertEq( otc.getNextUnsortedOffer(offer_id[1]), 0);
+        assertEq(otc.getFirstUnsortedOffer(), offer_id[1]);
+        assertEq(otc.getNextUnsortedOffer(offer_id[1]), 0);
     }
     function testGetFirstNextUnsortedOfferThreeOffers() {
         mkr.approve(otc, 90);
@@ -1195,34 +1196,56 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(sell_val1, 1);
         assertEq(buy_val1, 10);
     }
-    function testAddTokenPairToWhitelist() {
-        ERC20 baseToken = mkr;
-        ERC20 quoteToken = dai;
-        assert(otc.addTokenPairWhitelist(baseToken, quoteToken));
-    }
+    //check if a token pair is whitelisted
     function testIsTokenPairWhitelisted() {
         ERC20 baseToken = mkr;
         ERC20 quoteToken = dai;
-        assert(otc.addTokenPairWhitelist(baseToken, quoteToken));
         assert(otc.isTokenPairWhitelisted(baseToken, quoteToken));
+    } 
+    //check if a token pair in reverse order is whitelisted
+    function testIsTokenPairWhitelisted2() {
+        ERC20 baseToken = dai;
+        ERC20 quoteToken = mkr;
+        assert(otc.isTokenPairWhitelisted(baseToken, quoteToken));
+    } 
+    //check if a token pair that is not in whitelist is whitelisted
+    function testIsTokenPairWhitelisted3() {
+        ERC20 gnt = new DSTokenBase(10 ** 9);
+        ERC20 baseToken = dgd;
+        ERC20 quoteToken = gnt;
+        assert(!otc.isTokenPairWhitelisted(baseToken, quoteToken));
     }
-    function testRemTokenPairFromWhitelistSuccess() {
-        ERC20 baseToken = mkr;
-        ERC20 quoteToken = dai;
-        assert(otc.addTokenPairWhitelist(baseToken, quoteToken));
+    //remove token pair in same order it was added
+    function testRemTokenPairFromWhitelist() {
+        ERC20 baseToken = dai;
+        ERC20 quoteToken = mkr;
+        assert(otc.isTokenPairWhitelisted(baseToken, quoteToken));
         assert(otc.remTokenPairWhitelist(baseToken, quoteToken));
         assert(!otc.isTokenPairWhitelisted(baseToken, quoteToken));
     }
-    function testIsTokenPairWhitelisted2() {
-        ERC20 baseToken = mkr;
-        ERC20 quoteToken = dai;
+    //remove token pair in reverse order of which it was added
+    function testRemTokenPairFromWhitelist2() {
+        ERC20 baseToken = dai;
+        ERC20 quoteToken = dgd;
+        assert(otc.isTokenPairWhitelisted(baseToken, quoteToken));
+        assert(otc.remTokenPairWhitelist(baseToken, quoteToken));
         assert(!otc.isTokenPairWhitelisted(baseToken, quoteToken));
     }
+    //add new token pair to whitelist
+    function testAddTokenPairToWhitelist() {
+        ERC20 baseToken = mkr;
+        ERC20 quoteToken = dgd;
+        assert(!otc.isTokenPairWhitelisted(baseToken, quoteToken));
+        assert(otc.addTokenPairWhitelist(baseToken, quoteToken));
+        assert(otc.isTokenPairWhitelisted(baseToken, quoteToken));
+    }
+    //add token pair that was previously added and removed from whitelist 
+    function testAddTokenPairToWhitelist2() {
+        ERC20 baseToken = mkr;
+        ERC20 quoteToken = dai;
+        assert(otc.remTokenPairWhitelist(baseToken, quoteToken));
+        assert(!otc.isTokenPairWhitelisted(baseToken, quoteToken)); //fails
+        assert(otc.addTokenPairWhitelist(baseToken, quoteToken));       //fails
+        assert(otc.isTokenPairWhitelisted(baseToken, quoteToken));
+    } //dai, mkr & dgd, dai
 }
-
-    //TODO
-    //1. add isWhitelist modifier with arguments to order matching functions. (both oasis and contract).
-    //    - offeru() - entrypoint for other contracts
-    //    - make() --> offer() 
-    //2. do existing tests need to be modified? - probably need to add "addTokenPairWhitelist() to most tests executing orders"
-    //3. What if I pass an address as ERC20 that's not actually pointing to an ERC20 contract?
