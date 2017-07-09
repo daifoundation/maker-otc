@@ -1244,8 +1244,8 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         ERC20 baseToken = mkr;
         ERC20 quoteToken = dai;
         assert(otc.remTokenPairWhitelist(baseToken, quoteToken));
-        assert(!otc.isTokenPairWhitelisted(baseToken, quoteToken)); //fails
-        assert(otc.addTokenPairWhitelist(baseToken, quoteToken));       //fails
+        assert(!otc.isTokenPairWhitelisted(baseToken, quoteToken));
+        assert(otc.addTokenPairWhitelist(baseToken, quoteToken));
         assert(otc.isTokenPairWhitelisted(baseToken, quoteToken));
-    } //dai, mkr & dgd, dai
+    }
 }
