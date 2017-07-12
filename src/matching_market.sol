@@ -495,6 +495,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         ERC20 quoteToken
     )
     public
+    constant
     returns (bool)
     {
         return (_menu[sha3(baseToken, quoteToken)] || _menu[sha3(quoteToken, baseToken)]);
