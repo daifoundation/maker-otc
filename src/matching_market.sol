@@ -32,7 +32,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     //check if token pair is enabled
     modifier isWhitelist(ERC20 buy_which_token, ERC20 sell_which_token) {
         if (!(_menu[sha3(buy_which_token, sell_which_token)] || _menu[sha3(sell_which_token, buy_which_token)])) {
-            throw;  //token pair is not in whitelist
+            revert();  //token pair is not in whitelist
         }   
         _;
     }
@@ -111,8 +111,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         address buy_which_token = address(offers[id].buy_which_token);
         address sell_which_token = address(offers[id].sell_which_token);
         uint lid; //lower maker (ask) id
-        uint hid; //higher maker (ask) id
-        uint hsi; //highest maker (ask) id
 
         assert(isActive(id));
         if (pos == 0
@@ -456,15 +454,15 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     returns (bool)
     {
         if (address(baseToken) == 0x0 || address(quoteToken) == 0x0) {
-            throw;  //invalid ERC20 token address
+            revert();  //invalid ERC20 token address
         }
         if (isTokenPairWhitelisted(baseToken, quoteToken)) {
-            throw;  //token pair already in whitelist
+            revert();  //token pair already in whitelist
         }
         _menu[sha3(baseToken, quoteToken)] = true;
         LogAddTokenPairWhitelist(baseToken, quoteToken);
         if (_menu[sha3(baseToken, quoteToken)]) return true;
-        else throw; //unexepected error with checking added token pair
+        else revert(); //unexepected error with checking added token pair
     }
 
     //returns true if token is successfully removed from whitelist
@@ -479,10 +477,10 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     returns (bool)
     {
         if (address(baseToken) == 0x0 || address(quoteToken) == 0x0) {
-            throw;  //invalid ERC20 token address
+            revert();  //invalid ERC20 token address
         }
         if (!(_menu[sha3(baseToken, quoteToken)] || _menu[sha3(quoteToken, baseToken)])) {
-            throw;  //whitelist does not contain token pair
+            revert();  //whitelist does not contain token pair
         }
         delete _menu[sha3(baseToken, quoteToken)];
         delete _menu[sha3(quoteToken, baseToken)];

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.8;
+pragma solidity ^0.4.13;
 
 import "ds-test/test.sol";
 import "ds-token/base.sol";
@@ -56,24 +56,24 @@ contract MarketTester {
     function doBuy(uint id, uint buy_how_much) returns (bool _success) {
         return market.buy(id, buy_how_much);
     }
-    function doUnsortedOffer( uint sell_how_much, ERC20 sell_which_token
-                    , uint buy_how_much,  ERC20 buy_which_token )
+    function doUnsortedOffer(uint sell_how_much, ERC20 sell_which_token,
+                    uint buy_how_much,  ERC20 buy_which_token)
     returns (uint) {
-        return market.offer( sell_how_much, sell_which_token
-                  , buy_how_much, buy_which_token);
+        return market.offer(sell_how_much, sell_which_token,
+                    buy_how_much, buy_which_token);
     }
-    function doOffer( uint sell_how_much, ERC20 sell_which_token
-                    , uint buy_how_much,  ERC20 buy_which_token )
+    function doOffer(uint sell_how_much, ERC20 sell_which_token,
+                    uint buy_how_much,  ERC20 buy_which_token)
     returns (uint) {
-        return market.offer( sell_how_much, sell_which_token
-                  , buy_how_much, buy_which_token, 0);
+        return market.offer(sell_how_much, sell_which_token,
+                  buy_how_much, buy_which_token, 0);
     }
-    function doOffer( uint sell_how_much, ERC20 sell_which_token
-                    , uint buy_how_much,  ERC20 buy_which_token
-                    , uint pos )
+    function doOffer(uint sell_how_much, ERC20 sell_which_token,
+                    uint buy_how_much,  ERC20 buy_which_token,
+                    uint pos)
     returns (uint) {
-        return market.offer( sell_how_much, sell_which_token
-                  , buy_how_much, buy_which_token, pos);
+        return market.offer(sell_how_much, sell_which_token,
+                  buy_how_much, buy_which_token, pos);
     }
     function doCancel(uint id) returns (bool _success) {
         return market.cancel(id);
@@ -117,8 +117,7 @@ contract OrderMatchingGasTest is DSTest {
     }
     function insertOffer(uint sell_how_much, ERC20 sell_which_token, 
                          uint buy_how_much, ERC20 buy_which_token) 
-    logs_gas 
-    returns(bool _success) {
+    logs_gas {
         otc.offer(sell_how_much, sell_which_token, 
                   buy_how_much, buy_which_token, 0);
     }
@@ -126,8 +125,7 @@ contract OrderMatchingGasTest is DSTest {
     function insertOffer(uint sell_how_much, ERC20 sell_which_token, 
                          uint buy_how_much, ERC20 buy_which_token, 
                          uint pos) 
-    logs_gas 
-    returns(bool _success) {
+    logs_gas {
         otc.offer(sell_how_much, sell_which_token, 
                   buy_how_much, buy_which_token, pos);
     }
@@ -1053,6 +1051,8 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         //assert price of offer_id[2] should be the same as before matching
         assertEq(sell_val, 5);
         assertEq(buy_val, 5);
+        assert(address(sell_token) > 0x0);
+        assert(address(buy_token) > 0x0);
     } 
     function testOfferMatchingPartialSellTwoOffers() {
         mkr.transfer(user1, 10);
@@ -1073,6 +1073,8 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assert(!otc.isActive(offer_id[2]));
         assertEq(sell_val, 5);
         assertEq(buy_val, 5);
+        assert(address(sell_token) > 0x0);
+        assert(address(buy_token) > 0x0);
     } 
     function testOfferMatchingOneOnTwoMatchCheckOfferPriceRemainsTheSame() {
         dai.transfer(user1, 9);
@@ -1092,6 +1094,8 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         //assert érice of offer_id[2] should be the same as before matching
         assertEq(sell_val, 1);
         assertEq(buy_val, 1);
+        assert(address(sell_token) > 0x0);
+        assert(address(buy_token) > 0x0);
     } 
     function testOfferMatchingPartialBuyTwoOffers() {
         mkr.transfer(user1, 5);
@@ -1112,6 +1116,8 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assert(!otc.isActive(offer_id[1]));
         assertEq(sell_val, 5);
         assertEq(buy_val, 5);
+        assert(address(sell_token) > 0x0);
+        assert(address(buy_token) > 0x0);
     } 
     function testOfferMatchingPartialBuyThreeOffers() {
         mkr.transfer(user1, 15);
@@ -1136,6 +1142,10 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(buy_val, 10);
         assertEq(sell_val1, 9);
         assertEq(buy_val1, 9);
+        assert(address(sell_token) > 0x0);
+        assert(address(buy_token) > 0x0);
+        assert(address(sell_token1) > 0x0);
+        assert(address(buy_token1) > 0x0);
     } 
     function testOfferMatchingPartialSellThreeOffers() {
         mkr.transfer(user1, 6);
@@ -1162,6 +1172,10 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(buy_val, 10);
         assertEq(sell_val1, 9);
         assertEq(buy_val1, 9);
+        assert(address(sell_token) > 0x0);
+        assert(address(buy_token) > 0x0);
+        assert(address(sell_token1) > 0x0);
+        assert(address(buy_token1) > 0x0);
     } 
     function testOfferMatchingPartialSellThreeOffersTwoBuyThreeSell() {
         dai.transfer(user1, 3);
@@ -1173,10 +1187,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         offer_id[4] = user1.doOffer(3, dai, 3, mkr);
         var (sell_val, sell_token, buy_val, buy_token) = otc.getOffer(offer_id[3]);
         var (sell_val1, sell_token1, buy_val1, buy_token1) = otc.getOffer(offer_id[1]);
-        address user1_address = address(user1);
-        address my_address = address(this);
-        address dai_address = address(dai);
-        address mkr_address = address(mkr);
+
         assertEq(otc.getBestOffer(mkr, dai), offer_id[3]);
         assertEq(otc.getBestOffer(dai, mkr), 0);
         assertEq(otc.getWorseOffer(offer_id[1]), 0);
@@ -1195,6 +1206,10 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(buy_val, 8);
         assertEq(sell_val1, 1);
         assertEq(buy_val1, 10);
+        assert(address(sell_token) > 0x0);
+        assert(address(buy_token) > 0x0);
+        assert(address(sell_token1) > 0x0);
+        assert(address(buy_token1) > 0x0);
     }
     //check if a token pair is whitelisted
     function testIsTokenPairWhitelisted() {

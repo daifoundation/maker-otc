@@ -1,4 +1,4 @@
-pragma solidity ^0.4.8;
+pragma solidity ^0.4.13;
 
 import "ds-test/test.sol";
 import "ds-token/base.sol";
@@ -56,22 +56,22 @@ contract ExpiringMarketTest is DSTest {
         assert(otc.isClosed());
     }
     function testOfferBeforeExpiry() {
-        otc.offer( 30, mkr, 100, dai );
+        otc.offer(30, mkr, 100, dai);
     }
     function testFailOfferAfterExpiry() {
         otc.addTime(ExpiringMarket(otc).lifetime() + 1 seconds);
-        otc.offer( 30, mkr, 100, dai );
+        otc.offer(30, mkr, 100, dai);
     }
     function testCancelBeforeExpiry() {
-        var id = otc.offer( 30, mkr, 100, dai );
+        var id = otc.offer(30, mkr, 100, dai);
         otc.cancel(id);
     }
     function testFailCancelNonOwnerBeforeExpiry() {
-        var id = otc.offer( 30, mkr, 100, dai );
+        var id = otc.offer(30, mkr, 100, dai);
         user1.doCancel(id);
     }
     function testCancelNonOwnerAfterExpiry() {
-        var id = otc.offer( 30, mkr, 100, dai );
+        var id = otc.offer(30, mkr, 100, dai);
         otc.addTime(otc.lifetime() + 1 seconds);
 
         assert(otc.isActive(id));
@@ -79,11 +79,11 @@ contract ExpiringMarketTest is DSTest {
         assert(!otc.isActive(id));
     }
     function testBuyBeforeExpiry() {
-        var id = otc.offer( 30, mkr, 100, dai );
+        var id = otc.offer(30, mkr, 100, dai);
         assert(user1.doBuy(id, 30));
     }
     function testFailBuyAfterExpiry() {
-        var id = otc.offer( 30, mkr, 100, dai );
+        var id = otc.offer(30, mkr, 100, dai);
         otc.addTime(otc.lifetime() + 1 seconds);
         user1.doBuy(id, 30);
     }
@@ -111,7 +111,7 @@ contract ExpiringCancelTransferTest is CancelTransferTest
                                      , ExpiringTransferTest
 {
     function testCancelAfterExpiryTransfersFromMarket() {
-        var id = otc.offer( 30, mkr, 100, dai );
+        var id = otc.offer(30, mkr, 100, dai);
         TestableExpiringMarket(otc).addTime(
             ExpiringMarket(otc).lifetime() + 1 seconds
         );
@@ -123,7 +123,7 @@ contract ExpiringCancelTransferTest is CancelTransferTest
         assertEq(balance_before - balance_after, 30);
     }
     function testCancelAfterExpiryTransfersToSeller() {
-        var id = otc.offer( 30, mkr, 100, dai );
+        var id = otc.offer(30, mkr, 100, dai);
         TestableExpiringMarket(otc).addTime(
             ExpiringMarket(otc).lifetime() + 1 seconds
         );

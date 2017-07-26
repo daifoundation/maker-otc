@@ -1,11 +1,11 @@
-pragma solidity ^0.4.8;
+pragma solidity ^0.4.13;
 
 import "erc20/erc20.sol";
 
 contract EventfulMarket {
-    event ItemUpdate( uint id );
-    event Trade( uint sell_how_much, address indexed sell_which_token,
-                 uint buy_how_much, address indexed buy_which_token );
+    event ItemUpdate(uint id);
+    event Trade(uint sell_how_much, address indexed sell_which_token,
+                 uint buy_how_much, address indexed buy_which_token);
 
     event LogMake(
         bytes32  indexed  id,
@@ -64,7 +64,7 @@ contract SimpleMarket is EventfulMarket {
     }
 
     function assert(bool x) internal {
-        if (!x) throw;
+        if (!x) revert();
     }
 
     struct OfferInfo {
@@ -103,7 +103,7 @@ contract SimpleMarket is EventfulMarket {
     function getOwner(uint id) constant returns (address owner) {
         return offers[id].owner;
     }
-    function getOffer( uint id ) constant returns (uint, ERC20, uint, ERC20) {
+    function getOffer(uint id) constant returns (uint, ERC20, uint, ERC20) {
       var offer = offers[id];
       return (offer.sell_how_much, offer.sell_which_token,
               offer.buy_how_much, offer.buy_which_token);
@@ -120,15 +120,15 @@ contract SimpleMarket is EventfulMarket {
         assert(a == 0 || c / a == b);
     }
 
-    function trade( address seller, uint sell_how_much, ERC20 sell_which_token,
-                    address buyer,  uint buy_how_much,  ERC20 buy_which_token )
+    function trade(address seller, uint sell_how_much, ERC20 sell_which_token,
+                    address buyer,  uint buy_how_much,  ERC20 buy_which_token)
         internal
     {
-        var seller_paid_out = buy_which_token.transferFrom( buyer, seller, buy_how_much );
+        var seller_paid_out = buy_which_token.transferFrom(buyer, seller, buy_how_much);
         assert(seller_paid_out);
-        var buyer_paid_out = sell_which_token.transfer( buyer, sell_how_much );
+        var buyer_paid_out = sell_which_token.transfer(buyer, sell_how_much);
         assert(buyer_paid_out);
-        Trade( sell_how_much, sell_which_token, buy_how_much, buy_which_token );
+        Trade(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
     }
 
     // ---- Public entrypoints ---- //
@@ -151,8 +151,8 @@ contract SimpleMarket is EventfulMarket {
     }
 
     // Make a new offer. Takes funds from the caller into market escrow.
-    function offer( uint sell_how_much, ERC20 sell_which_token
-                  , uint buy_how_much,  ERC20 buy_which_token )
+    function offer(uint sell_how_much, ERC20 sell_which_token,
+                uint buy_how_much, ERC20 buy_which_token)
         can_offer
         synchronized
         returns (uint id)
@@ -176,7 +176,7 @@ contract SimpleMarket is EventfulMarket {
         id = next_id();
         offers[id] = info;
 
-        var seller_paid = sell_which_token.transferFrom( msg.sender, this, sell_how_much );
+        var seller_paid = sell_which_token.transferFrom(msg.sender, this, sell_how_much);
         assert(seller_paid);
 
         ItemUpdate(id);
@@ -210,10 +210,10 @@ contract SimpleMarket is EventfulMarket {
 
     // Accept given `quantity` of an offer. Transfers funds from caller to
     // offer maker, and from market to caller.
-    function buy( uint id, uint quantity )
+    function buy(uint id, uint quantity)
         can_buy(id)
         synchronized
-        returns ( bool success )
+        returns (bool success)
     {
         assert(uint128(quantity) == quantity);
 
@@ -224,15 +224,15 @@ contract SimpleMarket is EventfulMarket {
         uint spend = safeMul(quantity, offer.buy_how_much) / offer.sell_how_much;
         assert(uint128(spend) == spend);
 
-        if ( spend > offer.buy_how_much || quantity > offer.sell_how_much ) {
+        if (spend > offer.buy_how_much || quantity > offer.sell_how_much) {
             // buyer wants more than is available
             success = false;
-        } else if ( spend == offer.buy_how_much && quantity == offer.sell_how_much ) {
+        } else if (spend == offer.buy_how_much && quantity == offer.sell_how_much) {
             // buyer wants exactly what is available
             delete offers[id];
 
-            trade( offer.owner, quantity, offer.sell_which_token,
-                   msg.sender, spend, offer.buy_which_token );
+            trade(offer.owner, quantity, offer.sell_which_token,
+                   msg.sender, spend, offer.buy_which_token);
 
             ItemUpdate(id);
             LogTake(
@@ -248,13 +248,13 @@ contract SimpleMarket is EventfulMarket {
             );
 
             success = true;
-        } else if ( spend > 0 && quantity > 0 ) {
+        } else if (spend > 0 && quantity > 0) {
             // buyer wants a fraction of what is available
             offers[id].sell_how_much = safeSub(offer.sell_how_much, quantity);
             offers[id].buy_how_much = safeSub(offer.buy_how_much, spend);
 
-            trade( offer.owner, quantity, offer.sell_which_token,
-                    msg.sender, spend, offer.buy_which_token );
+            trade(offer.owner, quantity, offer.sell_which_token,
+                    msg.sender, spend, offer.buy_which_token);
 
             ItemUpdate(id);
             LogTake(
@@ -277,16 +277,16 @@ contract SimpleMarket is EventfulMarket {
     }
 
     // Cancel an offer. Refunds offer maker.
-    function cancel( uint id )
+    function cancel(uint id)
         can_cancel(id)
         synchronized
-        returns ( bool success )
+        returns (bool success)
     {
         // read-only offer. Modify an offer by directly accessing offers[id]
         OfferInfo memory offer = offers[id];
         delete offers[id];
 
-        var seller_refunded = offer.sell_which_token.transfer( offer.owner , offer.sell_how_much );
+        var seller_refunded = offer.sell_which_token.transfer(offer.owner , offer.sell_how_much);
         assert(seller_refunded);
 
         ItemUpdate(id);
