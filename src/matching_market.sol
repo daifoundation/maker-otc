@@ -1,4 +1,4 @@
-pragma solidity ^0.4.8;
+pragma solidity ^0.4.13;
 
 import "./expiring_market.sol";
 import "ds-note/note.sol";
@@ -550,7 +550,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         return _matchingEnabled;
     }
 
-    //set matching anabled/disabled
+    //set matching enabled/disabled
     //    If matchingEnabled true(default), then inserted offers are matched. 
     //    Except the ones inserted by contracts, because those end up 
     //    in the unsorted list of offers, that must be later sorted by
