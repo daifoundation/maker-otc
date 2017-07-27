@@ -451,6 +451,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     )
     public
     auth
+    note
     returns (bool)
     {
         if (address(baseToken) == 0x0 || address(quoteToken) == 0x0) {
@@ -474,6 +475,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     )
     public
     auth
+    note
     returns (bool)
     {
         if (address(baseToken) == 0x0 || address(quoteToken) == 0x0) {
