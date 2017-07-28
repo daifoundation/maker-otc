@@ -185,74 +185,74 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     }
 
     //these variables are global only because of solidity local variable limit
-    uint _buy_how_much;      //maker(ask) offer wants to buy this much token
-    uint _sell_how_much;     //maker(ask) offer wants to sell this much token
-    bool _isMatched;         //if true, taker(bid) offer should not be created, because it was already matched
+    uint m_buy_how_much;            //maker offer wants to buy this much token
+    uint m_sell_how_much;           //maker offer wants to sell this much token
+    bool isMatched;                //if true, taker offer should not be created, because it was already matched
 
-    //match offers with taker(bid) offer, and execute token transactions
+    //match offers with taker offer, and execute token transactions
     function matcho( 
-        uint tsh,   //taker(bid) sell how much
-        ERC20 tst,  //taker(bid) sell which token
-        uint tbh,   //taker(bid) buy how much
-        ERC20 tbt,  //taker(bid) buy which token
-        uint pos    //position id
+        uint t_sell_how_much,       //taker sell how much
+        ERC20 t_sell_which_token,   //taker sell which token
+        uint t_buy_how_much,        //taker buy how much
+        ERC20 t_buy_which_token,    //taker buy which token
+        uint pos                    //position id
     )
     internal
     returns (uint id)
     {
-        _isMatched = false;  //taker offer should be created
-        bool yet = true;    //matching not done yet
-        uint mes;           //highest maker (ask) id
-        uint tab;           //taker (bid) buy how much saved  
+        isMatched = false;          //taker offer should be created
+        bool isTakerFilled = true;  //has the taker offer been filled
+        uint best_maker_id;         //highest maker id
+        uint tab;                   //taker buy how much saved  
         
         //offers[pos] should buy the same token as taker 
         assert(pos == 0 
                || !isActive(pos) 
-               || tbt == offers[pos].buy_which_token);
+               || t_buy_which_token == offers[pos].buy_which_token);
 
         //offers[pos] should sell the same token as taker 
         assert(pos == 0 
                || !isActive(pos) 
-               || tst == offers[pos].sell_which_token);
+               || t_sell_which_token == offers[pos].sell_which_token);
 
-        while (yet && _best[tbt][tst] > 0) {
+        while (isTakerFilled && _best[t_buy_which_token][t_sell_which_token] > 0) {
             //matching is not done yet and there is at 
             //least one offer stored for token pair
-            mes = _best[tbt][tst]; //store highest maker (ask) offer's id
-            if (mes > 0) {
-                //there is at least one maker (ask) offer stored 
-                _buy_how_much = offers[mes].buy_how_much;
-                _sell_how_much = offers[mes].sell_how_much;
-                if (safeMul(_buy_how_much , tbh ) <= safeMul(tsh , _sell_how_much)) {
-                    //maker (ask) price is lower than or equal to 
-                    //taker (bid) price
-                    if (_sell_how_much >= tbh) {
-                        //maker (ask) wants to sell more than 
-                        //taker(bid) wants to buy
-                        _isMatched = true;
-                        yet = false;
-                        buy(mes, tbh);
+            best_maker_id = _best[t_buy_which_token][t_sell_which_token]; //store highest maker offer's id
+            if (best_maker_id > 0) {
+                //there is at least one maker offer stored 
+                m_buy_how_much = offers[best_maker_id].buy_how_much;
+                m_sell_how_much = offers[best_maker_id].sell_how_much;
+                if (safeMul(m_buy_how_much , t_buy_how_much) <= safeMul(t_sell_how_much , m_sell_how_much)) {
+                    //maker price is lower than or equal to 
+                    //taker price
+                    if (m_sell_how_much >= t_buy_how_much) {
+                        //maker wants to sell more than 
+                        //taker wants to buy
+                        isMatched = true;
+                        isTakerFilled = false;
+                        buy(best_maker_id, t_buy_how_much);
                     } else {
-                        //maker(ask) wants to sell less than 
-                        //taker(bid) wants to buy
-                        tab = tbh; 
-                        tbh = safeSub(tbh, _sell_how_much);
-                        tsh = safeMul(tbh, tsh) / tab;
-                        buy(mes, _sell_how_much);
+                        //maker wants to sell less than 
+                        //taker wants to buy
+                        tab = t_buy_how_much; 
+                        t_buy_how_much = safeSub(t_buy_how_much, m_sell_how_much);
+                        t_sell_how_much = safeMul(t_buy_how_much, t_sell_how_much) / tab;
+                        buy(best_maker_id, m_sell_how_much);
                     }
                 } else {
-                    //lowest maker (ask) price is higher than 
-                    //current taker (bid) price
-                    yet = false;
+                    //lowest maker price is higher than 
+                    //current taker price
+                    isTakerFilled = false;
                 }
             } else {
-                //there is no maker (ask) offer to match
-                yet = false;
+                //there is no maker offer to match
+                isTakerFilled = false;
             }
         }
-        if (!_isMatched) {
+        if (!isMatched) {
             //new offer should be created            
-            id = super.offer(tsh, tst, tbh, tbt);
+            id = super.offer(t_sell_how_much, t_sell_which_token, t_buy_how_much, t_buy_which_token);
             //insert offer into the sorted list
             sort(id, pos);
         }
@@ -313,9 +313,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     //     * no sorting is done.
     /*NOT synchronized!!! */
     function offer( 
-        uint sell_how_much,                   //maker (ask) sell how much
+        uint sell_how_much,         //maker (ask) sell how much
         ERC20 sell_which_token,     //maker (ask) sell which token
-        uint buy_how_much,                   //maker (ask) buy how much
+        uint buy_how_much,          //maker (ask) buy how much
         ERC20 buy_which_token       //maker (ask) buy which token
     )
     isWhitelist(sell_which_token, buy_which_token)
@@ -332,9 +332,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     // Make a new offer. Takes funds from the caller into market escrow.
     /*NOT synchronized!!! */
     function offer( 
-        uint sell_how_much,                   //maker (ask) sell how much
+        uint sell_how_much,         //maker (ask) sell how much
         ERC20 sell_which_token,     //maker (ask) sell which token
-        uint buy_how_much,                   //maker (ask) buy how much
+        uint buy_how_much,          //maker (ask) buy how much
         ERC20 buy_which_token,      //maker (ask) buy which token
         uint pos                    //position to insert offer, 0 should be used if unknown
     )
