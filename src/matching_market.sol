@@ -201,21 +201,16 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     returns (uint id)
     {
         isMatched = false;          //taker offer should be created
-        bool isTakerFilled = true;  //has the taker offer been filled
+        bool isTakerFilled = false; //has the taker offer been filled
         uint best_maker_id;         //highest maker id
         uint tab;                   //taker buy how much saved  
         
         //offers[pos] should buy the same token as taker 
         assert(pos == 0 
                || !isActive(pos) 
-               || t_buy_which_token == offers[pos].buy_which_token);
+               || (t_buy_which_token == offers[pos].buy_which_token) && t_sell_which_token == offers[pos].sell_which_token);
 
-        //offers[pos] should sell the same token as taker 
-        assert(pos == 0 
-               || !isActive(pos) 
-               || t_sell_which_token == offers[pos].sell_which_token);
-
-        while (isTakerFilled && _best[t_buy_which_token][t_sell_which_token] > 0) {
+        while (!isTakerFilled && _best[t_buy_which_token][t_sell_which_token] > 0) {
             //matching is not done yet and there is at 
             //least one offer stored for token pair
             best_maker_id = _best[t_buy_which_token][t_sell_which_token]; //store highest maker offer's id
@@ -224,30 +219,26 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
                 m_buy_how_much = offers[best_maker_id].buy_how_much;
                 m_sell_how_much = offers[best_maker_id].sell_how_much;
                 if (safeMul(m_buy_how_much , t_buy_how_much) <= safeMul(t_sell_how_much , m_sell_how_much)) {
-                    //maker price is lower than or equal to 
-                    //taker price
+                    //maker price is lower than or equal to taker price
                     if (m_sell_how_much >= t_buy_how_much) {
-                        //maker wants to sell more than 
-                        //taker wants to buy
+                        //maker wants to sell more than taker wants to buy
                         isMatched = true;
-                        isTakerFilled = false;
+                        isTakerFilled = true;
                         buy(best_maker_id, t_buy_how_much);
                     } else {
-                        //maker wants to sell less than 
-                        //taker wants to buy
+                        //maker wants to sell less than taker wants to buy
                         tab = t_buy_how_much; 
                         t_buy_how_much = safeSub(t_buy_how_much, m_sell_how_much);
                         t_sell_how_much = safeMul(t_buy_how_much, t_sell_how_much) / tab;
                         buy(best_maker_id, m_sell_how_much);
                     }
                 } else {
-                    //lowest maker price is higher than 
-                    //current taker price
-                    isTakerFilled = false;
+                    //lowest maker price is higher than current taker price
+                    isTakerFilled = true;
                 }
             } else {
                 //there is no maker offer to match
-                isTakerFilled = false;
+                isTakerFilled = true;
             }
         }
         if (!isMatched) {
