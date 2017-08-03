@@ -218,7 +218,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
                 //there is at least one maker offer stored 
                 m_buy_how_much = offers[best_maker_id].buy_how_much;
                 m_sell_how_much = offers[best_maker_id].sell_how_much;
-                if (safeMul(m_buy_how_much , t_buy_how_much) <= safeMul(t_sell_how_much , m_sell_how_much)) {
+                if (safeMul(m_buy_how_much , t_buy_how_much) <= safeMul(t_sell_how_much , m_sell_how_much) + m_buy_how_much + t_buy_how_much + t_sell_how_much + m_sell_how_much ) {
                     //maker price is lower than or equal to taker price
                     if (m_sell_how_much >= t_buy_how_much) {
                         //maker wants to sell more than taker wants to buy
