@@ -106,17 +106,6 @@ contract SimpleMarket is EventfulMarket, DSMath {
               offer.buy_how_much, offer.buy_which_token);
     }
 
-    function trade(address seller, uint sell_how_much, ERC20 sell_which_token,
-                    address buyer,  uint buy_how_much,  ERC20 buy_which_token)
-        internal
-    {
-        var seller_paid_out = buy_which_token.transferFrom(buyer, seller, buy_how_much);
-        assert(seller_paid_out);
-        var buyer_paid_out = sell_which_token.transfer(buyer, sell_how_much);
-        assert(buyer_paid_out);
-        Trade(sell_how_much, sell_which_token, buy_how_much, buy_which_token);
-    }
-
     // ---- Public entrypoints ---- //
 
     function make(
@@ -296,5 +285,14 @@ contract SimpleMarket is EventfulMarket, DSMath {
 
     function next_id() internal returns (uint) {
         last_offer_id++; return last_offer_id;
+    }
+
+    function trade(address seller, uint sold_amount, ERC20 sold_token,
+                    address buyer,  uint paid_amount,  ERC20 paid_token)
+        internal
+    {
+        assert( paid_token.transferFrom(buyer, seller, paid_amount) );
+        assert( sold_token.transfer(buyer, sold_amount) );
+        Trade(sold_amount, sold_token, paid_amount, paid_token);
     }
 }
