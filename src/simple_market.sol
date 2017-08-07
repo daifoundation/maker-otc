@@ -1,5 +1,6 @@
 pragma solidity ^0.4.13;
 
+import "ds-math/math.sol";
 import "erc20/erc20.sol";
 
 contract EventfulMarket {
@@ -53,19 +54,13 @@ contract EventfulMarket {
     );
 }
 
-contract SimpleMarket is EventfulMarket {
+contract SimpleMarket is EventfulMarket, DSMath {
+
+    uint public last_offer_id;
+
+    mapping (uint => OfferInfo) public offers;
+
     bool locked;
-
-    modifier synchronized {
-        assert(!locked);
-        locked = true;
-        _;
-        locked = false;
-    }
-
-    function assert(bool x) internal {
-        if (!x) revert();
-    }
 
     struct OfferInfo {
         uint     sell_how_much;
@@ -77,26 +72,28 @@ contract SimpleMarket is EventfulMarket {
         uint64   timestamp;
     }
 
-    mapping (uint => OfferInfo) public offers;
-
-    uint public last_offer_id;
-
-    function next_id() internal returns (uint) {
-        last_offer_id++; return last_offer_id;
-    }
-
-    modifier can_offer {
-        _;
-    }
     modifier can_buy(uint id) {
         assert(isActive(id));
         _;
     }
+
     modifier can_cancel(uint id) {
         assert(isActive(id));
         assert(getOwner(id) == msg.sender);
         _;
     }
+
+    modifier can_offer {
+        _;
+    }
+
+    modifier synchronized {
+        assert(!locked);
+        locked = true;
+        _;
+        locked = false;
+    }
+
     function isActive(uint id) constant returns (bool active) {
         return offers[id].active;
     }
@@ -107,17 +104,6 @@ contract SimpleMarket is EventfulMarket {
       var offer = offers[id];
       return (offer.sell_how_much, offer.sell_which_token,
               offer.buy_how_much, offer.buy_which_token);
-    }
-
-    // non underflowing subtraction
-    function safeSub(uint a, uint b) internal returns (uint) {
-        assert(b <= a);
-        return a - b;
-    }
-    // non overflowing multiplication
-    function safeMul(uint a, uint b) internal returns (uint c) {
-        c = a * b;
-        assert(a == 0 || c / a == b);
     }
 
     function trade(address seller, uint sell_how_much, ERC20 sell_which_token,
@@ -221,7 +207,7 @@ contract SimpleMarket is EventfulMarket {
         OfferInfo memory offer = offers[id];
 
         // inferred quantity that the buyer wishes to spend
-        uint spend = safeMul(quantity, offer.buy_how_much) / offer.sell_how_much;
+        uint spend = mul(quantity, offer.buy_how_much) / offer.sell_how_much;
         assert(uint128(spend) == spend);
 
         if (spend > offer.buy_how_much || quantity > offer.sell_how_much) {
@@ -250,8 +236,8 @@ contract SimpleMarket is EventfulMarket {
             success = true;
         } else if (spend > 0 && quantity > 0) {
             // buyer wants a fraction of what is available
-            offers[id].sell_how_much = safeSub(offer.sell_how_much, quantity);
-            offers[id].buy_how_much = safeSub(offer.buy_how_much, spend);
+            offers[id].sell_how_much = sub(offer.sell_how_much, quantity);
+            offers[id].buy_how_much = sub(offer.buy_how_much, spend);
 
             trade(offer.owner, quantity, offer.sell_which_token,
                     msg.sender, spend, offer.buy_which_token);
@@ -302,5 +288,13 @@ contract SimpleMarket is EventfulMarket {
         );
 
         success = true;
+    }
+
+    function assert(bool x) internal {
+        if (!x) revert();
+    }
+
+    function next_id() internal returns (uint) {
+        last_offer_id++; return last_offer_id;
     }
 }
