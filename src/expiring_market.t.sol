@@ -4,7 +4,7 @@ import "ds-test/test.sol";
 import "ds-token/base.sol";
 
 import "./expiring_market.sol";
-import "./simple_market_test.sol";
+import "./simple_market.t.sol";
 
 contract TestableExpiringMarket is ExpiringMarket(1 weeks) {
     uint public time;
