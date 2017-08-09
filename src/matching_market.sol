@@ -37,7 +37,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         _;
     }
 
-    function MatchingMarket(uint lifetime) ExpiringMarket(lifetime, 0) {
+    function MatchingMarket(uint64 lifetime) ExpiringMarket(lifetime, 0) {
     }
 
     //return true if offers[low] priced less than or equal to offers[high]

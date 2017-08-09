@@ -9,18 +9,19 @@ import "./simple_market.sol";
 // offers can only be cancelled (offer and buy will throw).
 
 contract ExpiringMarket is DSAuth, SimpleMarket, DSWarp {
-    uint public lifetime;
-    uint public close_time;
+    uint64 public lifetime;
+    uint64 public close_time;
     bool public stopped;
 
     function stop() auth {
         stopped = true;
     }
 
-    function ExpiringMarket(uint lifetime_, uint64 era_) {
+    function ExpiringMarket(uint64 lifetime_, uint64 era_) {
         warp(era_);
         lifetime = lifetime_;
         close_time = era() + lifetime_;
+        assert(close_time > era());
     }
 
     function isClosed() constant returns (bool closed) {
