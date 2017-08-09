@@ -16,3 +16,6 @@
 [submodule "lib/ds-math"]
 	path = lib/ds-math
 	url = https://github.com/dapphub/ds-math
+[submodule "lib/ds-warp"]
+	path = lib/ds-warp
+	url = https://github.com/dapphub/ds-warp
