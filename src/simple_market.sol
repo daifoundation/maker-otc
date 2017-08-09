@@ -5,17 +5,17 @@ import "erc20/erc20.sol";
 
 contract EventfulMarket {
     event ItemUpdate(uint id);
-    event Trade(uint sell_how_much, address indexed sell_which_token,
-                 uint buy_how_much, address indexed buy_which_token);
+    event Trade(uint pay_amt, address indexed pay_gem,
+                uint buy_amt, address indexed buy_gem);
 
     event LogMake(
         bytes32  indexed  id,
         bytes32  indexed  pair,
         address  indexed  maker,
-        ERC20             haveToken,
-        ERC20             wantToken,
-        uint128           haveAmount,
-        uint128           wantAmount,
+        ERC20             pay_gem,
+        ERC20             buy_gem,
+        uint128           pay_amt,
+        uint128           buy_amt,
         uint64            timestamp
     );
 
@@ -23,10 +23,10 @@ contract EventfulMarket {
         bytes32  indexed  id,
         bytes32  indexed  pair,
         address  indexed  maker,
-        ERC20             haveToken,
-        ERC20             wantToken,
-        uint128           haveAmount,
-        uint128           wantAmount,
+        ERC20             pay_gem,
+        ERC20             buy_gem,
+        uint128           pay_amt,
+        uint128           buy_amt,
         uint64            timestamp
     );
 
@@ -34,11 +34,11 @@ contract EventfulMarket {
         bytes32           id,
         bytes32  indexed  pair,
         address  indexed  maker,
-        ERC20             haveToken,
-        ERC20             wantToken,
+        ERC20             pay_gem,
+        ERC20             buy_gem,
         address  indexed  taker,
-        uint128           takeAmount,
-        uint128           giveAmount,
+        uint128           take_amt,
+        uint128           give_amt,
         uint64            timestamp
     );
 
@@ -46,10 +46,10 @@ contract EventfulMarket {
         bytes32  indexed  id,
         bytes32  indexed  pair,
         address  indexed  maker,
-        ERC20             haveToken,
-        ERC20             wantToken,
-        uint128           haveAmount,
-        uint128           wantAmount,
+        ERC20             pay_gem,
+        ERC20             buy_gem,
+        uint128           pay_amt,
+        uint128           buy_amt,
         uint64            timestamp
     );
 }
@@ -63,10 +63,10 @@ contract SimpleMarket is EventfulMarket, DSMath {
     bool locked;
 
     struct OfferInfo {
-        uint     sell_how_much;
-        ERC20    sell_which_token;
-        uint     buy_how_much;
-        ERC20    buy_which_token;
+        uint     pay_amt;
+        ERC20    pay_gem;
+        uint     buy_amt;
+        ERC20    buy_gem;
         address  owner;
         bool     active;
         uint64   timestamp;
@@ -102,19 +102,19 @@ contract SimpleMarket is EventfulMarket, DSMath {
     }
     function getOffer(uint id) constant returns (uint, ERC20, uint, ERC20) {
       var offer = offers[id];
-      return (offer.sell_how_much, offer.sell_which_token,
-              offer.buy_how_much, offer.buy_which_token);
+      return (offer.pay_amt, offer.pay_gem,
+              offer.buy_amt, offer.buy_gem);
     }
 
     // ---- Public entrypoints ---- //
 
     function make(
-        ERC20    haveToken,
-        ERC20    wantToken,
-        uint128  haveAmount,
-        uint128  wantAmount
+        ERC20    pay_gem,
+        ERC20    buy_gem,
+        uint128  pay_amt,
+        uint128  buy_amt
     ) returns (bytes32 id) {
-        return bytes32(offer(haveAmount, haveToken, wantAmount, wantToken));
+        return bytes32(offer(pay_amt, pay_gem, buy_amt, buy_gem));
     }
 
     function take(bytes32 id, uint128 maxTakeAmount) {
@@ -126,43 +126,42 @@ contract SimpleMarket is EventfulMarket, DSMath {
     }
 
     // Make a new offer. Takes funds from the caller into market escrow.
-    function offer(uint sell_how_much, ERC20 sell_which_token,
-                uint buy_how_much, ERC20 buy_which_token)
+    function offer(uint pay_amt, ERC20 pay_gem, uint buy_amt, ERC20 buy_gem)
         can_offer
         synchronized
         returns (uint id)
     {
-        assert(uint128(sell_how_much) == sell_how_much);
-        assert(uint128(buy_how_much) == buy_how_much);
-        assert(sell_how_much > 0);
-        assert(sell_which_token != ERC20(0x0));
-        assert(buy_how_much > 0);
-        assert(buy_which_token != ERC20(0x0));
-        assert(sell_which_token != buy_which_token);
+        assert(uint128(pay_amt) == pay_amt);
+        assert(uint128(buy_amt) == buy_amt);
+        assert(pay_amt > 0);
+        assert(pay_gem != ERC20(0x0));
+        assert(buy_amt > 0);
+        assert(buy_gem != ERC20(0x0));
+        assert(pay_gem != buy_gem);
 
         OfferInfo memory info;
-        info.sell_how_much = sell_how_much;
-        info.sell_which_token = sell_which_token;
-        info.buy_how_much = buy_how_much;
-        info.buy_which_token = buy_which_token;
+        info.pay_amt = pay_amt;
+        info.pay_gem = pay_gem;
+        info.buy_amt = buy_amt;
+        info.buy_gem = buy_gem;
         info.owner = msg.sender;
         info.active = true;
         info.timestamp = uint64(now);
         id = next_id();
         offers[id] = info;
 
-        var seller_paid = sell_which_token.transferFrom(msg.sender, this, sell_how_much);
+        var seller_paid = pay_gem.transferFrom(msg.sender, this, pay_amt);
         assert(seller_paid);
 
         ItemUpdate(id);
         LogMake(
             bytes32(id),
-            sha3(sell_which_token, buy_which_token),
+            sha3(pay_gem, buy_gem),
             msg.sender,
-            sell_which_token,
-            buy_which_token,
-            uint128(sell_how_much),
-            uint128(buy_how_much),
+            pay_gem,
+            buy_gem,
+            uint128(pay_amt),
+            uint128(buy_amt),
             uint64(now)
         );
     }
@@ -173,12 +172,12 @@ contract SimpleMarket is EventfulMarket, DSMath {
         var id = uint256(id_);
         LogBump(
             id_,
-            sha3(offers[id].sell_which_token, offers[id].buy_which_token),
+            sha3(offers[id].pay_gem, offers[id].buy_gem),
             offers[id].owner,
-            offers[id].sell_which_token,
-            offers[id].buy_which_token,
-            uint128(offers[id].sell_how_much),
-            uint128(offers[id].buy_how_much),
+            offers[id].pay_gem,
+            offers[id].buy_gem,
+            uint128(offers[id].pay_amt),
+            uint128(offers[id].buy_amt),
             offers[id].timestamp
         );
     }
@@ -196,48 +195,48 @@ contract SimpleMarket is EventfulMarket, DSMath {
         OfferInfo memory offer = offers[id];
 
         // inferred quantity that the buyer wishes to spend
-        uint spend = mul(quantity, offer.buy_how_much) / offer.sell_how_much;
+        uint spend = mul(quantity, offer.buy_amt) / offer.pay_amt;
         assert(uint128(spend) == spend);
 
-        if (spend > offer.buy_how_much || quantity > offer.sell_how_much) {
-            // buyer wants more than is available
+        if (spend > offer.buy_amt || quantity > offer.pay_amt) {
+            // buyer buys more than is available
             success = false;
-        } else if (spend == offer.buy_how_much && quantity == offer.sell_how_much) {
-            // buyer wants exactly what is available
+        } else if (spend == offer.buy_amt && quantity == offer.pay_amt) {
+            // buyer buys exactly what is available
             delete offers[id];
 
-            trade(offer.owner, quantity, offer.sell_which_token,
-                   msg.sender, spend, offer.buy_which_token);
+            trade(offer.owner, quantity, offer.pay_gem,
+                   msg.sender, spend, offer.buy_gem);
 
             ItemUpdate(id);
             LogTake(
                 bytes32(id),
-                sha3(offer.sell_which_token, offer.buy_which_token),
+                sha3(offer.pay_gem, offer.buy_gem),
                 offer.owner,
-                offer.sell_which_token,
-                offer.buy_which_token,
+                offer.pay_gem,
+                offer.buy_gem,
                 msg.sender,
-                uint128(offer.sell_how_much),
-                uint128(offer.buy_how_much),
+                uint128(offer.pay_amt),
+                uint128(offer.buy_amt),
                 uint64(now)
             );
 
             success = true;
         } else if (spend > 0 && quantity > 0) {
-            // buyer wants a fraction of what is available
-            offers[id].sell_how_much = sub(offer.sell_how_much, quantity);
-            offers[id].buy_how_much = sub(offer.buy_how_much, spend);
+            // buyer buys a fraction of what is available
+            offers[id].pay_amt = sub(offer.pay_amt, quantity);
+            offers[id].buy_amt = sub(offer.buy_amt, spend);
 
-            trade(offer.owner, quantity, offer.sell_which_token,
-                    msg.sender, spend, offer.buy_which_token);
+            trade(offer.owner, quantity, offer.pay_gem,
+                  msg.sender, spend, offer.buy_gem);
 
             ItemUpdate(id);
             LogTake(
                 bytes32(id),
-                sha3(offer.sell_which_token, offer.buy_which_token),
+                sha3(offer.pay_gem, offer.buy_gem),
                 offer.owner,
-                offer.sell_which_token,
-                offer.buy_which_token,
+                offer.pay_gem,
+                offer.buy_gem,
                 msg.sender,
                 uint128(quantity),
                 uint128(spend),
@@ -246,7 +245,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
 
             success = true;
         } else {
-            // buyer wants an unsatisfiable amount (less than 1 integer)
+            // buyer buys an unsatisfiable amount (less than 1 integer)
             success = false;
         }
     }
@@ -261,18 +260,17 @@ contract SimpleMarket is EventfulMarket, DSMath {
         OfferInfo memory offer = offers[id];
         delete offers[id];
 
-        var seller_refunded = offer.sell_which_token.transfer(offer.owner , offer.sell_how_much);
-        assert(seller_refunded);
+        assert( offer.pay_gem.transfer(offer.owner, offer.pay_amt) );
 
         ItemUpdate(id);
         LogKill(
             bytes32(id),
-            sha3(offer.sell_which_token, offer.buy_which_token),
+            sha3(offer.pay_gem, offer.buy_gem),
             offer.owner,
-            offer.sell_which_token,
-            offer.buy_which_token,
-            uint128(offer.sell_how_much),
-            uint128(offer.buy_how_much),
+            offer.pay_gem,
+            offer.buy_gem,
+            uint128(offer.pay_amt),
+            uint128(offer.buy_amt),
             uint64(now)
         );
 
@@ -287,12 +285,12 @@ contract SimpleMarket is EventfulMarket, DSMath {
         last_offer_id++; return last_offer_id;
     }
 
-    function trade(address seller, uint sold_amount, ERC20 sold_token,
-                    address buyer,  uint paid_amount,  ERC20 paid_token)
+    function trade(address seller, uint sell_amt, ERC20 sell_gem,
+                    address buyer,  uint pay_amt,  ERC20 pay_gem)
         internal
     {
-        assert( paid_token.transferFrom(buyer, seller, paid_amount) );
-        assert( sold_token.transfer(buyer, sold_amount) );
-        Trade(sold_amount, sold_token, paid_amount, paid_token);
+        assert( pay_gem.transferFrom(buyer, seller, pay_amt) );
+        assert( sell_gem.transfer(buyer, sell_amt) );
+        Trade(sell_amt, sell_gem, pay_amt, pay_gem);
     }
 }

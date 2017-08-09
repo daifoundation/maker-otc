@@ -40,40 +40,40 @@ contract MarketTester {
     {
         return market.isBuyEnabled();
     }
-    function doSetMinSellAmount(ERC20 sell_which_token, uint min_amount)
+    function doSetMinSellAmount(ERC20 pay_gem, uint min_amount)
     returns (bool)
     {
-        return market.setMinSell(sell_which_token, min_amount);
+        return market.setMinSell(pay_gem, min_amount);
     }
-    function doGetMinSellAmount(ERC20 sell_which_token)
+    function doGetMinSellAmount(ERC20 pay_gem)
     returns (uint)
     {
-        return market.getMinSell(sell_which_token);
+        return market.getMinSell(pay_gem);
     }
     function doApprove(address spender, uint value, ERC20 token) {
         token.approve(spender, value);
     }
-    function doBuy(uint id, uint buy_how_much) returns (bool _success) {
-        return market.buy(id, buy_how_much);
+    function doBuy(uint id, uint buy_amt) returns (bool _success) {
+        return market.buy(id, buy_amt);
     }
-    function doUnsortedOffer(uint sell_how_much, ERC20 sell_which_token,
-                    uint buy_how_much,  ERC20 buy_which_token)
+    function doUnsortedOffer(uint pay_amt, ERC20 pay_gem,
+                    uint buy_amt,  ERC20 buy_gem)
     returns (uint) {
-        return market.offer(sell_how_much, sell_which_token,
-                    buy_how_much, buy_which_token);
+        return market.offer(pay_amt, pay_gem,
+                    buy_amt, buy_gem);
     }
-    function doOffer(uint sell_how_much, ERC20 sell_which_token,
-                    uint buy_how_much,  ERC20 buy_which_token)
+    function doOffer(uint pay_amt, ERC20 pay_gem,
+                    uint buy_amt,  ERC20 buy_gem)
     returns (uint) {
-        return market.offer(sell_how_much, sell_which_token,
-                  buy_how_much, buy_which_token, 0);
+        return market.offer(pay_amt, pay_gem,
+                  buy_amt, buy_gem, 0);
     }
-    function doOffer(uint sell_how_much, ERC20 sell_which_token,
-                    uint buy_how_much,  ERC20 buy_which_token,
+    function doOffer(uint pay_amt, ERC20 pay_gem,
+                    uint buy_amt,  ERC20 buy_gem,
                     uint pos)
     returns (uint) {
-        return market.offer(sell_how_much, sell_which_token,
-                  buy_how_much, buy_which_token, pos);
+        return market.offer(pay_amt, pay_gem,
+                  buy_amt, buy_gem, pos);
     }
     function doCancel(uint id) returns (bool _success) {
         return market.cancel(id);
@@ -120,19 +120,19 @@ contract OrderMatchingGasTest is DSTest {
         c = a * b;
         assert(a == 0 || c / a == b);
     }
-    function insertOffer(uint sell_how_much, ERC20 sell_which_token,
-                         uint buy_how_much, ERC20 buy_which_token)
+    function insertOffer(uint pay_amt, ERC20 pay_gem,
+                         uint buy_amt, ERC20 buy_gem)
     logs_gas {
-        otc.offer(sell_how_much, sell_which_token,
-                  buy_how_much, buy_which_token, 0);
+        otc.offer(pay_amt, pay_gem,
+                  buy_amt, buy_gem, 0);
     }
     //insert single offer
-    function insertOffer(uint sell_how_much, ERC20 sell_which_token,
-                         uint buy_how_much, ERC20 buy_which_token,
+    function insertOffer(uint pay_amt, ERC20 pay_gem,
+                         uint buy_amt, ERC20 buy_gem,
                          uint pos)
     logs_gas {
-        otc.offer(sell_how_much, sell_which_token,
-                  buy_how_much, buy_which_token, pos);
+        otc.offer(pay_amt, pay_gem,
+                  buy_amt, buy_gem, pos);
     }
     //creates offer_count number of offers of increasing price
     function createOffers(uint offer_count) {
