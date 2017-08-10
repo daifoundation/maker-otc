@@ -80,15 +80,10 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         ERC20 buy_gem       //maker (ask) buy which token
     )
     isWhitelist(pay_gem, buy_gem)
-    returns (uint id)
+    returns (uint)
     {
-        if(_matchingEnabled) {
-            //matching enabled
-            id = _offeru(pay_amt, pay_gem, buy_amt, buy_gem);
-        } else {
-            //revert to expiring market
-            id = super.offer(pay_amt, pay_gem, buy_amt, buy_gem);
-        }
+        var fn = _matchingEnabled ? _offeru : super.offer;
+        return fn(pay_amt, pay_gem, buy_amt, buy_gem);
     }
     // Make a new offer. Takes funds from the caller into market escrow.
     /*NOT synchronized!!! */
