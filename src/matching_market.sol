@@ -25,9 +25,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     mapping(address => mapping(address => uint)) public _best;  //id of the highest offer for a token pair
     mapping(address => mapping(address => uint)) public _span;  //number of offers stored for token pair
     mapping(address => uint) public _dust;                      //minimum sell amount for a token to avoid dust offers
-    mapping(uint => uint) public _near;                         //next unsorted offer id
-    mapping(bytes32 => bool) public _menu;                      //whitelist tracking which token pairs can be traded
-    uint _head;                                                 //first unsorted offer id
+    mapping(uint => uint) public _near;         //next unsorted offer id
+    mapping(bytes32 => bool) public _menu;      //whitelist tracking which token pairs can be traded
+    uint _head;                                 //first unsorted offer id
 
     //check if token pair is enabled
     modifier isWhitelist(ERC20 buy_gem, ERC20 pay_gem) {
@@ -68,38 +68,41 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     //     * available to authorized contracts only!
     //     * keepers should call insert(id,pos)
     //       to put offer in the sorted list.
+    //
     // If matching is disabled:
     //     * calls expiring market's offer().
     //     * available to everyone without authorization.
     //     * no sorting is done.
-    /*NOT synchronized!!! */
+    //
     function offer(
-        uint pay_amt,         //maker (ask) sell how much
-        ERC20 pay_gem,     //maker (ask) sell which token
-        uint buy_amt,          //maker (ask) buy how much
-        ERC20 buy_gem       //maker (ask) buy which token
+        uint pay_amt,    //maker (ask) sell how much
+        ERC20 pay_gem,   //maker (ask) sell which token
+        uint buy_amt,    //taker (ask) buy how much
+        ERC20 buy_gem    //taker (ask) buy which token
     )
     isWhitelist(pay_gem, buy_gem)
+    /* NOT synchronized!!! */
     returns (uint)
     {
         var fn = _matchingEnabled ? _offeru : super.offer;
         return fn(pay_amt, pay_gem, buy_amt, buy_gem);
     }
+
     // Make a new offer. Takes funds from the caller into market escrow.
-    /*NOT synchronized!!! */
     function offer(
-        uint pay_amt,         //maker (ask) sell how much
-        ERC20 pay_gem,     //maker (ask) sell which token
-        uint buy_amt,          //maker (ask) buy how much
-        ERC20 buy_gem,      //maker (ask) buy which token
-        uint pos                    //position to insert offer, 0 should be used if unknown
+        uint pay_amt,    //maker (ask) sell how much
+        ERC20 pay_gem,   //maker (ask) sell which token
+        uint buy_amt,    //maker (ask) buy how much
+        ERC20 buy_gem,   //maker (ask) buy which token
+        uint pos         //position to insert offer, 0 should be used if unknown
     )
     isWhitelist(pay_gem, buy_gem)
+    /*NOT synchronized!!! */
     can_offer
     returns (uint id)
     {
-        //make sure 'sell how much' is greater than minimum required
         require(_dust[pay_gem] <= pay_amt);
+
         if (_matchingEnabled) {
             //matching enabled
             id = _matcho(pay_amt, pay_gem, buy_amt, buy_gem, pos);
@@ -108,6 +111,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
             id = super.offer(pay_amt, pay_gem, buy_amt, buy_gem);
         }
     }
+
     //Transfers funds from caller to offer maker, and from market to caller.
     function buy(
         uint id,        //maker (ask) offer's id that is to be bought
@@ -131,6 +135,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
             success = super.buy(id, amount);
         }
     }
+
     // Cancel an offer. Refunds offer maker.
     function cancel(uint id)
     /*NOT synchronized!!! */
@@ -138,11 +143,11 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     returns (bool success)
     {
         if (_matchingEnabled) {
-            //matching enabled
             _unsort(id);
         }
         return super.cancel(id);
     }
+
     //insert offer into the sorted list
     //keepers need to use this function
     function insert(
@@ -153,6 +158,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     {
         address buy_gem = address(offers[id].buy_gem);
         address pay_gem = address(offers[id].pay_gem);
+
         //make sure offers[id] is not yet sorted
         require(_rank[id].next == 0);
         require(_rank[id].prev == 0);
@@ -261,7 +267,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     //    of tokens received.
     function setMinSell(
         ERC20 pay_gem,     //token to assign minimum sell amount to
-        uint dust                  //maker (ask) minimum sell amount
+        uint dust          //maker (ask) minimum sell amount
     )
     auth
     note
@@ -270,6 +276,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         LogMinSell(pay_gem, dust);
         suc = true;
     }
+
     //returns the minimum sell amount for an offer
     function getMinSell(
         ERC20 pay_gem      //token for which minimum sell amount is queried
@@ -425,17 +432,17 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     }
 
     //these variables are global only because of solidity local variable limit
-    uint m_buy_amt;            //maker offer wants to buy this much token
-    uint m_pay_amt;           //maker offer wants to sell this much token
-    bool isMatched;                //if true, taker offer should not be created, because it was already matched
+    uint m_buy_amt;        //maker offer wants to buy this much token
+    uint m_pay_amt;        //maker offer wants to sell this much token
+    bool isMatched;        //if true, taker offer should not be created, because it was already matched
 
     //match offers with taker offer, and execute token transactions
     function _matcho(
-        uint t_pay_amt,       //taker sell how much
+        uint t_pay_amt,    //taker sell how much
         ERC20 t_pay_gem,   //taker sell which token
-        uint t_buy_amt,        //taker buy how much
-        ERC20 t_buy_gem,    //taker buy which token
-        uint pos                    //position id
+        uint t_buy_amt,    //taker buy how much
+        ERC20 t_buy_gem,   //taker buy which token
+        uint pos           //position id
     )
     internal
     returns (uint id)

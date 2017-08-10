@@ -97,9 +97,11 @@ contract SimpleMarket is EventfulMarket, DSMath {
     function isActive(uint id) constant returns (bool active) {
         return offers[id].active;
     }
+
     function getOwner(uint id) constant returns (address owner) {
         return offers[id].owner;
     }
+
     function getOffer(uint id) constant returns (uint, ERC20, uint, ERC20) {
       var offer = offers[id];
       return (offer.pay_amt, offer.pay_gem,
