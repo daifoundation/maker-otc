@@ -402,9 +402,9 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         expectEventsExact(otc);
         LogBuyEnabled(false);
         LogBuyEnabled(true);
-        ItemUpdate(offer_id[1]);
-        Trade(30, mkr, 100, dai);
-        ItemUpdate(offer_id[1]);
+        LogItemUpdate(offer_id[1]);
+        LogTrade(30, mkr, 100, dai);
+        LogItemUpdate(offer_id[1]);
     }
     function testMatchingEnabledByDefault() {
         assert(otc.isMatchingEnabled());
@@ -507,7 +507,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         // Doesn't work in the current version of dapp, so don't rely on it.
         // Leaving it in for later expansion when dapp _does_ support this.
         expectEventsExact(otc);
-        Trade(mkr_amt, mkr, dai_amt, dai);
+        LogTrade(mkr_amt, mkr, dai_amt, dai);
 
         require(mkr.balanceOf(this) > mkr_amt);
         require(dai.balanceOf(this) > dai_amt);
@@ -825,10 +825,10 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assert(!otc.isActive( offer_id[3]));
 
         expectEventsExact(otc);
-        ItemUpdate(offer_id[1]);
-        ItemUpdate(offer_id[2]);
-        ItemUpdate(offer_id[3]);
-        ItemUpdate(offer_id[3]);
+        LogItemUpdate(offer_id[1]);
+        LogItemUpdate(offer_id[2]);
+        LogItemUpdate(offer_id[3]);
+        LogItemUpdate(offer_id[3]);
     }
     function testBestOfferWithTwoOffersWithDifferentTokens() {
         dai.transfer(user1, 2);
@@ -1066,9 +1066,9 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
 
         /* //REPORTS FALSE ERROR:
         expectEventsExact(otc);
-        ItemUpdate(offer_id[1]);
-        ItemUpdate(offer_id[1]);
-        ItemUpdate(offer_id[2]);*/
+        LogItemUpdate(offer_id[1]);
+        LogItemUpdate(offer_id[1]);
+        LogItemUpdate(offer_id[2]);*/
     }
     function testOfferMatchOneOnOnePartialSellSendAmounts() {
         dai.transfer(user1, 50);
@@ -1098,9 +1098,9 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
 
         /* //REPORTS FALSE ERROR:
         expectEventsExact(otc);
-        ItemUpdate(offer_id[1]);
-        ItemUpdate(offer_id[1]);
-        ItemUpdate(offer_id[2]);*/
+        LogItemUpdate(offer_id[1]);
+        LogItemUpdate(offer_id[1]);
+        LogItemUpdate(offer_id[2]);*/
     }
     function testOfferMatchOneOnOnePartialBuySendAmounts() {
         dai.transfer(user1, 2000);
@@ -1131,9 +1131,9 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(buy_val1 , 600);
 
         expectEventsExact(otc);
-        ItemUpdate(offer_id[1]);
-        ItemUpdate(offer_id[1]);
-        ItemUpdate(offer_id[2]);
+        LogItemUpdate(offer_id[1]);
+        LogItemUpdate(offer_id[1]);
+        LogItemUpdate(offer_id[2]);
     }
     function testOfferMatchingOneOnOneMatch() {
         dai.transfer(user1, 1);

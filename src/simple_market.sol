@@ -4,9 +4,9 @@ import "ds-math/math.sol";
 import "erc20/erc20.sol";
 
 contract EventfulMarket {
-    event ItemUpdate(uint id);
-    event Trade(uint pay_amt, address indexed pay_gem,
-                uint buy_amt, address indexed buy_gem);
+    event LogItemUpdate(uint id);
+    event LogTrade(uint pay_amt, address indexed pay_gem,
+                   uint buy_amt, address indexed buy_gem);
 
     event LogMake(
         bytes32  indexed  id,
@@ -153,7 +153,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
         var seller_paid = pay_gem.transferFrom(msg.sender, this, pay_amt);
         assert(seller_paid);
 
-        ItemUpdate(id);
+        LogItemUpdate(id);
         LogMake(
             bytes32(id),
             sha3(pay_gem, buy_gem),
@@ -208,7 +208,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
             _trade(offer.owner, quantity, offer.pay_gem,
                    msg.sender, spend, offer.buy_gem);
 
-            ItemUpdate(id);
+            LogItemUpdate(id);
             LogTake(
                 bytes32(id),
                 sha3(offer.pay_gem, offer.buy_gem),
@@ -230,7 +230,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
             _trade(offer.owner, quantity, offer.pay_gem,
                    msg.sender, spend, offer.buy_gem);
 
-            ItemUpdate(id);
+            LogItemUpdate(id);
             LogTake(
                 bytes32(id),
                 sha3(offer.pay_gem, offer.buy_gem),
@@ -262,7 +262,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
 
         assert( offer.pay_gem.transfer(offer.owner, offer.pay_amt) );
 
-        ItemUpdate(id);
+        LogItemUpdate(id);
         LogKill(
             bytes32(id),
             sha3(offer.pay_gem, offer.buy_gem),
@@ -287,6 +287,6 @@ contract SimpleMarket is EventfulMarket, DSMath {
     {
         assert( pay_gem.transferFrom(buyer, seller, pay_amt) );
         assert( sell_gem.transfer(buyer, sell_amt) );
-        Trade(sell_amt, sell_gem, pay_amt, pay_gem);
+        LogTrade(sell_amt, sell_gem, pay_amt, pay_gem);
     }
 }

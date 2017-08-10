@@ -55,9 +55,9 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         assertEq(100, user1_dai_balance_before - user1_dai_balance_after);
 
         expectEventsExact(otc);
-        ItemUpdate(id);
-        Trade(30, mkr, 100, dai);
-        ItemUpdate(id);
+        LogItemUpdate(id);
+        LogTrade(30, mkr, 100, dai);
+        LogItemUpdate(id);
     }
     function testPartiallyFilledOrderMkr() {
         dai.transfer(user1, 30);
@@ -87,9 +87,9 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         assert(address(buy_token) > 0x0);
 
         expectEventsExact(otc);
-        ItemUpdate(id);
-        Trade(10, mkr, 25, dai);
-        ItemUpdate(id);
+        LogItemUpdate(id);
+        LogTrade(10, mkr, 25, dai);
+        LogItemUpdate(id);
     }
     function testPartiallyFilledOrderDai() {
         mkr.transfer(user1, 10);
@@ -119,9 +119,9 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         assert(address(buy_token) > 0x0);
 
         expectEventsExact(otc);
-        ItemUpdate(id);
-        Trade(10, dai, 4, mkr);
-        ItemUpdate(id);
+        LogItemUpdate(id);
+        LogTrade(10, dai, 4, mkr);
+        LogItemUpdate(id);
     }
     function testPartiallyFilledOrderMkrExcessQuantity() {
         dai.transfer(user1, 30);
@@ -152,7 +152,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         assert(address(buy_token) > 0x0);
 
         expectEventsExact(otc);
-        ItemUpdate(id);
+        LogItemUpdate(id);
     }
     function testInsufficientlyFilledOrder() {
         mkr.approve(otc, 30);
@@ -169,8 +169,8 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         assert(otc.cancel(id));
 
         expectEventsExact(otc);
-        ItemUpdate(id);
-        ItemUpdate(id);
+        LogItemUpdate(id);
+        LogItemUpdate(id);
     }
     function testFailCancelNotOwner() {
         mkr.approve(otc, 30);
