@@ -113,27 +113,13 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     }
 
     //Transfers funds from caller to offer maker, and from market to caller.
-    function buy(
-        uint id,        //maker (ask) offer's id that is to be bought
-        uint amount     //quantity of token to buy
-    )
+    function buy(uint id, uint amount)
     /*NOT synchronized!!! */
     can_buy(id)
-    returns (bool success)
+    returns (bool)
     {
-        if (_matchingEnabled) {
-            //matching enabled
-            require(_buyEnabled);     //buy enabled
-            if(amount >= offers[id].pay_amt) {
-                //offers[id] must be removed from sorted list because all of it is bought
-                _unsort(id);
-            }
-            assert(super.buy(id, amount));
-            success = true;
-        } else {
-            //revert to expiring market
-            success = super.buy(id, amount);
-        }
+        var fn = _matchingEnabled ? _buys : super.buy;
+        return fn(id, amount);
     }
 
     // Cancel an offer. Refunds offer maker.
@@ -367,6 +353,20 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
 
     // ---- Internal Functions ---- //
 
+
+    function _buys(uint id, uint amount)
+    internal
+    returns (bool)
+    {
+        require(_buyEnabled);
+
+        if (amount >= offers[id].pay_amt) {
+            //offers[id] must be removed from sorted list because all of it is bought
+            _unsort(id);
+        }
+        assert(super.buy(id, amount));
+        return true;
+    }
 
     //find the id of the next higher offer after offers[id]
     function _find(uint id)
