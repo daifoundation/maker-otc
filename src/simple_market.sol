@@ -187,67 +187,45 @@ contract SimpleMarket is EventfulMarket, DSMath {
     function buy(uint id, uint quantity)
         can_buy(id)
         synchronized
-        returns (bool success)
+        returns (bool)
     {
-        assert(uint128(quantity) == quantity);
-
-        // read-only offer. Modify an offer by directly accessing offers[id]
         OfferInfo memory offer = offers[id];
-
-        // inferred quantity that the buyer wishes to spend
         uint spend = mul(quantity, offer.buy_amt) / offer.pay_amt;
-        assert(uint128(spend) == spend);
 
-        if (spend > offer.buy_amt || quantity > offer.pay_amt) {
-            // buyer buys more than is available
-            success = false;
-        } else if (spend == offer.buy_amt && quantity == offer.pay_amt) {
-            // buyer buys exactly what is available
-            delete offers[id];
+        require(uint128(spend) == spend);
+        require(uint128(quantity) == quantity);
 
-            _trade(offer.owner, quantity, offer.pay_gem,
-                   msg.sender, spend, offer.buy_gem);
-
-            LogItemUpdate(id);
-            LogTake(
-                bytes32(id),
-                sha3(offer.pay_gem, offer.buy_gem),
-                offer.owner,
-                offer.pay_gem,
-                offer.buy_gem,
-                msg.sender,
-                uint128(offer.pay_amt),
-                uint128(offer.buy_amt),
-                uint64(now)
-            );
-
-            success = true;
-        } else if (spend > 0 && quantity > 0) {
-            // buyer buys a fraction of what is available
-            offers[id].pay_amt = sub(offer.pay_amt, quantity);
-            offers[id].buy_amt = sub(offer.buy_amt, spend);
-
-            _trade(offer.owner, quantity, offer.pay_gem,
-                   msg.sender, spend, offer.buy_gem);
-
-            LogItemUpdate(id);
-            LogTake(
-                bytes32(id),
-                sha3(offer.pay_gem, offer.buy_gem),
-                offer.owner,
-                offer.pay_gem,
-                offer.buy_gem,
-                msg.sender,
-                uint128(quantity),
-                uint128(spend),
-                uint64(now)
-            );
-
-            success = true;
-        } else {
-            // buyer buys an unsatisfiable amount (less than 1 integer)
-            success = false;
+        // For backwards semantic compatibility.
+        if (quantity == 0 || spend == 0 ||
+            quantity > offer.pay_amt || spend > offer.buy_amt)
+        {
+            return false;
         }
+
+        offers[id].pay_amt = sub(offer.pay_amt, quantity);
+        offers[id].buy_amt = sub(offer.buy_amt, spend);
+
+        _trade(offer.owner, quantity, offer.pay_gem,
+               msg.sender, spend, offer.buy_gem);
+
+        LogItemUpdate(id);
+        LogTake(
+            bytes32(id),
+            sha3(offer.pay_gem, offer.buy_gem),
+            offer.owner,
+            offer.pay_gem,
+            offer.buy_gem,
+            msg.sender,
+            uint128(quantity),
+            uint128(spend),
+            uint64(now)
+        );
+
+        if (offers[id].pay_amt == 0) {
+          delete offers[id];
+        }
+
+        return true;
     }
 
     // Cancel an offer. Refunds offer maker.
