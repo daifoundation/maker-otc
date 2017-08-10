@@ -40,238 +40,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     function MatchingMarket(uint64 lifetime) ExpiringMarket(lifetime, 0) {
     }
 
-    //return true if offers[low] priced less than or equal to offers[high]
-    function _isLtOrEq(
-        uint low,   //lower priced offer's id
-        uint high   //higher priced offer's id
-    )
-    internal
-    returns (bool)
-    {
-        return
-        mul(
-            offers[low].buy_amt,
-            offers[high].pay_amt
-        )
-        >=
-        mul(
-            offers[high].buy_amt,
-            offers[low].pay_amt
-        );
-    }
-
-    //find the id of the next higher offer after offers[id]
-    function _find(uint id)
-    internal
-    returns (uint)
-    {
-        assert( id > 0 );
-        address buy_gem = address(offers[id].buy_gem);
-        address pay_gem = address(offers[id].pay_gem);
-        uint top = _best[pay_gem][buy_gem];
-
-        if (_span[pay_gem][buy_gem] > 1) {
-            //there are at least two offers stored for token pair
-            if (!_isLtOrEq(id, top)) {
-                //No  offer that has higher or equal price than offers[id]
-                return 0;
-            } else {
-                //offers[top] is higher or equal priced than offers[id]
-
-                //cycle through all offers for token pair to find the id
-                //that is the next higher or equal to offers[id]
-                while (_rank[top].prev != 0 && _isLtOrEq(id, _rank[top].prev)) {
-                    top = _rank[top].prev;
-                }
-                return top;
-            }
-        } else {
-            //there is maximum one offer stored
-            if (_best[pay_gem][buy_gem] == 0) {
-                //there is no offer stored yet
-                return 0;
-            }
-            if (_isLtOrEq(id, top)) {
-                //there is exactly one offer stored,
-                //and it is higher or equal than offers[id]
-                return top;
-            } else {
-                //there is exatly one offer stored, but lower than offers[id]
-                return 0;
-            }
-        }
-    }
-
-    //put offer into the sorted list
-    function _sort(
-        uint id,    //maker (ask) id
-        uint pos    //position to insert into
-    )
-    internal
-    {
-        address buy_gem = address(offers[id].buy_gem);
-        address pay_gem = address(offers[id].pay_gem);
-        uint lid; //lower maker (ask) id
-
-        assert(isActive(id));
-        if (pos == 0
-            || !isActive(pos)
-            || !_isLtOrEq(id, pos)
-            || (_rank[pos].prev != 0 && _isLtOrEq(id, _rank[pos].prev))
-        ) {
-            //client did not provide valid position,
-            //so we have to find it
-            pos = 0;
-            if (_best[pay_gem][buy_gem] > 0 && _isLtOrEq(id, _best[pay_gem][buy_gem])) {
-                //pos was 0 because user did not provide one
-                pos = _find(id);
-            }
-        }
-        //assert `pos` is in the sorted list or is 0
-        assert(pos == 0 || _rank[pos].next != 0 || _rank[pos].prev != 0 || _best[pay_gem][buy_gem] == pos);
-        if (pos != 0) {
-            //offers[id] is not the highest offer
-            assert(_isLtOrEq(id, pos));
-            lid = _rank[pos].prev;
-            _rank[pos].prev = id;
-            _rank[id].next = pos;
-        } else {
-            //offers[id] is the highest offer
-            lid = _best[pay_gem][buy_gem];
-            _best[pay_gem][buy_gem] = id;
-        }
-        assert(lid == 0 || offers[lid].pay_gem
-               == offers[id].pay_gem);
-        assert(lid == 0 || offers[lid].buy_gem
-               == offers[id].buy_gem);
-
-        if (lid != 0) {
-            //if lower offer does exist
-            assert(!_isLtOrEq(id, lid));
-            _rank[lid].next = id;
-            _rank[id].prev = lid;
-        }
-        _span[pay_gem][buy_gem]++;
-        LogSortedOffer(id);
-    }
-    // Remove offer from the sorted list.
-    function _unsort(
-        uint id    //id of maker (ask) offer to remove from sorted list
-    )
-    internal
-    returns (bool)
-    {
-        address buy_gem = address(offers[id].buy_gem);
-        address pay_gem = address(offers[id].pay_gem);
-
-        //assert id is in the sorted list
-        assert(_rank[id].next != 0 || _rank[id].prev != 0 || _best[pay_gem][buy_gem] == id);
-
-        if (id != _best[pay_gem][buy_gem]) {
-            // offers[id] is not the highest offer
-            _rank[_rank[id].next].prev = _rank[id].prev;
-        } else {
-            //offers[id] is the highest offer
-            _best[pay_gem][buy_gem] = _rank[id].prev;
-        }
-        if (_rank[id].prev != 0) {
-            //offers[id] is not the lowest offer
-            _rank[_rank[id].prev].next = _rank[id].next;
-        }
-        assert (_span[pay_gem][buy_gem] > 0);
-        _span[pay_gem][buy_gem]--;
-        delete _rank[id].prev;
-        delete _rank[id].next;
-        return true;
-    }
-
-    //these variables are global only because of solidity local variable limit
-    uint m_buy_amt;            //maker offer wants to buy this much token
-    uint m_pay_amt;           //maker offer wants to sell this much token
-    bool isMatched;                //if true, taker offer should not be created, because it was already matched
-
-    //match offers with taker offer, and execute token transactions
-    function _matcho(
-        uint t_pay_amt,       //taker sell how much
-        ERC20 t_pay_gem,   //taker sell which token
-        uint t_buy_amt,        //taker buy how much
-        ERC20 t_buy_gem,    //taker buy which token
-        uint pos                    //position id
-    )
-    internal
-    returns (uint id)
-    {
-        isMatched = false;          //taker offer should be created
-        bool isTakerFilled = false; //has the taker offer been filled
-        uint best_maker_id;         //highest maker id
-        uint tab;                   //taker buy how much saved
-
-        //offers[pos] should buy the same token as taker
-        assert(pos == 0
-               || !isActive(pos)
-               || (t_buy_gem == offers[pos].buy_gem) && t_pay_gem == offers[pos].pay_gem);
-
-        while (!isTakerFilled && _best[t_buy_gem][t_pay_gem] > 0) {
-            //matching is not done yet and there is at
-            //least one offer stored for token pair
-            best_maker_id = _best[t_buy_gem][t_pay_gem]; //store highest maker offer's id
-            if (best_maker_id > 0) {
-                //there is at least one maker offer stored
-                m_buy_amt = offers[best_maker_id].buy_amt;
-                m_pay_amt = offers[best_maker_id].pay_amt;
-                if (mul(m_buy_amt , t_buy_amt) <= mul(t_pay_amt , m_pay_amt)
-		    + m_buy_amt + t_buy_amt + t_pay_amt + m_pay_amt ) {
-                    //maker price is lower than or equal to taker price + round-off error
-                    if (m_pay_amt >= t_buy_amt) {
-                        //maker wants to sell more than taker wants to buy
-                        isMatched = true;
-                        isTakerFilled = true;
-                        buy(best_maker_id, t_buy_amt);
-                    } else {
-                        //maker wants to sell less than taker wants to buy
-                        tab = t_buy_amt;
-                        t_buy_amt = sub(t_buy_amt, m_pay_amt);
-                        t_pay_amt = mul(t_buy_amt, t_pay_amt) / tab;
-                        buy(best_maker_id, m_pay_amt);
-                    }
-                } else {
-                    //lowest maker price is higher than current taker price
-                    isTakerFilled = true;
-                }
-            } else {
-                //there is no maker offer to match
-                isTakerFilled = true;
-            }
-        }
-        if (!isMatched) {
-            //new offer should be created
-            id = super.offer(t_pay_amt, t_pay_gem, t_buy_amt, t_buy_gem);
-            //insert offer into the sorted list
-            _sort(id, pos);
-        }
-    }
-    // Make a new offer without putting it in the sorted list.
-    // Takes funds from the caller into market escrow.
-    // ****Available to authorized contracts only!**********
-    // Keepers should call insert(id,pos) to put offer in the sorted list.
-    function _offeru(
-        uint pay_amt,         //maker (ask) sell how much
-        ERC20 pay_gem,     //maker (ask) sell which token
-        uint buy_amt,          //maker (ask) buy how much
-        ERC20 buy_gem       //maker (ask) buy which token
-    )
-    auth
-    internal
-    /*NOT synchronized!!! */
-    returns (uint id)
-    {
-        id = super.offer(pay_amt, pay_gem, buy_amt, buy_gem);
-        //insert offer into the unsorted offers list
-        _near[id] = _head;
-        _head = id;
-        LogUnsortedOffer(id);
-    }
-
     // ---- Public entrypoints ---- //
 
     function make(
@@ -595,5 +363,243 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     //      Can be used to cycle through all the unsorted offers.
     function getNextUnsortedOffer(uint id) constant returns(uint) {
         return _near[id];
+    }
+
+
+    // ---- Internal Functions ---- //
+
+
+    //find the id of the next higher offer after offers[id]
+    function _find(uint id)
+    internal
+    returns (uint)
+    {
+        assert( id > 0 );
+        address buy_gem = address(offers[id].buy_gem);
+        address pay_gem = address(offers[id].pay_gem);
+        uint top = _best[pay_gem][buy_gem];
+
+        if (_span[pay_gem][buy_gem] > 1) {
+            //there are at least two offers stored for token pair
+            if (!_isLtOrEq(id, top)) {
+                //No  offer that has higher or equal price than offers[id]
+                return 0;
+            } else {
+                //offers[top] is higher or equal priced than offers[id]
+
+                //cycle through all offers for token pair to find the id
+                //that is the next higher or equal to offers[id]
+                while (_rank[top].prev != 0 && _isLtOrEq(id, _rank[top].prev)) {
+                    top = _rank[top].prev;
+                }
+                return top;
+            }
+        } else {
+            //there is maximum one offer stored
+            if (_best[pay_gem][buy_gem] == 0) {
+                //there is no offer stored yet
+                return 0;
+            }
+            if (_isLtOrEq(id, top)) {
+                //there is exactly one offer stored,
+                //and it is higher or equal than offers[id]
+                return top;
+            } else {
+                //there is exatly one offer stored, but lower than offers[id]
+                return 0;
+            }
+        }
+    }
+
+    //return true if offers[low] priced less than or equal to offers[high]
+    function _isLtOrEq(
+        uint low,   //lower priced offer's id
+        uint high   //higher priced offer's id
+    )
+    internal
+    returns (bool)
+    {
+        return
+        mul(
+            offers[low].buy_amt,
+            offers[high].pay_amt
+        )
+        >=
+        mul(
+            offers[high].buy_amt,
+            offers[low].pay_amt
+        );
+    }
+
+    //these variables are global only because of solidity local variable limit
+    uint m_buy_amt;            //maker offer wants to buy this much token
+    uint m_pay_amt;           //maker offer wants to sell this much token
+    bool isMatched;                //if true, taker offer should not be created, because it was already matched
+
+    //match offers with taker offer, and execute token transactions
+    function _matcho(
+        uint t_pay_amt,       //taker sell how much
+        ERC20 t_pay_gem,   //taker sell which token
+        uint t_buy_amt,        //taker buy how much
+        ERC20 t_buy_gem,    //taker buy which token
+        uint pos                    //position id
+    )
+    internal
+    returns (uint id)
+    {
+        isMatched = false;          //taker offer should be created
+        bool isTakerFilled = false; //has the taker offer been filled
+        uint best_maker_id;         //highest maker id
+        uint tab;                   //taker buy how much saved
+
+        //offers[pos] should buy the same token as taker
+        assert(pos == 0
+               || !isActive(pos)
+               || (t_buy_gem == offers[pos].buy_gem) && t_pay_gem == offers[pos].pay_gem);
+
+        while (!isTakerFilled && _best[t_buy_gem][t_pay_gem] > 0) {
+            //matching is not done yet and there is at
+            //least one offer stored for token pair
+            best_maker_id = _best[t_buy_gem][t_pay_gem]; //store highest maker offer's id
+            if (best_maker_id > 0) {
+                //there is at least one maker offer stored
+                m_buy_amt = offers[best_maker_id].buy_amt;
+                m_pay_amt = offers[best_maker_id].pay_amt;
+                if (mul(m_buy_amt , t_buy_amt) <= mul(t_pay_amt , m_pay_amt)
+		    + m_buy_amt + t_buy_amt + t_pay_amt + m_pay_amt ) {
+                    //maker price is lower than or equal to taker price + round-off error
+                    if (m_pay_amt >= t_buy_amt) {
+                        //maker wants to sell more than taker wants to buy
+                        isMatched = true;
+                        isTakerFilled = true;
+                        buy(best_maker_id, t_buy_amt);
+                    } else {
+                        //maker wants to sell less than taker wants to buy
+                        tab = t_buy_amt;
+                        t_buy_amt = sub(t_buy_amt, m_pay_amt);
+                        t_pay_amt = mul(t_buy_amt, t_pay_amt) / tab;
+                        buy(best_maker_id, m_pay_amt);
+                    }
+                } else {
+                    //lowest maker price is higher than current taker price
+                    isTakerFilled = true;
+                }
+            } else {
+                //there is no maker offer to match
+                isTakerFilled = true;
+            }
+        }
+        if (!isMatched) {
+            //new offer should be created
+            id = super.offer(t_pay_amt, t_pay_gem, t_buy_amt, t_buy_gem);
+            //insert offer into the sorted list
+            _sort(id, pos);
+        }
+    }
+
+    // Make a new offer without putting it in the sorted list.
+    // Takes funds from the caller into market escrow.
+    // ****Available to authorized contracts only!**********
+    // Keepers should call insert(id,pos) to put offer in the sorted list.
+    function _offeru(
+        uint pay_amt,         //maker (ask) sell how much
+        ERC20 pay_gem,     //maker (ask) sell which token
+        uint buy_amt,          //maker (ask) buy how much
+        ERC20 buy_gem       //maker (ask) buy which token
+    )
+    auth
+    internal
+    /*NOT synchronized!!! */
+    returns (uint id)
+    {
+        id = super.offer(pay_amt, pay_gem, buy_amt, buy_gem);
+        //insert offer into the unsorted offers list
+        _near[id] = _head;
+        _head = id;
+        LogUnsortedOffer(id);
+    }
+
+    //put offer into the sorted list
+    function _sort(
+        uint id,    //maker (ask) id
+        uint pos    //position to insert into
+    )
+    internal
+    {
+        address buy_gem = address(offers[id].buy_gem);
+        address pay_gem = address(offers[id].pay_gem);
+        uint lid; //lower maker (ask) id
+
+        assert(isActive(id));
+        if (pos == 0
+            || !isActive(pos)
+            || !_isLtOrEq(id, pos)
+            || (_rank[pos].prev != 0 && _isLtOrEq(id, _rank[pos].prev))
+        ) {
+            //client did not provide valid position,
+            //so we have to find it
+            pos = 0;
+            if (_best[pay_gem][buy_gem] > 0 && _isLtOrEq(id, _best[pay_gem][buy_gem])) {
+                //pos was 0 because user did not provide one
+                pos = _find(id);
+            }
+        }
+        //assert `pos` is in the sorted list or is 0
+        assert(pos == 0 || _rank[pos].next != 0 || _rank[pos].prev != 0 || _best[pay_gem][buy_gem] == pos);
+        if (pos != 0) {
+            //offers[id] is not the highest offer
+            assert(_isLtOrEq(id, pos));
+            lid = _rank[pos].prev;
+            _rank[pos].prev = id;
+            _rank[id].next = pos;
+        } else {
+            //offers[id] is the highest offer
+            lid = _best[pay_gem][buy_gem];
+            _best[pay_gem][buy_gem] = id;
+        }
+        assert(lid == 0 || offers[lid].pay_gem
+               == offers[id].pay_gem);
+        assert(lid == 0 || offers[lid].buy_gem
+               == offers[id].buy_gem);
+
+        if (lid != 0) {
+            //if lower offer does exist
+            assert(!_isLtOrEq(id, lid));
+            _rank[lid].next = id;
+            _rank[id].prev = lid;
+        }
+        _span[pay_gem][buy_gem]++;
+        LogSortedOffer(id);
+    }
+
+    // Remove offer from the sorted list.
+    function _unsort(
+        uint id    //id of maker (ask) offer to remove from sorted list
+    )
+    internal
+    returns (bool)
+    {
+        address buy_gem = address(offers[id].buy_gem);
+        address pay_gem = address(offers[id].pay_gem);
+
+        //assert id is in the sorted list
+        assert(_rank[id].next != 0 || _rank[id].prev != 0 || _best[pay_gem][buy_gem] == id);
+
+        if (id != _best[pay_gem][buy_gem]) {
+            // offers[id] is not the highest offer
+            _rank[_rank[id].next].prev = _rank[id].prev;
+        } else {
+            //offers[id] is the highest offer
+            _best[pay_gem][buy_gem] = _rank[id].prev;
+        }
+        if (_rank[id].prev != 0) {
+            //offers[id] is not the lowest offer
+            _rank[_rank[id].prev].next = _rank[id].next;
+        }
+        assert (_span[pay_gem][buy_gem] > 0);
+        _span[pay_gem][buy_gem]--;
+        delete _rank[id].prev;
+        delete _rank[id].next;
+        return true;
     }
 }
