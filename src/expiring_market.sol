@@ -13,8 +13,24 @@ contract ExpiringMarket is DSAuth, SimpleMarket, DSWarp {
     uint64 public close_time;
     bool public stopped;
 
-    function stop() auth {
-        stopped = true;
+    // after market lifetime has elapsed, no new offers are allowed
+    modifier can_offer {
+        assert(!isClosed());
+        _;
+    }
+
+    // after close, no new buys are allowed
+    modifier can_buy(uint id) {
+        require(isActive(id));
+        require(!isClosed());
+        _;
+    }
+
+    // after close, anyone can cancel an offer
+    modifier can_cancel(uint id) {
+        require(isActive(id));
+        require(isClosed() || (msg.sender == getOwner(id)));
+        _;
     }
 
     function ExpiringMarket(uint64 lifetime_, uint64 era_) {
@@ -28,21 +44,7 @@ contract ExpiringMarket is DSAuth, SimpleMarket, DSWarp {
         return stopped || era() > close_time;
     }
 
-    // after market lifetime has elapsed, no new offers are allowed
-    modifier can_offer {
-        assert(!isClosed());
-        _;
-    }
-    // after close, no new buys are allowed
-    modifier can_buy(uint id) {
-        require(isActive(id));
-        require(!isClosed());
-        _;
-    }
-    // after close, anyone can cancel an offer
-    modifier can_cancel(uint id) {
-        require(isActive(id));
-        require(isClosed() || (msg.sender == getOwner(id)));
-        _;
+    function stop() auth {
+        stopped = true;
     }
 }
