@@ -41,7 +41,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     }
 
     //return true if offers[low] priced less than or equal to offers[high]
-    function isLtOrEq(
+    function _isLtOrEq(
         uint low,   //lower priced offer's id
         uint high   //higher priced offer's id
     )
@@ -61,7 +61,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     }
 
     //find the id of the next higher offer after offers[id]
-    function find(uint id)
+    function _find(uint id)
     internal
     returns (uint)
     {
@@ -72,7 +72,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
 
         if (_span[pay_gem][buy_gem] > 1) {
             //there are at least two offers stored for token pair
-            if (!isLtOrEq(id, top)) {
+            if (!_isLtOrEq(id, top)) {
                 //No  offer that has higher or equal price than offers[id]
                 return 0;
             } else {
@@ -80,7 +80,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
 
                 //cycle through all offers for token pair to find the id
                 //that is the next higher or equal to offers[id]
-                while (_rank[top].prev != 0 && isLtOrEq(id, _rank[top].prev)) {
+                while (_rank[top].prev != 0 && _isLtOrEq(id, _rank[top].prev)) {
                     top = _rank[top].prev;
                 }
                 return top;
@@ -91,7 +91,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
                 //there is no offer stored yet
                 return 0;
             }
-            if (isLtOrEq(id, top)) {
+            if (_isLtOrEq(id, top)) {
                 //there is exactly one offer stored,
                 //and it is higher or equal than offers[id]
                 return top;
@@ -103,7 +103,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     }
 
     //put offer into the sorted list
-    function sort(
+    function _sort(
         uint id,    //maker (ask) id
         uint pos    //position to insert into
     )
@@ -116,22 +116,22 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         assert(isActive(id));
         if (pos == 0
             || !isActive(pos)
-            || !isLtOrEq(id, pos)
-            || (_rank[pos].prev != 0 && isLtOrEq(id, _rank[pos].prev))
+            || !_isLtOrEq(id, pos)
+            || (_rank[pos].prev != 0 && _isLtOrEq(id, _rank[pos].prev))
         ) {
             //client did not provide valid position,
             //so we have to find it
             pos = 0;
-            if (_best[pay_gem][buy_gem] > 0 && isLtOrEq(id, _best[pay_gem][buy_gem])) {
+            if (_best[pay_gem][buy_gem] > 0 && _isLtOrEq(id, _best[pay_gem][buy_gem])) {
                 //pos was 0 because user did not provide one
-                pos = find(id);
+                pos = _find(id);
             }
         }
         //assert `pos` is in the sorted list or is 0
         assert(pos == 0 || _rank[pos].next != 0 || _rank[pos].prev != 0 || _best[pay_gem][buy_gem] == pos);
         if (pos != 0) {
             //offers[id] is not the highest offer
-            assert(isLtOrEq(id, pos));
+            assert(_isLtOrEq(id, pos));
             lid = _rank[pos].prev;
             _rank[pos].prev = id;
             _rank[id].next = pos;
@@ -147,7 +147,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
 
         if (lid != 0) {
             //if lower offer does exist
-            assert(!isLtOrEq(id, lid));
+            assert(!_isLtOrEq(id, lid));
             _rank[lid].next = id;
             _rank[id].prev = lid;
         }
@@ -155,7 +155,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         LogSortedOffer(id);
     }
     // Remove offer from the sorted list.
-    function unsort(
+    function _unsort(
         uint id    //id of maker (ask) offer to remove from sorted list
     )
     internal
@@ -191,7 +191,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     bool isMatched;                //if true, taker offer should not be created, because it was already matched
 
     //match offers with taker offer, and execute token transactions
-    function matcho(
+    function _matcho(
         uint t_pay_amt,       //taker sell how much
         ERC20 t_pay_gem,   //taker sell which token
         uint t_buy_amt,        //taker buy how much
@@ -247,14 +247,14 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
             //new offer should be created
             id = super.offer(t_pay_amt, t_pay_gem, t_buy_amt, t_buy_gem);
             //insert offer into the sorted list
-            sort(id, pos);
+            _sort(id, pos);
         }
     }
     // Make a new offer without putting it in the sorted list.
     // Takes funds from the caller into market escrow.
     // ****Available to authorized contracts only!**********
     // Keepers should call insert(id,pos) to put offer in the sorted list.
-    function offeru(
+    function _offeru(
         uint pay_amt,         //maker (ask) sell how much
         ERC20 pay_gem,     //maker (ask) sell which token
         uint buy_amt,          //maker (ask) buy how much
@@ -316,7 +316,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     {
         if(_matchingEnabled) {
             //matching enabled
-            id = offeru(pay_amt, pay_gem, buy_amt, buy_gem);
+            id = _offeru(pay_amt, pay_gem, buy_amt, buy_gem);
         } else {
             //revert to expiring market
             id = super.offer(pay_amt, pay_gem, buy_amt, buy_gem);
@@ -339,7 +339,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         assert(_dust[pay_gem] <= pay_amt);
         if (_matchingEnabled) {
             //matching enabled
-            id = matcho(pay_amt, pay_gem, buy_amt, buy_gem, pos);
+            id = _matcho(pay_amt, pay_gem, buy_amt, buy_gem, pos);
         } else {
             //revert to expiring market
             id = super.offer(pay_amt, pay_gem, buy_amt, buy_gem);
@@ -359,7 +359,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
             assert(_buyEnabled);     //buy enabled
             if(amount >= offers[id].pay_amt) {
                 //offers[id] must be removed from sorted list because all of it is bought
-                unsort(id);
+                _unsort(id);
             }
             assert(super.buy(id, amount));
             success = true;
@@ -376,7 +376,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     {
         if (_matchingEnabled) {
             //matching enabled
-            unsort(id);
+            _unsort(id);
         }
         return super.cancel(id);
     }
@@ -416,7 +416,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
                 //uid was the first in unsorted offers list
                 _head = _near[uid];
                 _near[uid] = 0;
-                sort(id, pos);
+                _sort(id, pos);
                 return true;
             }
             //there were no offers in the unsorted list
@@ -427,7 +427,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
                 //uid was not the first in the list but we found id
                 _near[pre] = _near[uid];
                 _near[uid] = 0;
-                sort(id, pos);
+                _sort(id, pos);
                 return true;
             }
             //did not find id
