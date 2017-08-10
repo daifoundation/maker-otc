@@ -277,10 +277,6 @@ contract SimpleMarket is EventfulMarket, DSMath {
         success = true;
     }
 
-    function assert(bool x) internal {
-        if (!x) revert();
-    }
-
     function _next_id() internal returns (uint) {
         last_offer_id++; return last_offer_id;
     }
