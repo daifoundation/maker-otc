@@ -494,49 +494,6 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
 
     // Derived from error on Kovan, transaction ID:
     // 0x2efe7de83d72ae499fec7f45d64ea48749f8a2bf809b2f64c10c6951b143ca8d
-    /*
-    function testOrderMatchRounding() {
-        uint dai_amt = 1230000000000000000 ;
-        uint wrong_dai_amt = 1230000000651528437;
-        uint mkr_amt = 100000000;
-
-        // Need to give the OTC contract enough for the erroneously high
-        // transfer to not fail.
-        dai.transfer(otc, wrong_dai_amt);
-
-        // Doesn't work in the current version of dapp, so don't rely on it.
-        // Leaving it in for later expansion when dapp _does_ support this.
-        expectEventsExact(otc);
-        LogTrade(mkr_amt, mkr, dai_amt, dai);
-
-        require(mkr.balanceOf(this) > mkr_amt);
-        require(dai.balanceOf(this) > dai_amt);
-        require(dai.totalSupply() > dai_amt);
-
-        mkr.approve(otc, mkr_amt);
-
-        dai.transfer(user1, wrong_dai_amt);
-        user1.doApprove(otc, wrong_dai_amt, dai);
-
-        uint expected_mkr_amt = mkr.balanceOf(this) - mkr_amt;
-        uint expected_user_dai_amt = dai.balanceOf(user1) - dai_amt;
-        uint expected_this_dai_amt = dai.balanceOf(this) + dai_amt;
-
-        offer_id[1] = user1.doOffer(dai_amt, dai, mkr_amt, mkr);
-        offer_id[2] = otc.offer(mkr_amt, mkr, wrong_dai_amt, dai, 0);
-
-        assertEq(otc.getBestOffer(dai, mkr), 0);
-        assertEq(otc.getBetterOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getOfferCount(dai, mkr), 0);
-        assert(!otc.isActive(offer_id[1]));
-        assert(!otc.isActive(offer_id[2]));
-        assertEq(mkr.balanceOf(user1), mkr_amt);
-        assertEq(mkr.balanceOf(this), expected_mkr_amt);
-        assertEq(dai.balanceOf(user1), expected_user_dai_amt);
-        assertEq(dai.balanceOf(this), expected_this_dai_amt);
-    }
-    */
     function testOrderMatchRounding() {
         // Approvals & user funding
         mkr.transfer(user1, MKR_SUPPLY / 2);
