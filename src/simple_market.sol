@@ -110,63 +110,6 @@ contract SimpleMarket is EventfulMarket, DSMath {
 
     // ---- Public entrypoints ---- //
 
-    function make(
-        ERC20    pay_gem,
-        ERC20    buy_gem,
-        uint128  pay_amt,
-        uint128  buy_amt
-    ) returns (bytes32 id) {
-        return bytes32(offer(pay_amt, pay_gem, buy_amt, buy_gem));
-    }
-
-    function take(bytes32 id, uint128 maxTakeAmount) {
-        assert(buy(uint256(id), maxTakeAmount));
-    }
-
-    function kill(bytes32 id) {
-        assert(cancel(uint256(id)));
-    }
-
-    // Make a new offer. Takes funds from the caller into market escrow.
-    function offer(uint pay_amt, ERC20 pay_gem, uint buy_amt, ERC20 buy_gem)
-        can_offer
-        synchronized
-        returns (uint id)
-    {
-        require(uint128(pay_amt) == pay_amt);
-        require(uint128(buy_amt) == buy_amt);
-        require(pay_amt > 0);
-        require(pay_gem != ERC20(0x0));
-        require(buy_amt > 0);
-        require(buy_gem != ERC20(0x0));
-        require(pay_gem != buy_gem);
-
-        OfferInfo memory info;
-        info.pay_amt = pay_amt;
-        info.pay_gem = pay_gem;
-        info.buy_amt = buy_amt;
-        info.buy_gem = buy_gem;
-        info.owner = msg.sender;
-        info.active = true;
-        info.timestamp = uint64(now);
-        id = _next_id();
-        offers[id] = info;
-
-        assert( pay_gem.transferFrom(msg.sender, this, pay_amt) );
-
-        LogItemUpdate(id);
-        LogMake(
-            bytes32(id),
-            sha3(pay_gem, buy_gem),
-            msg.sender,
-            pay_gem,
-            buy_gem,
-            uint128(pay_amt),
-            uint128(buy_amt),
-            uint64(now)
-        );
-    }
-
     function bump(bytes32 id_)
         can_buy(uint256(id_))
     {
@@ -254,6 +197,63 @@ contract SimpleMarket is EventfulMarket, DSMath {
         );
 
         success = true;
+    }
+
+    function kill(bytes32 id) {
+        assert(cancel(uint256(id)));
+    }
+
+    function make(
+        ERC20    pay_gem,
+        ERC20    buy_gem,
+        uint128  pay_amt,
+        uint128  buy_amt
+    ) returns (bytes32 id) {
+        return bytes32(offer(pay_amt, pay_gem, buy_amt, buy_gem));
+    }
+
+    // Make a new offer. Takes funds from the caller into market escrow.
+    function offer(uint pay_amt, ERC20 pay_gem, uint buy_amt, ERC20 buy_gem)
+        can_offer
+        synchronized
+        returns (uint id)
+    {
+        require(uint128(pay_amt) == pay_amt);
+        require(uint128(buy_amt) == buy_amt);
+        require(pay_amt > 0);
+        require(pay_gem != ERC20(0x0));
+        require(buy_amt > 0);
+        require(buy_gem != ERC20(0x0));
+        require(pay_gem != buy_gem);
+
+        OfferInfo memory info;
+        info.pay_amt = pay_amt;
+        info.pay_gem = pay_gem;
+        info.buy_amt = buy_amt;
+        info.buy_gem = buy_gem;
+        info.owner = msg.sender;
+        info.active = true;
+        info.timestamp = uint64(now);
+        id = _next_id();
+        offers[id] = info;
+
+        assert( pay_gem.transferFrom(msg.sender, this, pay_amt) );
+
+        LogItemUpdate(id);
+        LogMake(
+            bytes32(id),
+            sha3(pay_gem, buy_gem),
+            msg.sender,
+            pay_gem,
+            buy_gem,
+            uint128(pay_amt),
+            uint128(buy_amt),
+            uint64(now)
+        );
+    }
+
+    function take(bytes32 id, uint128 maxTakeAmount) {
+        assert(buy(uint256(id), maxTakeAmount));
     }
 
     function _next_id() internal returns (uint) {
