@@ -31,9 +31,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
 
     //check if token pair is enabled
     modifier isWhitelist(ERC20 buy_gem, ERC20 pay_gem) {
-        if (!(_menu[sha3(buy_gem, pay_gem)] || _menu[sha3(pay_gem, buy_gem)])) {
-            revert();  //token pair is not in whitelist
-        }
+        require(_menu[sha3(buy_gem, pay_gem)] || _menu[sha3(pay_gem, buy_gem)]);
         _;
     }
 
@@ -48,7 +46,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         uint128  pay_amt,
         uint128  buy_amt
     )
-    returns (bytes32 id) {
+    returns (bytes32) {
         return bytes32(offer(pay_amt, pay_gem, buy_amt, buy_gem));
     }
 
@@ -99,17 +97,14 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     isWhitelist(pay_gem, buy_gem)
     /*NOT synchronized!!! */
     can_offer
-    returns (uint id)
+    returns (uint)
     {
         require(_dust[pay_gem] <= pay_amt);
 
         if (_matchingEnabled) {
-            //matching enabled
-            id = _matcho(pay_amt, pay_gem, buy_amt, buy_gem, pos);
-        } else {
-            //revert to expiring market
-            id = super.offer(pay_amt, pay_gem, buy_amt, buy_gem);
+          return _matcho(pay_amt, pay_gem, buy_amt, buy_gem, pos);
         }
+        return super.offer(pay_amt, pay_gem, buy_amt, buy_gem);
     }
 
     //Transfers funds from caller to offer maker, and from market to caller.
@@ -138,8 +133,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     //keepers need to use this function
     function insert(
         uint id,   //maker (ask) id
-        uint pos    //position to insert into
-                   )
+        uint pos   //position to insert into
+    )
     returns (bool)
     {
         address buy_gem = address(offers[id].buy_gem);
@@ -154,7 +149,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
 
         //take offer out of list of unsorted offers
         uint uid = _head; //id to search for `id` in unsorted offers list
-        uint pre = 0; //previous offer's id in unsorted offers list
+        uint pre = 0;     //previous offer's id in unsorted offers list
 
         //find `id` in the unsorted list of offers
         while(uid > 0 && uid != id) {
@@ -199,16 +194,12 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     note
     returns (bool)
     {
-        if (address(baseToken) == 0x0 || address(quoteToken) == 0x0) {
-            revert();  //invalid ERC20 token address
-        }
-        if (isTokenPairWhitelisted(baseToken, quoteToken)) {
-            revert();  //token pair already in whitelist
-        }
+        require(!isTokenPairWhitelisted(baseToken, quoteToken));
+        require(address(baseToken) != 0x0 && address(quoteToken) != 0x0);
+
         _menu[sha3(baseToken, quoteToken)] = true;
         LogAddTokenPairWhitelist(baseToken, quoteToken);
-        if (_menu[sha3(baseToken, quoteToken)]) return true;
-        else revert(); //unexepected error with checking added token pair
+        return true;
     }
 
     //returns true if token is successfully removed from whitelist
@@ -223,12 +214,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     note
     returns (bool)
     {
-        if (address(baseToken) == 0x0 || address(quoteToken) == 0x0) {
-            revert();  //invalid ERC20 token address
-        }
-        if (!(_menu[sha3(baseToken, quoteToken)] || _menu[sha3(quoteToken, baseToken)])) {
-            revert();  //whitelist does not contain token pair
-        }
+        require(isTokenPairWhitelisted(baseToken, quoteToken));
+
         delete _menu[sha3(baseToken, quoteToken)];
         delete _menu[sha3(quoteToken, baseToken)];
         LogRemTokenPairWhitelist(baseToken, quoteToken);
@@ -257,10 +244,11 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     )
     auth
     note
-    returns (bool suc) {
+    returns (bool)
+    {
         _dust[pay_gem] = dust;
         LogMinSell(pay_gem, dust);
-        suc = true;
+        return true;
     }
 
     //returns the minimum sell amount for an offer
