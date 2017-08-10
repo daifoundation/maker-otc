@@ -205,9 +205,8 @@ contract SimpleMarket is EventfulMarket, DSMath {
 
         offers[id].pay_amt = sub(offer.pay_amt, quantity);
         offers[id].buy_amt = sub(offer.buy_amt, spend);
-
-        _trade(offer.owner, quantity, offer.pay_gem,
-               msg.sender, spend, offer.buy_gem);
+        assert( offer.buy_gem.transferFrom(msg.sender, offer.owner, spend) );
+        assert( offer.pay_gem.transfer(msg.sender, quantity) );
 
         LogItemUpdate(id);
         LogTake(
@@ -221,6 +220,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
             uint128(spend),
             uint64(now)
         );
+        LogTrade(quantity, offer.pay_gem, spend, offer.buy_gem);
 
         if (offers[id].pay_amt == 0) {
           delete offers[id];
@@ -258,14 +258,5 @@ contract SimpleMarket is EventfulMarket, DSMath {
 
     function _next_id() internal returns (uint) {
         last_offer_id++; return last_offer_id;
-    }
-
-    function _trade(address seller, uint sell_amt, ERC20 sell_gem,
-                    address buyer,  uint pay_amt,  ERC20 pay_gem)
-        internal
-    {
-        assert( pay_gem.transferFrom(buyer, seller, pay_amt) );
-        assert( sell_gem.transfer(buyer, sell_amt) );
-        LogTrade(sell_amt, sell_gem, pay_amt, pay_gem);
     }
 }
