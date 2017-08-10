@@ -104,7 +104,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     returns (uint id)
     {
         //make sure 'sell how much' is greater than minimum required
-        assert(_dust[pay_gem] <= pay_amt);
+        require(_dust[pay_gem] <= pay_amt);
         if (_matchingEnabled) {
             //matching enabled
             id = _matcho(pay_amt, pay_gem, buy_amt, buy_gem, pos);
@@ -124,7 +124,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     {
         if (_matchingEnabled) {
             //matching enabled
-            assert(_buyEnabled);     //buy enabled
+            require(_buyEnabled);     //buy enabled
             if(amount >= offers[id].pay_amt) {
                 //offers[id] must be removed from sorted list because all of it is bought
                 _unsort(id);
@@ -158,19 +158,16 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     {
         address buy_gem = address(offers[id].buy_gem);
         address pay_gem = address(offers[id].pay_gem);
-        uint uid; //id to search for `id` in unsorted offers list
-        uint pre; //previous offer's id in unsorted offers list
-
         //make sure offers[id] is not yet sorted
-        assert(_rank[id].next == 0);
-        assert(_rank[id].prev == 0);
-        assert(_best[pay_gem][buy_gem] != id);
-        assert(isActive(id));
-        assert(pos == 0 || isActive(pos));
+        require(_rank[id].next == 0);
+        require(_rank[id].prev == 0);
+        require(_best[pay_gem][buy_gem] != id);
+        require(isActive(id));
+        require(pos == 0 || isActive(pos));
 
         //take offer out of list of unsorted offers
-        uid = _head;
-        pre = 0;
+        uint uid = _head; //id to search for `id` in unsorted offers list
+        uint pre = 0; //previous offer's id in unsorted offers list
 
         //find `id` in the unsorted list of offers
         while(uid > 0 && uid != id) {
@@ -374,7 +371,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     internal
     returns (uint)
     {
-        assert( id > 0 );
+        require( id > 0 );
+
         address buy_gem = address(offers[id].buy_gem);
         address pay_gem = address(offers[id].pay_gem);
         uint top = _best[pay_gem][buy_gem];
@@ -453,7 +451,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         uint tab;                   //taker buy how much saved
 
         //offers[pos] should buy the same token as taker
-        assert(pos == 0
+        require(pos == 0
                || !isActive(pos)
                || (t_buy_gem == offers[pos].buy_gem) && t_pay_gem == offers[pos].pay_gem);
 
@@ -526,11 +524,12 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     )
     internal
     {
+        require(isActive(id));
+
         address buy_gem = address(offers[id].buy_gem);
         address pay_gem = address(offers[id].pay_gem);
         uint lid; //lower maker (ask) id
 
-        assert(isActive(id));
         if (pos == 0
             || !isActive(pos)
             || !_isLtOrEq(id, pos)
@@ -544,11 +543,12 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
                 pos = _find(id);
             }
         }
+
         //assert `pos` is in the sorted list or is 0
-        assert(pos == 0 || _rank[pos].next != 0 || _rank[pos].prev != 0 || _best[pay_gem][buy_gem] == pos);
+        require(pos == 0 || _rank[pos].next != 0 || _rank[pos].prev != 0 || _best[pay_gem][buy_gem] == pos);
         if (pos != 0) {
             //offers[id] is not the highest offer
-            assert(_isLtOrEq(id, pos));
+            require(_isLtOrEq(id, pos));
             lid = _rank[pos].prev;
             _rank[pos].prev = id;
             _rank[id].next = pos;
@@ -557,14 +557,14 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
             lid = _best[pay_gem][buy_gem];
             _best[pay_gem][buy_gem] = id;
         }
-        assert(lid == 0 || offers[lid].pay_gem
+        require(lid == 0 || offers[lid].pay_gem
                == offers[id].pay_gem);
-        assert(lid == 0 || offers[lid].buy_gem
+        require(lid == 0 || offers[lid].buy_gem
                == offers[id].buy_gem);
 
         if (lid != 0) {
             //if lower offer does exist
-            assert(!_isLtOrEq(id, lid));
+            require(!_isLtOrEq(id, lid));
             _rank[lid].next = id;
             _rank[id].prev = lid;
         }
@@ -583,7 +583,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         address pay_gem = address(offers[id].pay_gem);
 
         //assert id is in the sorted list
-        assert(_rank[id].next != 0 || _rank[id].prev != 0 || _best[pay_gem][buy_gem] == id);
+        require(_rank[id].next != 0 || _rank[id].prev != 0 || _best[pay_gem][buy_gem] == id);
 
         if (id != _best[pay_gem][buy_gem]) {
             // offers[id] is not the highest offer
@@ -596,7 +596,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
             //offers[id] is not the lowest offer
             _rank[_rank[id].prev].next = _rank[id].next;
         }
-        assert (_span[pay_gem][buy_gem] > 0);
+        require(_span[pay_gem][buy_gem] > 0);
         _span[pay_gem][buy_gem]--;
         delete _rank[id].prev;
         delete _rank[id].next;

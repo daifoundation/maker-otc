@@ -21,7 +21,7 @@ contract ExpiringMarket is DSAuth, SimpleMarket, DSWarp {
         warp(era_);
         lifetime = lifetime_;
         close_time = era() + lifetime_;
-        assert(close_time > era());
+        require(close_time > era());
     }
 
     function isClosed() constant returns (bool closed) {
@@ -35,14 +35,14 @@ contract ExpiringMarket is DSAuth, SimpleMarket, DSWarp {
     }
     // after close, no new buys are allowed
     modifier can_buy(uint id) {
-        assert(isActive(id));
-        assert(!isClosed());
+        require(isActive(id));
+        require(!isClosed());
         _;
     }
     // after close, anyone can cancel an offer
     modifier can_cancel(uint id) {
-        assert(isActive(id));
-        assert(isClosed() || (msg.sender == getOwner(id)));
+        require(isActive(id));
+        require(isClosed() || (msg.sender == getOwner(id)));
         _;
     }
 }

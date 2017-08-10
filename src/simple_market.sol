@@ -73,13 +73,13 @@ contract SimpleMarket is EventfulMarket, DSMath {
     }
 
     modifier can_buy(uint id) {
-        assert(isActive(id));
+        require(isActive(id));
         _;
     }
 
     modifier can_cancel(uint id) {
-        assert(isActive(id));
-        assert(getOwner(id) == msg.sender);
+        require(isActive(id));
+        require(getOwner(id) == msg.sender);
         _;
     }
 
@@ -131,13 +131,13 @@ contract SimpleMarket is EventfulMarket, DSMath {
         synchronized
         returns (uint id)
     {
-        assert(uint128(pay_amt) == pay_amt);
-        assert(uint128(buy_amt) == buy_amt);
-        assert(pay_amt > 0);
-        assert(pay_gem != ERC20(0x0));
-        assert(buy_amt > 0);
-        assert(buy_gem != ERC20(0x0));
-        assert(pay_gem != buy_gem);
+        require(uint128(pay_amt) == pay_amt);
+        require(uint128(buy_amt) == buy_amt);
+        require(pay_amt > 0);
+        require(pay_gem != ERC20(0x0));
+        require(buy_amt > 0);
+        require(buy_gem != ERC20(0x0));
+        require(pay_gem != buy_gem);
 
         OfferInfo memory info;
         info.pay_amt = pay_amt;
@@ -150,8 +150,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
         id = _next_id();
         offers[id] = info;
 
-        var seller_paid = pay_gem.transferFrom(msg.sender, this, pay_amt);
-        assert(seller_paid);
+        assert( pay_gem.transferFrom(msg.sender, this, pay_amt) );
 
         LogItemUpdate(id);
         LogMake(
