@@ -421,10 +421,10 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     // ****Available to authorized contracts only!**********
     // Keepers should call insert(id,pos) to put offer in the sorted list.
     function _offeru(
-        uint pay_amt,         //maker (ask) sell how much
+        uint pay_amt,      //maker (ask) sell how much
         ERC20 pay_gem,     //maker (ask) sell which token
-        uint buy_amt,          //maker (ask) buy how much
-        ERC20 buy_gem       //maker (ask) buy which token
+        uint buy_amt,      //maker (ask) buy how much
+        ERC20 buy_gem      //maker (ask) buy which token
     )
     auth
     internal
@@ -432,7 +432,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     returns (uint id)
     {
         id = super.offer(pay_amt, pay_gem, buy_amt, buy_gem);
-        //insert offer into the unsorted offers list
         _near[id] = _head;
         _head = id;
         LogUnsortedOffer(id);
