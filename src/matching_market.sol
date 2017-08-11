@@ -331,7 +331,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     {
         require(buyEnabled);
 
-        if (amount >= offers[id].pay_amt) {
+        if (amount == offers[id].pay_amt) {
             //offers[id] must be removed from sorted list because all of it is bought
             _unsort(id);
         }
