@@ -455,13 +455,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
             || !_isLtOrEq(id, pos)
             || (_rank[pos].prev != 0 && _isLtOrEq(id, _rank[pos].prev))
         ) {
-            //client did not provide valid position,
-            //so we have to find it
-            pos = 0;
-            if (_best[pay_gem][buy_gem] > 0 && _isLtOrEq(id, _best[pay_gem][buy_gem])) {
-                //pos was 0 because user did not provide one
-                pos = _find(id);
-            }
+            //client did not provide valid position, so we have to find it
+            pos = _find(id);
         }
 
         //assert `pos` is in the sorted list or is 0
