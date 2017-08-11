@@ -152,34 +152,26 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         uint pre = 0;     //previous offer's id in unsorted offers list
 
         //find `id` in the unsorted list of offers
-        while(uid > 0 && uid != id) {
-            //while not found `id`
+        while (uid > 0 && uid != id) {
             pre = uid;
-            uid = _near[uid];
+            uid = _near[uid]; // _near is a chain of ids.
         }
-        if (pre == 0) {
-            //uid was the first in the unsorted offers list
-            if (uid == id) {
-                //uid was the first in unsorted offers list
-                _head = _near[uid];
-                _near[uid] = 0;
-                _sort(id, pos);
-                return true;
-            }
-            //there were no offers in the unsorted list
-            return false;
-        } else {
-            //uid was not the first in the unsorted offers list
-            if (uid == id) {
-                //uid was not the first in the list but we found id
-                _near[pre] = _near[uid];
-                _near[uid] = 0;
-                _sort(id, pos);
-                return true;
-            }
+
+        if (uid != id) {
             //did not find id
             return false;
         }
+
+        if (_head == id) {
+            _head = _near[id];
+        } else {
+            _near[pre] = _near[id];
+        }
+
+        _near[id] = 0;
+        _sort(id, pos);
+
+        return true;
     }
 
     //returns true if token is succesfully added to whitelist
