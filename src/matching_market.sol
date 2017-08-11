@@ -364,9 +364,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     }
 
     //these variables are global only because of solidity local variable limit
-    uint m_buy_amt;        //maker offer wants to buy this much token
-    uint m_pay_amt;        //maker offer wants to sell this much token
-    bool isMatched;        //if true, taker offer should not be created, because it was already matched
 
     //match offers with taker offer, and execute token transactions
     function _matcho(
@@ -379,49 +376,39 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     internal
     returns (uint id)
     {
-        isMatched = false;          //taker offer should be created
-        bool isTakerFilled = false; //has the taker offer been filled
-        uint best_maker_id;         //highest maker id
-        uint tab;                   //taker buy how much saved
+        uint best_maker_id;    //highest maker id
+        uint tab;              //taker buy how much saved
+        uint m_buy_amt;        //maker offer wants to buy this much token
+        uint m_pay_amt;        //maker offer wants to sell this much token
 
-        //offers[pos] should buy the same token as taker
         require(pos == 0
                || !isActive(pos)
-               || (t_buy_gem == offers[pos].buy_gem) && t_pay_gem == offers[pos].pay_gem);
+               || t_buy_gem == offers[pos].buy_gem
+                  && t_pay_gem == offers[pos].pay_gem);
 
-        while (!isTakerFilled && _best[t_buy_gem][t_pay_gem] > 0) {
-            //matching is not done yet and there is at
-            //least one offer stored for token pair
-            best_maker_id = _best[t_buy_gem][t_pay_gem]; //store highest maker offer's id
-            if (best_maker_id > 0) {
-                //there is at least one maker offer stored
-                m_buy_amt = offers[best_maker_id].buy_amt;
-                m_pay_amt = offers[best_maker_id].pay_amt;
-                if (mul(m_buy_amt , t_buy_amt) <= mul(t_pay_amt , m_pay_amt)
-		    + m_buy_amt + t_buy_amt + t_pay_amt + m_pay_amt ) {
-                    //maker price is lower than or equal to taker price + round-off error
-                    if (m_pay_amt >= t_buy_amt) {
-                        //maker wants to sell more than taker wants to buy
-                        isMatched = true;
-                        isTakerFilled = true;
-                        buy(best_maker_id, t_buy_amt);
-                    } else {
-                        //maker wants to sell less than taker wants to buy
-                        tab = t_buy_amt;
-                        t_buy_amt = sub(t_buy_amt, m_pay_amt);
-                        t_pay_amt = mul(t_buy_amt, t_pay_amt) / tab;
-                        buy(best_maker_id, m_pay_amt);
-                    }
-                } else {
-                    //lowest maker price is higher than current taker price
-                    isTakerFilled = true;
-                }
-            } else {
-                //there is no maker offer to match
-                isTakerFilled = true;
+        // there is at least one offer stored for token pair
+        while (_best[t_buy_gem][t_pay_gem] > 0) {
+            best_maker_id = _best[t_buy_gem][t_pay_gem];
+            m_buy_amt = offers[best_maker_id].buy_amt;
+            m_pay_amt = offers[best_maker_id].pay_amt;
+
+            if (mul(m_buy_amt, t_buy_amt)
+                > mul(t_pay_amt, m_pay_amt) + m_buy_amt + t_buy_amt + t_pay_amt + m_pay_amt)
+            {
+                break;
+            }
+
+            buy(best_maker_id, min(m_pay_amt, t_buy_amt));
+            tab = t_buy_amt;
+            t_buy_amt = sub(t_buy_amt, min(m_pay_amt, t_buy_amt));
+            t_pay_amt = mul(t_buy_amt, t_pay_amt) / tab;
+
+            if (t_pay_amt == 0) {
+                break;
             }
         }
-        if (!isMatched) {
+
+        if (t_buy_amt > 0 && t_pay_amt > 0) {
             //new offer should be created
             id = super.offer(t_pay_amt, t_pay_gem, t_buy_amt, t_buy_gem);
             //insert offer into the sorted list
