@@ -341,37 +341,14 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         address buy_gem = address(offers[id].buy_gem);
         address pay_gem = address(offers[id].pay_gem);
         uint top = _best[pay_gem][buy_gem];
+        uint old_top = top;
 
-        if (_span[pay_gem][buy_gem] > 1) {
-            //there are at least two offers stored for token pair
-            if (!_isLtOrEq(id, top)) {
-                //No  offer that has higher or equal price than offers[id]
-                return 0;
-            } else {
-                //offers[top] is higher or equal priced than offers[id]
-
-                //cycle through all offers for token pair to find the id
-                //that is the next higher or equal to offers[id]
-                while (_rank[top].prev != 0 && _isLtOrEq(id, _rank[top].prev)) {
-                    top = _rank[top].prev;
-                }
-                return top;
-            }
-        } else {
-            //there is maximum one offer stored
-            if (_best[pay_gem][buy_gem] == 0) {
-                //there is no offer stored yet
-                return 0;
-            }
-            if (_isLtOrEq(id, top)) {
-                //there is exactly one offer stored,
-                //and it is higher or equal than offers[id]
-                return top;
-            } else {
-                //there is exatly one offer stored, but lower than offers[id]
-                return 0;
-            }
+        // Find the larger-than-id order whose successor is less-than-id.
+        while (top != 0 && _isLtOrEq(id, top)) {
+            old_top = top;
+            top = _rank[top].prev;
         }
+        return old_top;
     }
 
     //return true if offers[low] priced less than or equal to offers[high]
