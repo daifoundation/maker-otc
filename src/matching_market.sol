@@ -21,7 +21,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         uint next;  //points to id of next higher offer
         uint prev;  //points to id of previous lower offer
     }
-    mapping(uint => sortInfo) public _rank;                     //doubly linked list of sorted offer ids
+    mapping(uint => sortInfo) public _rank;                     //doubly linked lists of sorted offer ids
     mapping(address => mapping(address => uint)) public _best;  //id of the highest offer for a token pair
     mapping(address => mapping(address => uint)) public _span;  //number of offers stored for token pair
     mapping(address => uint) public _dust;                      //minimum sell amount for a token to avoid dust offers
@@ -466,17 +466,20 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
 
         //assert `pos` is in the sorted list or is 0
         require(pos == 0 || _rank[pos].next != 0 || _rank[pos].prev != 0 || _best[pay_gem][buy_gem] == pos);
+
         if (pos != 0) {
             //offers[id] is not the highest offer
             require(_isLtOrEq(id, pos));
             lid = _rank[pos].prev;
             _rank[pos].prev = id;
             _rank[id].next = pos;
+
         } else {
             //offers[id] is the highest offer
             lid = _best[pay_gem][buy_gem];
             _best[pay_gem][buy_gem] = id;
         }
+
         require(lid == 0 || offers[lid].pay_gem == offers[id].pay_gem);
         require(lid == 0 || offers[lid].buy_gem == offers[id].buy_gem);
 
@@ -486,6 +489,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
             _rank[lid].next = id;
             _rank[id].prev = lid;
         }
+
         _span[pay_gem][buy_gem]++;
         LogSortedOffer(id);
     }
@@ -499,6 +503,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     {
         address buy_gem = address(offers[id].buy_gem);
         address pay_gem = address(offers[id].pay_gem);
+        require(_span[pay_gem][buy_gem] > 0);
 
         //assert id is in the sorted list
         require(_rank[id].next != 0 || _rank[id].prev != 0 || _best[pay_gem][buy_gem] == id);
@@ -506,15 +511,17 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         if (id != _best[pay_gem][buy_gem]) {
             // offers[id] is not the highest offer
             _rank[_rank[id].next].prev = _rank[id].prev;
+
         } else {
             //offers[id] is the highest offer
             _best[pay_gem][buy_gem] = _rank[id].prev;
         }
+
         if (_rank[id].prev != 0) {
             //offers[id] is not the lowest offer
             _rank[_rank[id].prev].next = _rank[id].next;
         }
-        require(_span[pay_gem][buy_gem] > 0);
+
         _span[pay_gem][buy_gem]--;
         delete _rank[id].prev;
         delete _rank[id].next;
