@@ -518,8 +518,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         }
 
         _span[pay_gem][buy_gem]--;
-        delete _rank[id].prev;
-        delete _rank[id].next;
+        delete _rank[id];
         return true;
     }
 }
