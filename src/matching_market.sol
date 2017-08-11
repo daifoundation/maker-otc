@@ -341,7 +341,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         address buy_gem = address(offers[id].buy_gem);
         address pay_gem = address(offers[id].pay_gem);
         uint top = _best[pay_gem][buy_gem];
-        uint old_top = top;
+        uint old_top = 0;
 
         // Find the larger-than-id order whose successor is less-than-id.
         while (top != 0 && _isLtOrEq(id, top)) {
