@@ -14,8 +14,8 @@ contract MatchingEvents {
 }
 
 contract MatchingMarket is MatchingEvents, ExpiringMarket {
-    bool public _buyEnabled = true;      //buy enabled
-    bool public _matchingEnabled = true; //true: enable matching,
+    bool public buyEnabled = true;      //buy enabled
+    bool public matchingEnabled = true; //true: enable matching,
                                          //false: revert to expiring market
     struct sortInfo {
         uint next;  //points to id of next higher offer
@@ -82,7 +82,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     /* NOT synchronized!!! */
     returns (uint)
     {
-        var fn = _matchingEnabled ? _offeru : super.offer;
+        var fn = matchingEnabled ? _offeru : super.offer;
         return fn(pay_amt, pay_gem, buy_amt, buy_gem);
     }
 
@@ -101,7 +101,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     {
         require(_dust[pay_gem] <= pay_amt);
 
-        if (_matchingEnabled) {
+        if (matchingEnabled) {
           return _matcho(pay_amt, pay_gem, buy_amt, buy_gem, pos);
         }
         return super.offer(pay_amt, pay_gem, buy_amt, buy_gem);
@@ -113,7 +113,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     can_buy(id)
     returns (bool)
     {
-        var fn = _matchingEnabled ? _buys : super.buy;
+        var fn = matchingEnabled ? _buys : super.buy;
         return fn(id, amount);
     }
 
@@ -123,7 +123,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     can_cancel(id)
     returns (bool success)
     {
-        if (_matchingEnabled) {
+        if (matchingEnabled) {
             _unsort(id);
         }
         return super.cancel(id);
@@ -260,28 +260,11 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         return _dust[pay_gem];
     }
 
-    //the call of buy() function is enabled (offer sniping)
-    //    Returns true, if users can click and buy any arbitrary offer,
-    //    not only the lowest one. Users can also buy unsorted offers as
-    //    well.
-    //    Returns false, if users are not allowed to buy arbitrary offers.
-    function isBuyEnabled() constant returns (bool) {
-        return _buyEnabled;
-    }
-
     //set buy functionality enabled/disabled
-    function setBuyEnabled(bool buyEnabled) auth note returns (bool) {
-        _buyEnabled = buyEnabled;
-        LogBuyEnabled(_buyEnabled);
+    function setBuyEnabled(bool buyEnabled_) auth note returns (bool) {
+        buyEnabled = buyEnabled_;
+        LogBuyEnabled(buyEnabled);
         return true;
-    }
-
-    //is otc offer matching enabled?
-    //      Returns true if offers will be matched if possible.
-    //      Returns false if contract is reverted to ExpiringMarket
-    //      and no matching is done for new offers.
-    function isMatchingEnabled() constant returns (bool) {
-        return _matchingEnabled;
     }
 
     //set matching enabled/disabled
@@ -291,9 +274,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     //    keepers using insert().
     //    If matchingEnabled is false then MatchingMarket is reverted to ExpiringMarket,
     //    and matching is not done, and sorted lists are disabled.
-    function setMatchingEnabled(bool matchingEnabled) auth note returns (bool) {
-        _matchingEnabled = matchingEnabled;
-        LogMatchingEnabled(_matchingEnabled);
+    function setMatchingEnabled(bool matchingEnabled_) auth note returns (bool) {
+        matchingEnabled = matchingEnabled_;
+        LogMatchingEnabled(matchingEnabled);
         return true;
     }
 
@@ -346,7 +329,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     internal
     returns (bool)
     {
-        require(_buyEnabled);
+        require(buyEnabled);
 
         if (amount >= offers[id].pay_amt) {
             //offers[id] must be removed from sorted list because all of it is bought
