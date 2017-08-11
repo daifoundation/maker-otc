@@ -359,16 +359,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     internal
     returns (bool)
     {
-        return
-        mul(
-            offers[low].buy_amt,
-            offers[high].pay_amt
-        )
-        >=
-        mul(
-            offers[high].buy_amt,
-            offers[low].pay_amt
-        );
+        return mul(offers[low].buy_amt, offers[high].pay_amt)
+          >= mul(offers[high].buy_amt, offers[low].pay_amt);
     }
 
     //these variables are global only because of solidity local variable limit
@@ -499,10 +491,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
             lid = _best[pay_gem][buy_gem];
             _best[pay_gem][buy_gem] = id;
         }
-        require(lid == 0 || offers[lid].pay_gem
-               == offers[id].pay_gem);
-        require(lid == 0 || offers[lid].buy_gem
-               == offers[id].buy_gem);
+        require(lid == 0 || offers[lid].pay_gem == offers[id].pay_gem);
+        require(lid == 0 || offers[lid].buy_gem == offers[id].buy_gem);
 
         if (lid != 0) {
             //if lower offer does exist
