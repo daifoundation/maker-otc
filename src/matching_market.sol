@@ -392,11 +392,18 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
             m_buy_amt = offers[best_maker_id].buy_amt;
             m_pay_amt = offers[best_maker_id].pay_amt;
 
+            // Ugly hack to work around rounding errors. Based on the idea that
+            // the furthest the amounts can stray from their "true" values is 1.
+            // Ergo the worst case has t_pay_amt and m_pay_amt at +1 away from
+            // their "correct" values and m_buy_amt and t_buy_amt at -1.
+            // Since (c - 1) * (d - 1) > (a + 1) * (b + 1) is equivalent to
+            // c * d > a * b + a + b + c + d, we write...
             if (mul(m_buy_amt, t_buy_amt)
                 > mul(t_pay_amt, m_pay_amt) + m_buy_amt + t_buy_amt + t_pay_amt + m_pay_amt)
             {
                 break;
             }
+            // ^ We need to find a cleaner way to deal with rounding ASAP.
 
             buy(best_maker_id, min(m_pay_amt, t_buy_amt));
             tab = t_buy_amt;
