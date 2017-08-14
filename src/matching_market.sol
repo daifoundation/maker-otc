@@ -410,7 +410,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
             t_buy_amt = sub(t_buy_amt, min(m_pay_amt, t_buy_amt));
             t_pay_amt = mul(t_buy_amt, t_pay_amt) / tab;
 
-            if (t_pay_amt == 0) {
+            if (t_pay_amt == 0 || t_buy_amt == 0) {
                 break;
             }
         }
