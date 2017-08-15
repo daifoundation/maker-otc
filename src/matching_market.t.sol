@@ -506,41 +506,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dgd.approve(otc, DGD_SUPPLY);
         mkr.approve(otc, MKR_SUPPLY);
 
-        // Set up the scenario as it was on Kovan, with DGD instead of RHOC.
-        otc.offer(15417583333333333333, mkr, 18501100000000000000, dai, 0);
-        otc.offer(1200000000000000000, dai, 1000000000000000000, mkr, 0);
-        otc.offer(1541758333, dgd, 18501100000000000000, dai, 0);
-        otc.offer(1200000000000000000, dai, 100000000, dgd, 0);
-        otc.cancel(2);
-        otc.offer(1541758333, dgd, 18501100000000000000, dai, 0);
-        otc.offer(1200000000000000000, dai, 100000000, dgd, 0);
-        otc.offer(1307692307, dgd, 15823076920000000000, dai, 3);
-        otc.offer(1210000000000000000, dai, 100000000, dgd, 0);
-        otc.cancel(3);
-        otc.offer(1210000000000000000, dai, 100000000, dgd, 0);
-        user1.doOffer(2400000000000000000, dai, 2000000000000000000, mkr, 0);
-        user1.doOffer(2820000000000000000, dai, 2350000000000000000, mkr, 0);
-        user1.doOffer(30000000000000000000, dai, 30000000000000000000, mkr, 0);
-        user1.doOffer(2231223200000000000, mkr, 2231223200000000000, dai, 0);
-        user1.doOffer(1465476000000000000, dai, 1221230000000000000, mkr, 0);
-        user1.doBuy(1, 1000000000000000000);
-        otc.cancel(4);
-        otc.offer(1529017447, dgd, 18501111110000000000, dai, 0);
-        otc.offer(1210000000000000000, dai, 100000000, dgd, 0);
-        otc.offer(1211000000000000000, dai, 100000000, dgd, 0);
-        otc.offer(2422200000000000000, dai, 200000000, dgd, 0);
-        otc.cancel(6);
-        otc.offer(1504154472, dgd, 18501100000000000000, dai, 0);
-        otc.offer(1230000000000000000, dai, 100000000, dgd, 0);
-        otc.cancel(7);
-        otc.offer(100000000, dgd, 1230000000000000000, dai, 0);
-        otc.offer(1230000000000000000, dai, 100000000, dgd, 0);
-        otc.offer(1003713658, dgd, 12345678000000000000, dai, 0);
-        otc.offer(1230000000000000000, dai, 100000000, dgd, 0);
-        otc.cancel(9);
-        otc.offer(1512345000, dgd, 18601843500000000000, dai, 0);
-        otc.offer(1230000000000000000, dai, 100000000, dgd, 0);
-        otc.cancel(10);
+        // Does not divide evenly.
         otc.offer(1504155374, dgd, 18501111110000000000, dai, 0);
 
         // The buggy transaction.
