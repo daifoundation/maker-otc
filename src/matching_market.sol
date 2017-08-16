@@ -99,10 +99,26 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     can_offer
     returns (uint)
     {
+        return offer(pay_amt, pay_gem, buy_amt, buy_gem, pos, false);
+    }
+
+    function offer(
+        uint pay_amt,    //maker (ask) sell how much
+        ERC20 pay_gem,   //maker (ask) sell which token
+        uint buy_amt,    //maker (ask) buy how much
+        ERC20 buy_gem,   //maker (ask) buy which token
+        uint pos,        //position to insert offer, 0 should be used if unknown
+        bool rounding    //match "close enough" orders?
+    )
+    isWhitelist(pay_gem, buy_gem)
+    /*NOT synchronized!!! */
+    can_offer
+    returns (uint)
+    {
         require(_dust[pay_gem] <= pay_amt);
 
         if (matchingEnabled) {
-          return _matcho(pay_amt, pay_gem, buy_amt, buy_gem, pos);
+          return _matcho(pay_amt, pay_gem, buy_amt, buy_gem, pos, rounding);
         }
         return super.offer(pay_amt, pay_gem, buy_amt, buy_gem);
     }
@@ -371,7 +387,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         ERC20 t_pay_gem,   //taker sell which token
         uint t_buy_amt,    //taker buy how much
         ERC20 t_buy_gem,   //taker buy which token
-        uint pos           //position id
+        uint pos,          //position id
+        bool rounding      //match "close enough" orders?
     )
     internal
     returns (uint id)
@@ -398,12 +415,13 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
             // their "correct" values and m_buy_amt and t_buy_amt at -1.
             // Since (c - 1) * (d - 1) > (a + 1) * (b + 1) is equivalent to
             // c * d > a * b + a + b + c + d, we write...
-            if (mul(m_buy_amt, t_buy_amt)
-                > mul(t_pay_amt, m_pay_amt) + m_buy_amt + t_buy_amt + t_pay_amt + m_pay_amt)
+            if (mul(m_buy_amt, t_buy_amt) > mul(t_pay_amt, m_pay_amt) +
+                (rounding ? m_buy_amt + t_buy_amt + t_pay_amt + m_pay_amt : 0))
             {
                 break;
             }
-            // ^ We need to find a cleaner way to deal with rounding ASAP.
+            // ^ The `rounding` parameter is a compromise borne of a couple days
+            // of discussion.
 
             buy(best_maker_id, min(m_pay_amt, t_buy_amt));
             tab = t_buy_amt;

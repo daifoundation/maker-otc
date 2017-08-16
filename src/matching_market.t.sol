@@ -75,6 +75,13 @@ contract MarketTester {
         return market.offer(pay_amt, pay_gem,
                   buy_amt, buy_gem, pos);
     }
+    function doOffer(uint pay_amt, ERC20 pay_gem,
+                    uint buy_amt,  ERC20 buy_gem,
+                    uint pos, bool rounding)
+    returns (uint) {
+        return market.offer(pay_amt, pay_gem,
+                  buy_amt, buy_gem, pos, rounding);
+    }
     function doCancel(uint id) returns (bool _success) {
         return market.cancel(id);
     }
@@ -394,9 +401,9 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         otc.setBuyEnabled(false);
         otc.setBuyEnabled(true);
         mkr.approve(otc, 30);
-        dai.transfer(user1, 100);
-        user1.doApprove(otc, 100, dai);
-        offer_id[1] = otc.offer(30, mkr, 100, dai, 0);
+        dai.transfer(user1, 90);
+        user1.doApprove(otc, 90, dai);
+        offer_id[1] = otc.offer(30, mkr, 90, dai, 0);
         user1.doBuy(offer_id[1], 30);
 
         expectEventsExact(otc);
@@ -464,7 +471,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         mkr.approve(otc, 30);
         otc.setMinSell(mkr,30);
         assertEq(otc.getMinSell(mkr), 30);
-        offer_id[1] = otc.offer(30, mkr, 100, dai, 0);
+        offer_id[1] = otc.offer(30, mkr, 90, dai, 0);
     }
     function testErroneousUserHigherIdStillWorks() {
         dai.transfer(user1, 10);
@@ -506,17 +513,48 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dgd.approve(otc, DGD_SUPPLY);
         mkr.approve(otc, MKR_SUPPLY);
 
-        // Does not divide evenly.
+        // Does not divide cleanly.
         otc.offer(1504155374, dgd, 18501111110000000000, dai, 0);
 
-        // The buggy transaction.
         uint old_dai_bal = dai.balanceOf(user1);
         uint old_dgd_bal = dgd.balanceOf(user1);
         uint dai_pay = 1230000000000000000;
         uint dgd_buy = 100000000;
+
+        // `true` allows rounding to a slightly higher price
+        // in order to find a match.
+        user1.doOffer(dai_pay, dai, dgd_buy, dgd, 0, true);
+
+        // We should have paid a bit more than we offered to pay.
+        uint expected_overpay = 651528437;
+        assertEq(dgd.balanceOf(user1) - old_dgd_bal, dgd_buy);
+        assertEq(old_dai_bal - dai.balanceOf(user1), dai_pay + expected_overpay);
+    }
+
+    function testOrderMatchNoRounding() {
+        // Approvals & user funding
+        mkr.transfer(user1, MKR_SUPPLY / 2);
+        dai.transfer(user1, DAI_SUPPLY / 2);
+        dgd.transfer(user1, DGD_SUPPLY / 2);
+        user1.doApprove(otc, DAI_SUPPLY, dai);
+        user1.doApprove(otc, DGD_SUPPLY, dgd);
+        user1.doApprove(otc, MKR_SUPPLY, mkr);
+        dai.approve(otc, DAI_SUPPLY);
+        dgd.approve(otc, DGD_SUPPLY);
+        mkr.approve(otc, MKR_SUPPLY);
+
+        // Does not divide cleanly.
+        otc.offer(1504155374, dgd, 18501111110000000000, dai, 0);
+
+        uint old_dai_bal = dai.balanceOf(user1);
+        uint old_dgd_bal = dgd.balanceOf(user1);
+        uint dai_pay = 1230000000000000000;
+        uint dgd_buy = 100000000;
+
         user1.doOffer(dai_pay, dai, dgd_buy, dgd, 0);
 
-        assertEq(dgd.balanceOf(user1) - old_dgd_bal, dgd_buy);
+        // Order should not have matched this time.
+        assertEq(dgd.balanceOf(user1), old_dgd_bal);
         assertEq(old_dai_bal - dai.balanceOf(user1), dai_pay);
     }
 
