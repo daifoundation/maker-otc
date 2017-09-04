@@ -1,19 +1,17 @@
 pragma solidity ^0.4.13;
 
 import "ds-auth/auth.sol";
-import "ds-warp/warp.sol";
 
 import "./simple_market.sol";
 
-// Simple Market with a market lifetime. When the lifetime has elapsed,
+// Simple Market with a market lifetime. When the close_time has been reached,
 // offers can only be cancelled (offer and buy will throw).
 
-contract ExpiringMarket is DSAuth, SimpleMarket, DSWarp {
-    uint64 public lifetime;
+contract ExpiringMarket is DSAuth, SimpleMarket {
     uint64 public close_time;
     bool public stopped;
 
-    // after market lifetime has elapsed, no new offers are allowed
+    // after close_time has been reached, no new offers are allowed
     modifier can_offer {
         assert(!isClosed());
         _;
@@ -33,15 +31,16 @@ contract ExpiringMarket is DSAuth, SimpleMarket, DSWarp {
         _;
     }
 
-    function ExpiringMarket(uint64 lifetime_, uint64 era_) {
-        warp(era_);
-        lifetime = lifetime_;
-        close_time = era() + lifetime_;
-        require(close_time > era());
+    function ExpiringMarket(uint64 _close_time) {
+        close_time = _close_time;
     }
 
     function isClosed() constant returns (bool closed) {
-        return stopped || era() > close_time;
+        return stopped || getTime() > close_time;
+    }
+
+    function getTime() returns (uint64) {
+        return uint64(now);
     }
 
     function stop() auth {

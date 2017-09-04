@@ -13,7 +13,7 @@ contract MatchingEvents {
     event LogRemTokenPairWhitelist(ERC20 baseToken, ERC20 quoteToken);
 }
 
-contract MatchingMarket is MatchingEvents, ExpiringMarket {
+contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     bool public buyEnabled = true;      //buy enabled
     bool public matchingEnabled = true; //true: enable matching,
                                          //false: revert to expiring market
@@ -35,7 +35,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
         _;
     }
 
-    function MatchingMarket(uint64 lifetime) ExpiringMarket(lifetime, 0) {
+    function MatchingMarket(uint64 close_time) ExpiringMarket(close_time) {
     }
 
     // ---- Public entrypoints ---- //
@@ -269,7 +269,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     }
 
     //set buy functionality enabled/disabled
-    function setBuyEnabled(bool buyEnabled_) auth note returns (bool) {
+    function setBuyEnabled(bool buyEnabled_) auth  returns (bool) {
         buyEnabled = buyEnabled_;
         LogBuyEnabled(buyEnabled);
         return true;
@@ -282,7 +282,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket {
     //    keepers using insert().
     //    If matchingEnabled is false then MatchingMarket is reverted to ExpiringMarket,
     //    and matching is not done, and sorted lists are disabled.
-    function setMatchingEnabled(bool matchingEnabled_) auth note returns (bool) {
+    function setMatchingEnabled(bool matchingEnabled_) auth  returns (bool) {
         matchingEnabled = matchingEnabled_;
         LogMatchingEnabled(matchingEnabled);
         return true;

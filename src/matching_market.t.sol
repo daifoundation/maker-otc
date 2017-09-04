@@ -108,7 +108,7 @@ contract OrderMatchingGasTest is DSTest {
     uint constant MKR_SUPPLY = (10 ** 9) * (10 ** 18);
 
     function setUp() {
-        otc = new MatchingMarket(50000);
+        otc = new MatchingMarket(uint64(now + 1 weeks));
         dai = new DSTokenBase(DAI_SUPPLY);
         mkr = new DSTokenBase(MKR_SUPPLY);
         dgd = new DSTokenBase(DGD_SUPPLY);
@@ -304,7 +304,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai = new DSTokenBase(DAI_SUPPLY);
         mkr = new DSTokenBase(MKR_SUPPLY);
         dgd = new DSTokenBase(DGD_SUPPLY);
-        otc = new MatchingMarket(50000);
+        otc = new MatchingMarket(uint64(now + 1 weeks));
         otc.addTokenPairWhitelist(dai, mkr);
         otc.addTokenPairWhitelist(dgd, dai);
         user1 = new MarketTester(otc);
