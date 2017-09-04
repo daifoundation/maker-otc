@@ -6,10 +6,26 @@ import "ds-token/base.sol";
 import "./expiring_market.sol";
 import "./simple_market.t.sol";
 
+contract WarpingExpiringMarket is ExpiringMarket {
+    uint64 _now;
+
+    function WarpingExpiringMarket(uint64 close_time) ExpiringMarket(close_time) {
+        _now = uint64(now);
+    }
+
+    function warp(uint64 w) {
+        _now += w;
+    }
+
+    function getTime() returns (uint64) {
+        return _now;
+    }
+}
+
 // Test expiring market retains behaviour of simple market
 contract ExpiringSimpleMarketTest is SimpleMarketTest {
     function setUp() {
-        otc = new ExpiringMarket(1 weeks, 1);
+        otc = new WarpingExpiringMarket(uint64(now) + 1 weeks);
         user1 = new MarketTester(otc);
 
         dai = new DSTokenBase(10 ** 9);
@@ -26,11 +42,11 @@ contract ExpiringMarketTest is DSTest {
     MarketTester user1;
     ERC20 dai;
     ERC20 mkr;
-    ExpiringMarket otc;
+    WarpingExpiringMarket otc;
     uint64 constant LIFETIME = 1 weeks;
 
     function setUp() {
-        otc = new ExpiringMarket(LIFETIME, 1);
+        otc = new WarpingExpiringMarket(uint64(now) + LIFETIME);
         user1 = new MarketTester(otc);
 
         dai = new DSTokenBase(10 ** 9);
@@ -83,7 +99,7 @@ contract ExpiringMarketTest is DSTest {
 
 contract ExpiringTransferTest is TransferTest {
     function setUp() {
-        otc = new ExpiringMarket(1 weeks, 1);
+        otc = new WarpingExpiringMarket(uint64(now) + 1 weeks);
         user1 = new MarketTester(otc);
 
         dai = new DSTokenBase(10 ** 9);
@@ -106,7 +122,7 @@ contract ExpiringCancelTransferTest is CancelTransferTest
 
     function testCancelAfterExpiryTransfersFromMarket() {
         var id = otc.offer(30, mkr, 100, dai);
-        ExpiringMarket(otc).warp(LIFETIME + 1 seconds);
+        WarpingExpiringMarket(otc).warp(LIFETIME + 1 seconds);
 
         var balance_before = mkr.balanceOf(otc);
         otc.cancel(id);
@@ -116,7 +132,7 @@ contract ExpiringCancelTransferTest is CancelTransferTest
     }
     function testCancelAfterExpiryTransfersToSeller() {
         var id = otc.offer(30, mkr, 100, dai);
-        ExpiringMarket(otc).warp(LIFETIME + 1 seconds);
+        WarpingExpiringMarket(otc).warp(LIFETIME + 1 seconds);
 
         var balance_before = mkr.balanceOf(this);
         user1.doCancel(id);
