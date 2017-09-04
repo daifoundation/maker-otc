@@ -4,22 +4,12 @@ import "ds-test/test.sol";
 import "ds-token/base.sol";
 
 import "./expiring_market.sol";
-import "./simple_market_test.sol";
-
-contract TestableExpiringMarket is ExpiringMarket(1 weeks) {
-    uint public time;
-    function getTime() constant returns (uint) {
-        return time;
-    }
-    function addTime(uint extra) {
-        time += extra;
-    }
-}
+import "./simple_market.t.sol";
 
 // Test expiring market retains behaviour of simple market
 contract ExpiringSimpleMarketTest is SimpleMarketTest {
     function setUp() {
-        otc = new TestableExpiringMarket();
+        otc = new ExpiringMarket(1 weeks, 1);
         user1 = new MarketTester(otc);
 
         dai = new DSTokenBase(10 ** 9);
@@ -36,9 +26,11 @@ contract ExpiringMarketTest is DSTest {
     MarketTester user1;
     ERC20 dai;
     ERC20 mkr;
-    TestableExpiringMarket otc;
+    ExpiringMarket otc;
+    uint64 constant LIFETIME = 1 weeks;
+
     function setUp() {
-        otc = new TestableExpiringMarket();
+        otc = new ExpiringMarket(LIFETIME, 1);
         user1 = new MarketTester(otc);
 
         dai = new DSTokenBase(10 ** 9);
@@ -52,14 +44,14 @@ contract ExpiringMarketTest is DSTest {
         assert(!otc.isClosed());
     }
     function testIsClosedAfterExpiry() {
-        otc.addTime(ExpiringMarket(otc).lifetime() + 1 seconds);
+        otc.warp(LIFETIME + 1 seconds);
         assert(otc.isClosed());
     }
     function testOfferBeforeExpiry() {
         otc.offer(30, mkr, 100, dai);
     }
     function testFailOfferAfterExpiry() {
-        otc.addTime(ExpiringMarket(otc).lifetime() + 1 seconds);
+        otc.warp(LIFETIME + 1 seconds);
         otc.offer(30, mkr, 100, dai);
     }
     function testCancelBeforeExpiry() {
@@ -72,7 +64,7 @@ contract ExpiringMarketTest is DSTest {
     }
     function testCancelNonOwnerAfterExpiry() {
         var id = otc.offer(30, mkr, 100, dai);
-        otc.addTime(otc.lifetime() + 1 seconds);
+        otc.warp(LIFETIME + 1 seconds);
 
         assert(otc.isActive(id));
         assert(user1.doCancel(id));
@@ -84,14 +76,14 @@ contract ExpiringMarketTest is DSTest {
     }
     function testFailBuyAfterExpiry() {
         var id = otc.offer(30, mkr, 100, dai);
-        otc.addTime(otc.lifetime() + 1 seconds);
+        otc.warp(LIFETIME + 1 seconds);
         user1.doBuy(id, 30);
     }
 }
 
 contract ExpiringTransferTest is TransferTest {
     function setUp() {
-        otc = new TestableExpiringMarket();
+        otc = new ExpiringMarket(1 weeks, 1);
         user1 = new MarketTester(otc);
 
         dai = new DSTokenBase(10 ** 9);
@@ -110,11 +102,11 @@ contract ExpiringPartialBuyTransferTest is PartialBuyTransferTest, ExpiringTrans
 contract ExpiringCancelTransferTest is CancelTransferTest
                                      , ExpiringTransferTest
 {
+    uint64 constant LIFETIME = 1 weeks;
+
     function testCancelAfterExpiryTransfersFromMarket() {
         var id = otc.offer(30, mkr, 100, dai);
-        TestableExpiringMarket(otc).addTime(
-            ExpiringMarket(otc).lifetime() + 1 seconds
-        );
+        ExpiringMarket(otc).warp(LIFETIME + 1 seconds);
 
         var balance_before = mkr.balanceOf(otc);
         otc.cancel(id);
@@ -124,9 +116,7 @@ contract ExpiringCancelTransferTest is CancelTransferTest
     }
     function testCancelAfterExpiryTransfersToSeller() {
         var id = otc.offer(30, mkr, 100, dai);
-        TestableExpiringMarket(otc).addTime(
-            ExpiringMarket(otc).lifetime() + 1 seconds
-        );
+        ExpiringMarket(otc).warp(LIFETIME + 1 seconds);
 
         var balance_before = mkr.balanceOf(this);
         user1.doCancel(id);
