@@ -394,7 +394,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     returns (uint id)
     {
         uint best_maker_id;    //highest maker id
-        uint tab;              //taker buy how much saved
+        uint t_buy_amt_old;              //taker buy how much saved
         uint m_buy_amt;        //maker offer wants to buy this much token
         uint m_pay_amt;        //maker offer wants to sell this much token
 
@@ -424,9 +424,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             // of discussion.
 
             buy(best_maker_id, min(m_pay_amt, t_buy_amt));
-            tab = t_buy_amt;
+            t_buy_amt_old = t_buy_amt;
             t_buy_amt = sub(t_buy_amt, min(m_pay_amt, t_buy_amt));
-            t_pay_amt = mul(t_buy_amt, t_pay_amt) / tab;
+            t_pay_amt = mul(t_buy_amt, t_pay_amt) / t_buy_amt_old;
 
             if (t_pay_amt == 0 || t_buy_amt == 0) {
                 break;
@@ -473,7 +473,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
         address buy_gem = address(offers[id].buy_gem);
         address pay_gem = address(offers[id].pay_gem);
-        uint lid; //lower maker (ask) id
+        uint prev_id; //maker (ask) id
 
         if (pos == 0
             || !isActive(pos)
@@ -490,24 +490,24 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         if (pos != 0) {
             //offers[id] is not the highest offer
             require(_isLtOrEq(id, pos));
-            lid = _rank[pos].prev;
+            prev_id = _rank[pos].prev;
             _rank[pos].prev = id;
             _rank[id].next = pos;
 
         } else {
             //offers[id] is the highest offer
-            lid = _best[pay_gem][buy_gem];
+            prev_id = _best[pay_gem][buy_gem];
             _best[pay_gem][buy_gem] = id;
         }
 
-        require(lid == 0 || offers[lid].pay_gem == offers[id].pay_gem);
-        require(lid == 0 || offers[lid].buy_gem == offers[id].buy_gem);
+        require(prev_id == 0 || offers[prev_id].pay_gem == offers[id].pay_gem);
+        require(prev_id == 0 || offers[prev_id].buy_gem == offers[id].buy_gem);
 
-        if (lid != 0) {
+        if (prev_id != 0) {
             //if lower offer does exist
-            require(!_isLtOrEq(id, lid));
-            _rank[lid].next = id;
-            _rank[id].prev = lid;
+            require(!_isLtOrEq(id, prev_id));
+            _rank[prev_id].next = id;
+            _rank[id].prev = prev_id;
         }
 
         _span[pay_gem][buy_gem]++;
