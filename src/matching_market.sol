@@ -23,7 +23,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     }
     mapping(uint => sortInfo) public _rank;                     //doubly linked lists of sorted offer ids
     mapping(address => mapping(address => uint)) public _best;  //id of the highest offer for a token pair
-    mapping(address => mapping(address => uint)) public _span;  //number of offers stored for token pair
+    mapping(address => mapping(address => uint)) public _span;  //number of offers stored for token pair in SORTED orderbook.
     mapping(address => uint) public _dust;                      //minimum sell amount for a token to avoid dust offers
     mapping(uint => uint) public _near;         //next unsorted offer id
     mapping(bytes32 => bool) public _menu;      //whitelist tracking which token pairs can be traded
@@ -139,10 +139,13 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     can_cancel(id)
     returns (bool success)
     {
-        if (matchingEnabled) {
-            _unsort(id);
+        if (matchingEnabled && isOfferSorted(id)) {
+            _unsort(id);            //remove offer from sorted offers list.
         }
-        return super.cancel(id);
+        if (matchingEnabled && !isOfferSorted(id)) {
+            _hide(id);              //remove offer from unsorted offers list
+        }
+        return super.cancel(id);    //delete the offer.
     }
 
     //insert offer into the sorted list
@@ -153,40 +156,12 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     )
     returns (bool)
     {
-        address buy_gem = address(offers[id].buy_gem);
-        address pay_gem = address(offers[id].pay_gem);
-
-        //make sure offers[id] is not yet sorted
-        require(_rank[id].next == 0);
-        require(_rank[id].prev == 0);
-        require(_best[pay_gem][buy_gem] != id);
+        require(!isOfferSorted(id));
         require(isActive(id));
         require(pos == 0 || isActive(pos));
 
-        //take offer out of list of unsorted offers
-        uint uid = _head; //id to search for `id` in unsorted offers list
-        uint pre = 0;     //previous offer's id in unsorted offers list
-
-        //find `id` in the unsorted list of offers
-        while (uid > 0 && uid != id) {
-            pre = uid;
-            uid = _near[uid]; // _near is a chain of ids.
-        }
-
-        if (uid != id) {
-            //did not find id
-            return false;
-        }
-
-        if (_head == id) {
-            _head = _near[id];
-        } else {
-            _near[pre] = _near[id];
-        }
-
-        _near[id] = 0;
-        _sort(id, pos);
-
+        _hide(id);          //take offer out of list of unsorted offers
+        _sort(id, pos);     //put offer into sorted order list
         return true;
     }
 
@@ -329,6 +304,11 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         return _near[id];
     }
 
+    function isOfferSorted(uint id) constant returns(bool) {
+        address buy_gem = address(offers[id].buy_gem);
+        address pay_gem = address(offers[id].pay_gem);
+        return (_rank[id].next != 0 || _rank[id].prev != 0 || _best[pay_gem][buy_gem] == id) ? true : false;
+    }
 
     // ---- Internal Functions ---- //
 
@@ -339,7 +319,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     {
         require(buyEnabled);
 
-        if (amount == offers[id].pay_amt) {
+        if (amount == offers[id].pay_amt && isOfferSorted(id)) {
             //offers[id] must be removed from sorted list because all of it is bought
             _unsort(id);
         }
@@ -514,7 +494,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         LogSortedOffer(id);
     }
 
-    // Remove offer from the sorted list.
+    // Remove offer from the sorted list (does not cancel offer)
     function _unsort(
         uint id    //id of maker (ask) offer to remove from sorted list
     )
@@ -544,6 +524,35 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
         _span[pay_gem][buy_gem]--;
         delete _rank[id];
+        return true;
+    }
+
+    //Hide offer from unsorted order book (does not cancel offer)
+    function _hide(
+        uint id //id of maker offer to remove from unsorted list
+    )
+    internal
+    returns (bool)
+    {
+        uint uid = _head;               //id of an offer in unsorted offers list
+        uint pre = uid;                 //previous offer's id in unsorted offers list
+
+        require(!isOfferSorted(id));    //make sure offers[id] is not in the sorted offers list
+ 
+        if (_head == id) {              //check if offer is first offer in unsorted offers list
+            _head = _near[id];          //set head to new first unsorted offer 
+            _near[id] = 0;              //delete tracking of offer id
+            return true;
+        }
+        while (uid > 0 && uid != id) {  //find offer in unsorted order list
+            pre = uid;
+            uid = _near[uid];
+        }
+        if (uid != id) {                //did not find offer id in unsorted offers list
+            return false;
+        }
+        _near[pre] = _near[id];         //set previous unsorted offer to point to offer that offer 'id' used to point to
+        _near[id] = 0;                  //set offer 'id' to not point to next offer anymore.
         return true;
     }
 }
