@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -ex
+
+test -z $1 && exit 1
+if ! [[ $1 =~ ^[0-9]+$ ]]
+    then
+        exit 1
+fi
+
+export SOLC_FLAGS=${SOLC_FLAGS:-"--optimize"}
+export ETH_GAS=${ETH_GAS:-"4000000"}
+export ETH_FROM=$(seth rpc eth_coinbase)
+export NETWORK=$(seth chain)
+
+. ./bin/$NETWORK-pairs
+
+test -z $NETWORK && exit 1
+
+dapp build
+
+OTC=$(dapp create MatchingMarket $1)
+
+export SETH_ASYNC=yes
+
+for pair in $pairs; do
+    addr1=$(echo $pair | cut -f1 -d-)
+    addr2=$(echo $pair | cut -f2 -d-)
+    seth send $OTC "addTokenPairWhitelist(address, address)" $addr1 $addr2
+done
+
+export OTC=$OTC
+
+echo OTC DEPLOYED AT: $OTC
