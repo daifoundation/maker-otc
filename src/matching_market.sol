@@ -436,7 +436,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint buy_amt,      //maker (ask) buy how much
         ERC20 buy_gem      //maker (ask) buy which token
     )
-    auth
     internal
     /*NOT synchronized!!! */
     returns (uint id)
