@@ -440,6 +440,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     /*NOT synchronized!!! */
     returns (uint id)
     {
+        require(_dust[pay_gem] <= pay_amt);
         id = super.offer(pay_amt, pay_gem, buy_amt, buy_gem);
         _near[id] = _head;
         _head = id;
