@@ -13,19 +13,27 @@ export ETH_FROM=$(seth rpc eth_coinbase)
 export NETWORK=$(seth chain)
 
 . ./bin/$NETWORK-pairs
+. ./bin/dustlimits
 
 test -z $NETWORK && exit 1
 
 dapp build
 
 OTC=$(dapp create MatchingMarket $1)
+OTC="0x3Aa927a97594c3ab7d7bf0d47C71c3877D1DE4A1"
 
-export SETH_ASYNC=yes
+export SETH_ASYNC=no
 
 for pair in $pairs; do
     addr1=$(echo $pair | cut -f1 -d-)
     addr2=$(echo $pair | cut -f2 -d-)
     seth send $OTC "addTokenPairWhitelist(address, address)" $addr1 $addr2
+done
+
+for dustLimit in $dustLimits; do
+	token=$(echo $dustLimit | cut -f1 -d-)
+	limit=$(echo $dustLimit | cut -f2 -d-)
+	seth send $OTC "setMinSell(address, uint)" $token $limit
 done
 
 export OTC=$OTC
