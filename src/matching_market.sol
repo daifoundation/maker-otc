@@ -176,7 +176,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     //deletes _rank [id]
     //  Function should be called by keepers.
     function del_rank(uint id)
-    returns(bool)
+    returns (bool)
     {
         require(!isActive(id) && _rank[id].delb != 0 && _rank[id].delb < block.number - 10);
         delete _rank[id];
@@ -292,14 +292,16 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
     //return the next worse offer in the sorted list
     //      the worse offer is the higher one if its an ask,
-    //      and lower one if its a bid offer
+    //      a lower one if its a bid offer,
+    //      and in both cases the newer one if they're equal.
     function getWorseOffer(uint id) constant returns(uint) {
         return _rank[id].prev;
     }
 
     //return the next better offer in the sorted list
     //      the better offer is in the lower priced one if its an ask,
-    //      and next higher priced one if its a bid offer
+    //      the next higher priced one if its a bid offer
+    //      and in both cases the older one if they're equal.
     function getBetterOffer(uint id) constant returns(uint) {
         return _rank[id].next;
     }
@@ -327,7 +329,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     function isOfferSorted(uint id) constant returns(bool) {
         address buy_gem = address(offers[id].buy_gem);
         address pay_gem = address(offers[id].pay_gem);
-        return (_rank[id].next != 0 || _rank[id].prev != 0 || _best[pay_gem][buy_gem] == id) ? true : false;
+        return _rank[id].delb == 0 &&
+               ( _rank[id].next != 0 || _rank[id].prev != 0 ||
+                 _best[pay_gem][buy_gem] == id);
     }
 
 
@@ -556,6 +560,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             _rank[id].prev = prev_id;
         }
 
+        _rank[id].delb = 0;
         _span[pay_gem][buy_gem]++;
         LogSortedOffer(id);
     }
@@ -572,7 +577,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         require(_span[pay_gem][buy_gem] > 0);
 
         //assert id is in the sorted list
-        require(_rank[id].next != 0 || _rank[id].prev != 0 || _best[pay_gem][buy_gem] == id);
+        require(_rank[id].delb == 0 &&
+                 (_rank[id].next != 0 || _rank[id].prev != 0 ||
+                  _best[pay_gem][buy_gem] == id));
 
         if (id != _best[pay_gem][buy_gem]) {
             // offers[id] is not the highest offer
@@ -591,7 +598,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         }
 
         _span[pay_gem][buy_gem]--;
-	_rank[id].delb = block.number;  //mark _rank[id] for deletion
+        _rank[id].delb = block.number;  //mark _rank[id] for deletion
         return true;
     }
     //Hide offer from the unsorted order book (does not cancel offer)

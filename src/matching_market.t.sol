@@ -492,7 +492,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testNonExistentOffersUserHigherIdStillWorks() {
         dai.transfer(user1, 10);
         user1.doApprove(otc, 10, dai);
-        uint non_existent_offer_id = 100000;
+        uint non_existent_offer_id = 4;
         offer_id[1] =  user1.doOffer(1, dai, 1,	mkr);
         offer_id[2] =  user1.doOffer(2, dai, 1,	mkr);
         offer_id[3] =  user1.doOffer(4, dai, 1,	mkr);
@@ -675,11 +675,11 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(otc.getBestOffer(dai, mkr), offer_id[4]);
         assertEq(otc.getWorseOffer(offer_id[1]), 0);
         assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
-        assertEq(otc.getWorseOffer(offer_id[3]), 0);
+        assertEq(otc.getWorseOffer(offer_id[3]), offer_id[2]);
         assertEq(otc.getWorseOffer(offer_id[4]), offer_id[2]);
         assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
         assertEq(otc.getBetterOffer(offer_id[2]), offer_id[4]);
-        assertEq(otc.getBetterOffer(offer_id[3]), 0);
+        assertEq(otc.getBetterOffer(offer_id[3]), offer_id[4]);
         assertEq(otc.getBetterOffer(offer_id[4]), 0);
         assertEq(otc.getOfferCount(dai, mkr), 3);
     }
@@ -731,7 +731,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(otc.getBestOffer(dai, mkr), offer_id[2]);
         assertEq(otc.getWorseOffer(offer_id[1]), 0);
         assertEq(otc.getWorseOffer(offer_id[2]), 0);
-        assertEq(otc.getBetterOffer(offer_id[1]), 0);
+        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
         assertEq(otc.getBetterOffer(offer_id[2]), 0);
         assertEq(otc.getOfferCount(dai,mkr), 1);
         assert(!otc.isActive( offer_id[1]));
@@ -745,7 +745,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
 
         assertEq(otc.getBestOffer(dai, mkr), offer_id[1]);
         assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), 0);
+        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
         assertEq(otc.getBetterOffer(offer_id[1]), 0);
         assertEq(otc.getBetterOffer(offer_id[2]), 0);
         assertEq(otc.getOfferCount(dai, mkr), 1);
@@ -762,7 +762,9 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(otc.getWorseOffer(offer_id[1]), 0);
         assertEq(otc.getWorseOffer(offer_id[2]), 0);
         assertEq(otc.getWorseOffer(offer_id[3]), offer_id[2]);
-        assertEq(otc.getBetterOffer(offer_id[1]), 0);
+
+        // make sure we retained our offer information.
+        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
         assertEq(otc.getBetterOffer(offer_id[2]), offer_id[3]);
         assertEq(otc.getBetterOffer(offer_id[3]), 0);
         assertEq(otc.getOfferCount(dai, mkr), 2);
@@ -778,7 +780,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(otc.getBestOffer(dai, mkr), offer_id[2]);
         assertEq(otc.getWorseOffer(offer_id[1]), 0);
         assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
-        assertEq(otc.getWorseOffer(offer_id[3]), 0);
+        assertEq(otc.getWorseOffer(offer_id[3]), offer_id[2]);
         assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
         assertEq(otc.getBetterOffer(offer_id[2]), 0);
         assertEq(otc.getBetterOffer(offer_id[3]), 0);
@@ -898,9 +900,9 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
 
         assertEq(otc.getBestOffer(dai, mkr), offer_id[2]);
         assertEq(otc.getBestOffer(dai, dgd), offer_id[4]);
-        assertEq(otc.getBetterOffer(offer_id[1]), 0);
+        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
         assertEq(otc.getBetterOffer(offer_id[2]), 0);
-        assertEq(otc.getBetterOffer(offer_id[3]), 0);
+        assertEq(otc.getBetterOffer(offer_id[3]), offer_id[4]);
         assertEq(otc.getBetterOffer(offer_id[4]), 0);
         assertEq(otc.getWorseOffer(offer_id[1]), 0);
         assertEq(otc.getWorseOffer(offer_id[2]), 0);
@@ -927,9 +929,9 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(otc.getBetterOffer(offer_id[3]), 0);
         assertEq(otc.getBetterOffer(offer_id[4]), 0);
         assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), 0);
+        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
         assertEq(otc.getWorseOffer(offer_id[3]), 0);
-        assertEq(otc.getWorseOffer(offer_id[4]), 0);
+        assertEq(otc.getWorseOffer(offer_id[4]), offer_id[3]);
         assertEq(otc.getOfferCount(dai,mkr), 1);
         assertEq(otc.getOfferCount(dai,dgd), 1);
         assert(!otc.isActive(offer_id[2]));
@@ -949,7 +951,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
 
         assertEq(otc.getBestOffer(dai, mkr), offer_id[3]);
         assertEq(otc.getBestOffer(dai, dgd), offer_id[5]);
-        assertEq(otc.getBetterOffer(offer_id[1]), 0);
+        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
         assertEq(otc.getBetterOffer(offer_id[2]), offer_id[3]);
         assertEq(otc.getBetterOffer(offer_id[3]), 0);
         assertEq(otc.getBetterOffer(offer_id[4]), offer_id[5]);
@@ -960,7 +962,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(otc.getWorseOffer(offer_id[3]), offer_id[2]);
         assertEq(otc.getWorseOffer(offer_id[4]), 0);
         assertEq(otc.getWorseOffer(offer_id[5]), offer_id[4]);
-        assertEq(otc.getWorseOffer(offer_id[6]), 0);
+        assertEq(otc.getWorseOffer(offer_id[6]), offer_id[5]);
         assertEq(otc.getOfferCount(dai,mkr), 2);
         assertEq(otc.getOfferCount(dai,dgd), 2);
         assert(!otc.isActive( offer_id[1]));
@@ -982,13 +984,13 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(otc.getBestOffer(dai, dgd), offer_id[6]);
         assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
         assertEq(otc.getBetterOffer(offer_id[2]), 0);
-        assertEq(otc.getBetterOffer(offer_id[3]), 0);
-        assertEq(otc.getBetterOffer(offer_id[4]), 0);
+        assertEq(otc.getBetterOffer(offer_id[3]), 0); // was best when cancelled
+        assertEq(otc.getBetterOffer(offer_id[4]), offer_id[5]);
         assertEq(otc.getBetterOffer(offer_id[5]), offer_id[6]);
         assertEq(otc.getBetterOffer(offer_id[6]), 0);
         assertEq(otc.getWorseOffer(offer_id[1]), 0);
         assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
-        assertEq(otc.getWorseOffer(offer_id[3]), 0);
+        assertEq(otc.getWorseOffer(offer_id[3]), offer_id[2]);
         assertEq(otc.getWorseOffer(offer_id[4]), 0);
         assertEq(otc.getWorseOffer(offer_id[5]), 0);
         assertEq(otc.getWorseOffer(offer_id[6]), offer_id[5]);
@@ -1236,7 +1238,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(otc.getBestOffer(mkr, dai), offer_id[1]);
         assertEq(otc.getBestOffer(dai, mkr), offer_id[3]);
         assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), 0);
+        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
         assertEq(otc.getWorseOffer(offer_id[3]), 0);
         assertEq(otc.getBetterOffer(offer_id[1]), 0);
         assertEq(otc.getBetterOffer(offer_id[2]), 0);
@@ -1267,7 +1269,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(otc.getBestOffer(mkr, dai), offer_id[3]);
         assertEq(otc.getBestOffer(dai, mkr), 0);
         assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), 0);
+        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[3]);
         assertEq(otc.getWorseOffer(offer_id[3]), offer_id[1]);
         assertEq(otc.getWorseOffer(offer_id[4]), 0);
         assertEq(otc.getBetterOffer(offer_id[1]), offer_id[3]);
