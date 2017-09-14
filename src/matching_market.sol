@@ -365,7 +365,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint old_top = 0;
 
         // Find the larger-than-id order whose successor is less-than-id.
-        while (top != 0 && _isLtOrEq(id, top)) {
+        while (top != 0 && _isPricedLtOrEq(id, top)) {
             old_top = top;
             top = _rank[top].prev;
         }
@@ -381,8 +381,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
         if (pos == 0
             || ( isActive(pos)
-                && (!_isLtOrEq(id, pos) || (_rank[pos].prev != 0
-                    && _isLtOrEq(id, _rank[pos].prev))))){
+                && (!_isPricedLtOrEq(id, pos) || (_rank[pos].prev != 0
+                    && _isPricedLtOrEq(id, _rank[pos].prev))))){
             //if user provided wrong pos or id is the best offer
             return _find(id);
         }else{
@@ -399,16 +399,16 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
                 return _find(id);
             }else{
                 //if we did find a nearby active offer
-                if(_isLtOrEq(id, old_top)) {
+                if(_isPricedLtOrEq(id, old_top)) {
                     top = _rank[old_top].prev;
-                    while (top != 0 && _isLtOrEq(id, top)) {
+                    while (top != 0 && _isPricedLtOrEq(id, top)) {
                         old_top = top;
                         top = _rank[top].prev;
                     }
                     return old_top;
                 }else{
                     top = _rank[old_top].next;
-                    while (top != 0 && !_isLtOrEq(id, top)) {
+                    while (top != 0 && !_isPricedLtOrEq(id, top)) {
                         top = _rank[top].next;
                     }
                     return top;
@@ -418,7 +418,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     }
 
     //return true if offers[low] priced less than or equal to offers[high]
-    function _isLtOrEq(
+    function _isPricedLtOrEq(
         uint low,   //lower priced offer's id
         uint high   //higher priced offer's id
     )
@@ -527,8 +527,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
         if (pos == 0
             || !isActive(pos)
-            || !_isLtOrEq(id, pos)
-            || (_rank[pos].prev != 0 && _isLtOrEq(id, _rank[pos].prev))
+            || !_isPricedLtOrEq(id, pos)
+            || (_rank[pos].prev != 0 && _isPricedLtOrEq(id, _rank[pos].prev))
         ) {
             //client did not provide valid position, so we have to find it
             pos = _findpos(id, pos);
@@ -539,7 +539,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
         if (pos != 0) {
             //offers[id] is not the highest offer
-            require(_isLtOrEq(id, pos));
+            require(_isPricedLtOrEq(id, pos));
             prev_id = _rank[pos].prev;
             _rank[pos].prev = id;
             _rank[id].next = pos;
@@ -555,7 +555,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
         if (prev_id != 0) {
             //if lower offer does exist
-            require(!_isLtOrEq(id, prev_id));
+            require(!_isPricedLtOrEq(id, prev_id));
             _rank[prev_id].next = id;
             _rank[id].prev = prev_id;
         }
