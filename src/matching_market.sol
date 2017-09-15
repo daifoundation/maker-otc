@@ -329,9 +329,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     function isOfferSorted(uint id) constant returns(bool) {
         address buy_gem = address(offers[id].buy_gem);
         address pay_gem = address(offers[id].pay_gem);
-        return _rank[id].delb == 0 &&
-               ( _rank[id].next != 0 || _rank[id].prev != 0 ||
-                 _best[pay_gem][buy_gem] == id);
+        return _rank[id].next != 0
+               || _rank[id].prev != 0
+               || _best[pay_gem][buy_gem] == id;
     }
 
 
@@ -380,39 +380,45 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         require( id > 0 );
 
         if (pos == 0
-            || ( isActive(pos)
-                && (!_isPricedLtOrEq(id, pos) || (_rank[pos].prev != 0
-                    && _isPricedLtOrEq(id, _rank[pos].prev))))){
+            || !isOfferSorted(pos)
+            || !_isPricedLtOrEq(id, pos))
+        {
             //if user provided wrong pos or id is the best offer
             return _find(id);
-        }else{
-            //pos is non zero and represents an inactive offer
-            uint top = pos;
-            uint old_top = 0;
+        }
 
-            while (top != 0 && !isActive(top)) {
-                old_top = top;
-                top = _rank[top].prev;
-            }
-            if (old_top == 0) {
-                //if we got to the end of list without a single active offer
-                return _find(id);
-            }else{
-                //if we did find a nearby active offer
-                if(_isPricedLtOrEq(id, old_top)) {
-                    top = _rank[old_top].prev;
-                    while (top != 0 && _isPricedLtOrEq(id, top)) {
-                        old_top = top;
-                        top = _rank[top].prev;
-                    }
-                    return old_top;
-                }else{
-                    top = _rank[old_top].next;
-                    while (top != 0 && !_isPricedLtOrEq(id, top)) {
-                        top = _rank[top].next;
-                    }
-                    return top;
+        //pos is non zero and represents a valid offer
+        uint top = pos;
+        uint old_top = 0;
+
+        // Look for an active order.
+        while (top != 0 && !isActive(top)) {
+            old_top = top;
+            top = _rank[top].prev;
+        }
+
+        if (old_top == 0) {
+            //if we got to the end of list without a single active offer
+            return _find(id);
+
+        } else {
+            // if we did find a nearby active offer
+            // Walk the order book down from there...
+            if(_isPricedLtOrEq(id, old_top)) {
+                top = _rank[old_top].prev;
+                while (top != 0 && _isPricedLtOrEq(id, top)) {
+                    old_top = top;
+                    top = _rank[top].prev;
                 }
+                return old_top;
+
+            // ...or walk it up.
+            } else {
+                top = _rank[old_top].next;
+                while (top != 0 && !_isPricedLtOrEq(id, top)) {
+                    top = _rank[top].next;
+                }
+                return top;
             }
         }
     }
@@ -527,6 +533,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
         if (pos == 0
             || !isActive(pos)
+            || !isOfferSorted(pos)
             || !_isPricedLtOrEq(id, pos)
             || (_rank[pos].prev != 0 && _isPricedLtOrEq(id, _rank[pos].prev))
         ) {
