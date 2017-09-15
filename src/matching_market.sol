@@ -160,9 +160,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     )
     returns (bool)
     {
-        address buy_gem = address(offers[id].buy_gem);
-        address pay_gem = address(offers[id].pay_gem);
-
         require(!isOfferSorted(id));    //make sure offers[id] is not yet sorted
         require(isActive(id));          //make sure offers[id] is active
         require(pos == 0 || isActive(pos));
@@ -369,7 +366,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             old_top = top;
             top = _rank[top].prev;
         }
-        return old_top;
+        return old_top;	
     }
 
     //find the id of the next higher offer after offers[id]
@@ -378,14 +375,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     returns (uint)
     {
         require( id > 0 );
-
-        if (pos == 0
-            || !isOfferSorted(pos)
-            || !_isPricedLtOrEq(id, pos))
-        {
-            //if user provided wrong pos or id is the best offer
-            return _find(id);
-        }
 
         //pos is non zero and represents a valid offer
         uint top = pos;
@@ -532,10 +521,14 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint prev_id; //maker (ask) id
 
         if (pos == 0
-            || !isActive(pos)
+            || ( !isActive(pos) && _rank[pos].prev == 0 )
             || !isOfferSorted(pos)
-            || !_isPricedLtOrEq(id, pos)
-            || (_rank[pos].prev != 0 && _isPricedLtOrEq(id, _rank[pos].prev))
+            || !_isPricedLtOrEq(id, pos))
+        {
+            //if user provided wrong pos or id is the best offer
+            pos = _find(id);
+        } else if ( !isActive(pos)
+                    || (_rank[pos].prev != 0 && _isPricedLtOrEq(id, _rank[pos].prev))
         ) {
             //client did not provide valid position, so we have to find it
             pos = _findpos(id, pos);
