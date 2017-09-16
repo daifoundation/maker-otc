@@ -366,7 +366,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             old_top = top;
             top = _rank[top].prev;
         }
-        return old_top;    
+        return old_top;
     }
 
     //find the id of the next higher offer after offers[id]
@@ -533,7 +533,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             && _isPricedLtOrEq(id, _rank[pos].prev))) {
             pos = _findpos(id, pos);
         }
-
         
         require(pos == 0 || isOfferSorted(pos));           //assert `pos` is in the sorted list or is 0
 
@@ -547,8 +546,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             _best[pay_gem][buy_gem] = id;
         }
 
-        require(prev_id == 0 || offers[prev_id].pay_gem == offers[id].pay_gem);
-        require(prev_id == 0 || offers[prev_id].buy_gem == offers[id].buy_gem);
+        require(prev_id == 0
+                || offers[prev_id].pay_gem == offers[id].pay_gem
+                || offers[prev_id].buy_gem == offers[id].buy_gem);
 
         if (prev_id != 0) {                               //if lower offer does exist
             require(!_isPricedLtOrEq(id, prev_id));
