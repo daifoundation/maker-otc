@@ -526,13 +526,15 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             || !isOfferSorted(pos))                        //pos is not a sorted offer
         {
             pos = _find(id);
-        } else if (                                        //if user provided useful pos
-            !isActive(pos)                                 //pos used to be an active sorted offer
-            || !_isPricedLtOrEq(id, pos)                   //pos price is lower than id price
-        || (_rank[pos].prev != 0                       //pos is wrong but close to actual pos
-            && _isPricedLtOrEq(id, _rank[pos].prev))) {
+        } else if (                                        //if pos is still wrong 
+            !(                                             //the opposite of following is true
+		isActive(pos)                              //pos is an active offer
+                && _isPricedLtOrEq(id, pos)                //and pos price is higher or equal to id price
+                && (_rank[pos].prev == 0                   //and pos predecessor is 0
+		    || !_isPricedLtOrEq(id, _rank[pos].prev)))) { //or pos predecessor price is strictly lower than id price
             pos = _findpos(id, pos);
         }
+
         
         require(pos == 0 || isOfferSorted(pos));           //assert `pos` is in the sorted list or is 0
 
