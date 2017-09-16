@@ -521,13 +521,13 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint prev_id;                                      //maker (ask) id
 
         if (                                               //if user provided useless pos or id is the best offer
-        pos == 0                                       //user did not provide pos
+        pos == 0                                           //user did not provide pos
             || ( !isActive(pos) && _rank[pos].prev == 0 )  //pos is not a deleted sorted offer
             || !isOfferSorted(pos))                        //pos is not a sorted offer
         {
             pos = _find(id);
         } else if (                                        //if pos is still wrong 
-            !(                                             //the opposite of following is true
+            !(                                             //(pos is sorted and) the opposite of following is true
 		isActive(pos)                              //pos is an active offer
                 && _isPricedLtOrEq(id, pos)                //and pos price is higher or equal to id price
                 && (_rank[pos].prev == 0                   //and pos predecessor is 0
