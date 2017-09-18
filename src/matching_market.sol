@@ -382,19 +382,17 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
         // Look for an active order.
         while (top != 0 && !isActive(top)) {
-            old_top = top;
             top = _rank[top].prev;
         }
 
-        if (old_top == 0) {
+        if (top == 0) {
             //if we got to the end of list without a single active offer
             return _find(id);
 
         } else {
             // if we did find a nearby active offer
             // Walk the order book down from there...
-            if(_isPricedLtOrEq(id, old_top)) {
-                top = _rank[old_top].prev;
+            if(_isPricedLtOrEq(id, top)) {
                 while (top != 0 && _isPricedLtOrEq(id, top)) {
                     old_top = top;
                     top = _rank[top].prev;
@@ -403,7 +401,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
             // ...or walk it up.
             } else {
-                top = _rank[old_top].next;
                 while (top != 0 && !_isPricedLtOrEq(id, top)) {
                     top = _rank[top].next;
                 }
