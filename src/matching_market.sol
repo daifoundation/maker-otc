@@ -374,40 +374,37 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     internal
     returns (uint)
     {
-        require( id > 0 );
-
-        //pos is non zero and represents a valid offer
-        uint top = pos;
+        require(id > 0);
 
         // Look for an active order.
-        while (top != 0 && !isActive(top)) {
-            top = _rank[top].prev;
+        while (pos != 0 && !isActive(pos)) {
+            pos = _rank[pos].prev;
         }
 
-        if (top == 0) {
+        if (pos == 0) {
             //if we got to the end of list without a single active offer
             return _find(id);
 
         } else {
             // if we did find a nearby active offer
             // Walk the order book down from there...
-            if(_isPricedLtOrEq(id, top)) {
-                uint old_top;
+            if(_isPricedLtOrEq(id, pos)) {
+                uint old_pos;
 
                 // Guaranteed to run at least once because of
                 // the prior if statements.
-                while (top != 0 && _isPricedLtOrEq(id, top)) {
-                    old_top = top;
-                    top = _rank[top].prev;
+                while (pos != 0 && _isPricedLtOrEq(id, pos)) {
+                    old_pos = pos;
+                    pos = _rank[pos].prev;
                 }
-                return old_top;
+                return old_pos;
 
             // ...or walk it up.
             } else {
-                while (top != 0 && !_isPricedLtOrEq(id, top)) {
-                    top = _rank[top].next;
+                while (pos != 0 && !_isPricedLtOrEq(id, pos)) {
+                    pos = _rank[pos].next;
                 }
-                return top;
+                return pos;
             }
         }
     }
