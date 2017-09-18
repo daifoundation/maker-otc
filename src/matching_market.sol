@@ -378,7 +378,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
         //pos is non zero and represents a valid offer
         uint top = pos;
-        uint old_top = 0;
 
         // Look for an active order.
         while (top != 0 && !isActive(top)) {
@@ -393,6 +392,10 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             // if we did find a nearby active offer
             // Walk the order book down from there...
             if(_isPricedLtOrEq(id, top)) {
+                uint old_top;
+
+                // Guaranteed to run at least once because of
+                // the prior if statements.
                 while (top != 0 && _isPricedLtOrEq(id, top)) {
                     old_top = top;
                     top = _rank[top].prev;
