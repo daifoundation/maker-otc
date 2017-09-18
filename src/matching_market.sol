@@ -524,13 +524,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         {
             pos = _find(id);
 
-        }
-        else if (                                         //if pos is wrong & sorted
-            !isActive(pos)                                //pos is not an active offer or
-            || !_isPricedLtOrEq(id, pos)                  //pos is a worse offer than id or
-            || (_rank[pos].prev != 0                      //pos is active, not the worst offer and
-                && _isPricedLtOrEq(id, _rank[pos].prev))) //it's better than id.
-        {
+        } else {
             pos = _findpos(id, pos);
         }
 
