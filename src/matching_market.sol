@@ -518,21 +518,23 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint prev_id;                                      //maker (ask) id
 
         if (                                               //if user provided useless pos or id is the best offer
-        pos == 0                                           //user did not provide pos
-            || ( !isActive(pos) && _rank[pos].prev == 0 )  //pos is not a deleted sorted offer
-            || !isOfferSorted(pos))                        //pos is not a sorted offer
+            pos == 0                                       //user did not provide pos
+            || !isOfferSorted(pos)                         //pos is not a sorted offer
+            || (!isActive(pos) && _rank[pos].prev == 0))   //_findpos will fail over to _find anyway in this case
         {
             pos = _find(id);
-        } else if (                                        //if pos is still wrong 
-            !(                                             //(pos is sorted and) the opposite of following is true
-		isActive(pos)                              //pos is an active offer
-                && _isPricedLtOrEq(id, pos)                //and pos price is higher or equal to id price
-                && (_rank[pos].prev == 0                   //and pos predecessor is 0
-		    || !_isPricedLtOrEq(id, _rank[pos].prev)))) { //or pos predecessor price is strictly lower than id price
+
+        }
+        else if (                                         //if pos is wrong & sorted
+            !isActive(pos)                                //pos is not an active offer or
+            || !_isPricedLtOrEq(id, pos)                  //pos is a worse offer than id or
+            || (_rank[pos].prev != 0                      //pos is active, not the worst offer and
+                && _isPricedLtOrEq(id, _rank[pos].prev))) //it's better than id.
+        {
             pos = _findpos(id, pos);
         }
 
-        
+
         require(pos == 0 || isOfferSorted(pos));           //assert `pos` is in the sorted list or is 0
 
         if (pos != 0) {                                    //offers[id] is not the highest offer
@@ -570,7 +572,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         address pay_gem = address(offers[id].pay_gem);
         require(_span[pay_gem][buy_gem] > 0);
 
-        
+
         require(_rank[id].delb == 0 &&                    //assert id is in the sorted list
                  isOfferSorted(id));
 
