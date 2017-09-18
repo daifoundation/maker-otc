@@ -517,17 +517,11 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         address pay_gem = address(offers[id].pay_gem);
         uint prev_id;                                      //maker (ask) id
 
-        if (                                               //if user provided useless pos or id is the best offer
-            pos == 0                                       //user did not provide pos
-            || !isOfferSorted(pos)                         //pos is not a sorted offer
-            || (!isActive(pos) && _rank[pos].prev == 0))   //_findpos will fail over to _find anyway in this case
-        {
+        if (pos == 0 || !isOfferSorted(pos)) {
             pos = _find(id);
-
         } else {
             pos = _findpos(id, pos);
         }
-
 
         require(pos == 0 || isOfferSorted(pos));           //assert `pos` is in the sorted list or is 0
 
