@@ -1371,29 +1371,49 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         mkr.approve(otc, uint(-1));
         dai.approve(otc, uint(-1));
         otc.offer(10 ether, mkr, 3200 ether, dai, 0);
-        otc.offer(10 ether, mkr, 2900 ether, dai, 0);
+        otc.offer(10 ether, mkr, 2800 ether, dai, 0);
 
-        var buyAmt = otc.sellAll(mkr, dai, 4000 ether);
-        assertEq(buyAmt, 10 ether * 2900 / 2900 + 10 ether * 1100 / 3200);
+        var buyAmt = otc.sellAll(dai, 4000 ether, mkr);
+        assertEq(buyAmt, 10 ether * 2800 / 2800 + 10 ether * 1200 / 3200);
 
         otc.offer(10 ether, mkr, 3200 ether, dai, 0);
-        otc.offer(10 ether, mkr, 2900 ether, dai, 0);
+        otc.offer(10 ether, mkr, 2800 ether, dai, 0);
 
-        buyAmt = otc.sellAll(mkr, dai, (2900 ether + 319)); // With 319 wei DAI is not possible to buy 1 wei MKR, then 319 wei DAI can not be sold
-        assertEq(buyAmt, 10 ether * 2900 / 2900);
+        buyAmt = otc.sellAll(dai, (2800 ether + 319), mkr); // With 319 wei DAI is not possible to buy 1 wei MKR, then 319 wei DAI can not be sold
+        assertEq(buyAmt, 10 ether * 2800 / 2800);
 
-        otc.offer(10 ether, mkr, 2900 ether, dai, 0);
-        buyAmt = otc.sellAll(mkr, dai, (2900 ether + 320)); // This time we should be able to buy 1 wei MKR more
-        assertEq(buyAmt, 10 ether * 2900 / 2900 + 1);
+        otc.offer(10 ether, mkr, 2800 ether, dai, 0);
+        buyAmt = otc.sellAll(dai, (2800 ether + 320), mkr); // This time we should be able to buy 1 wei MKR more
+        assertEq(buyAmt, 10 ether * 2800 / 2800 + 1);
     }
 
     function testSellAllMkr() public {
         mkr.approve(otc, uint(-1));
         dai.approve(otc, uint(-1));
         otc.offer(3200 ether, dai, 10 ether, mkr, 0);
-        otc.offer(2900 ether, dai, 10 ether, mkr, 0);
+        otc.offer(2800 ether, dai, 10 ether, mkr, 0);
 
-        var buyAmt = otc.sellAll(dai, mkr, 18 ether);
-        assertEq(buyAmt, 3200 ether * 10 / 10 + 2900 ether * 8 / 10);
+        var buyAmt = otc.sellAll(mkr, 18 ether, dai);
+        assertEq(buyAmt, 3200 ether * 10 / 10 + 2800 ether * 8 / 10);
+    }
+
+    function testBuyAllMkr() public {
+        mkr.approve(otc, uint(-1));
+        dai.approve(otc, uint(-1));
+        otc.offer(10 ether, mkr, 3200 ether, dai, 0);
+        otc.offer(10 ether, mkr, 2800 ether, dai, 0);
+
+        var sellAmt = otc.buyAll(mkr, 15 ether, dai);
+        assertEq(sellAmt, 2800 ether * 10 / 10 + 3200 ether * 5 / 10);
+    }
+
+    function testBuyAllDai() public {
+        mkr.approve(otc, uint(-1));
+        dai.approve(otc, uint(-1));
+        otc.offer(3200 ether, dai, 10 ether, mkr, 0);
+        otc.offer(2800 ether, dai, 10 ether, mkr, 0);
+
+        var sellAmt = otc.buyAll(dai, 4600 ether, mkr);
+        assertEq(sellAmt, 10 ether * 3200 / 3200 + 10 ether * 1400 / 2800);
     }
 }

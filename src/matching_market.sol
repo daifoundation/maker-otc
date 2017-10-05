@@ -322,7 +322,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         return (_rank[id].next != 0 || _rank[id].prev != 0 || _best[pay_gem][buy_gem] == id) ? true : false;
     }
 
-    function sellAll(ERC20 buy_gem, ERC20 pay_gem, uint pay_amt)
+    function sellAll(ERC20 pay_gem, uint pay_amt, ERC20 buy_gem)
         public
         returns (uint buy_amt)
     {
@@ -337,7 +337,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
                 if (pay_amt > 0) { // If we still need more offers
                     offerId = getBestOffer(buy_gem, pay_gem); // We look for the next best offer
                     assert(offerId != 0); // Fails if there are not more offers
-                    if (pay_amt * 1 ether < wdiv(offers[offerId].buy_amt, offers[offerId].pay_amt)) { // There is a chance that some remaining payAmt is smaller than 1 wei of the other token
+                    if (pay_amt * 1 ether < wdiv(offers[offerId].buy_amt, offers[offerId].pay_amt)) { // There is a chance that some remaining pay_amt is smaller than 1 wei of the other token
                         pay_amt = 0; // We consider that all amount is sold
                     }
                 }
@@ -346,6 +346,33 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
                 buy_amt = add(buy_amt, baux); // Add amount bought to acumulator
                 take(bytes32(offerId), uint128(baux)); // We take the portion of the offer that we need
                 pay_amt = 0; // All amount is sold
+            }
+        }
+    }
+
+    function buyAll(ERC20 buy_gem, uint buy_amt, ERC20 pay_gem)
+        public
+        returns (uint pay_amt)
+    {
+        var offerId = getBestOffer(buy_gem, pay_gem); // Get the best offer for the token pair
+        pay_amt = 0; // Amount sold accumulator
+
+        while (buy_amt > 0) { // Meanwhile there is amount to buy
+            if (buy_amt >= offers[offerId].pay_amt) { // If amount to buy is higher or equal than current offer amount to sell
+                pay_amt = add(pay_amt, offers[offerId].buy_amt); // Add amount sold to acumulator
+                buy_amt = sub(buy_amt, offers[offerId].pay_amt); // Decrease amount to buy
+                take(bytes32(offerId), uint128(offers[offerId].pay_amt)); // We take the whole offer
+                if (buy_amt > 0) { // If we still need more offers
+                    offerId = getBestOffer(buy_gem, pay_gem); // We look for the next best offer
+                    assert(offerId != 0); // Fails if there are not more offers
+                    if (buy_amt * 1 ether < wdiv(offers[offerId].pay_amt, offers[offerId].buy_amt)) { // There is a chance that some remaining buy_amt is smaller than 1 wei of the other token
+                        buy_amt = 0; // We consider that all amount is sold
+                    }
+                }
+            } else { // if lower
+                pay_amt = add(pay_amt, rmul(buy_amt * 10 ** 9, rdiv(offers[offerId].buy_amt, offers[offerId].pay_amt)) / 10 ** 9); // Add amount sold to acumulator
+                take(bytes32(offerId), uint128(buy_amt)); // We take the portion of the offer that we need
+                buy_amt = 0; // All amount is bought
             }
         }
     }
