@@ -322,13 +322,11 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         return (_rank[id].next != 0 || _rank[id].prev != 0 || _best[pay_gem][buy_gem] == id) ? true : false;
     }
 
-    function sellAll(ERC20 pay_gem, uint pay_amt, ERC20 buy_gem)
+    function sellAllAmount(ERC20 pay_gem, uint pay_amt, ERC20 buy_gem)
         public
         returns (uint buy_amt)
     {
         var offerId = getBestOffer(buy_gem, pay_gem); // Get the best offer for the token pair
-        buy_amt = 0; // Amount bought accumulator
-
         while (pay_amt > 0) { // Meanwhile there is amount to sell
             if (pay_amt >= offers[offerId].buy_amt) { // If amount to sell is higher or equal than current offer amount to buy
                 buy_amt = add(buy_amt, offers[offerId].pay_amt); // Add amount bought to acumulator
@@ -350,13 +348,11 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         }
     }
 
-    function buyAll(ERC20 buy_gem, uint buy_amt, ERC20 pay_gem)
+    function buyAllAmount(ERC20 buy_gem, uint buy_amt, ERC20 pay_gem)
         public
         returns (uint pay_amt)
     {
         var offerId = getBestOffer(buy_gem, pay_gem); // Get the best offer for the token pair
-        pay_amt = 0; // Amount sold accumulator
-
         while (buy_amt > 0) { // Meanwhile there is amount to buy
             if (buy_amt >= offers[offerId].pay_amt) { // If amount to buy is higher or equal than current offer amount to sell
                 pay_amt = add(pay_amt, offers[offerId].buy_amt); // Add amount sold to acumulator
@@ -375,6 +371,32 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
                 buy_amt = 0; // All amount is bought
             }
         }
+    }
+
+    function getBuyAmount(ERC20 buy_gem, ERC20 pay_gem, uint pay_amt) public constant returns (uint buy_amt) {
+        var offerId = getBestOffer(buy_gem, pay_gem); // Get best offer for the token pair
+        while (pay_amt > offers[offerId].buy_amt) {
+            buy_amt = add(buy_amt, offers[offerId].pay_amt); // Add amount to buy accumulator
+            pay_amt = sub(pay_amt, offers[offerId].buy_amt); // Decrease amount to pay
+            if (pay_amt > 0) { // If we still need more offers
+                offerId = getWorseOffer(offerId); // We look for the next best offer
+                assert(offerId != 0); // Fails if there are not enough offers to complete
+            }
+        }
+        buy_amt = add(buy_amt, rmul(pay_amt * 10 ** 9, rdiv(offers[offerId].pay_amt, offers[offerId].buy_amt)) / 10 ** 9); // Add proportional amount of last offer to pay accumulator
+    }
+
+    function getPayAmount(ERC20 pay_gem, ERC20 buy_gem, uint buy_amt) public constant returns (uint pay_amt) {
+        var offerId = getBestOffer(buy_gem, pay_gem); // Get best offer for the token pair
+        while (buy_amt > offers[offerId].pay_amt) {
+            pay_amt = add(pay_amt, offers[offerId].buy_amt); // Add amount to pay accumulator
+            buy_amt = sub(buy_amt, offers[offerId].pay_amt); // Decrease amount to buy
+            if (buy_amt > 0) { // If we still need more offers
+                offerId = getWorseOffer(offerId); // We look for the next best offer
+                assert(offerId != 0); // Fails if there are not enough offers to complete
+            }
+        }
+        pay_amt = add(pay_amt, rmul(buy_amt * 10 ** 9, rdiv(offers[offerId].buy_amt, offers[offerId].pay_amt)) / 10 ** 9); // Add proportional amount of last offer to pay accumulator
     }
 
     // ---- Internal Functions ---- //
