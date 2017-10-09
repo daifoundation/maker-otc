@@ -322,7 +322,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         return (_rank[id].next != 0 || _rank[id].prev != 0 || _best[pay_gem][buy_gem] == id) ? true : false;
     }
 
-    function sellAllAmount(ERC20 pay_gem, uint pay_amt, ERC20 buy_gem)
+    function sellAllAmount(ERC20 pay_gem, uint pay_amt, ERC20 buy_gem, uint min_buy_amount)
         public
         returns (uint buy_amt)
     {
@@ -346,9 +346,10 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
                 pay_amt = 0; // All amount is sold
             }
         }
+        assert(buy_amt >= min_buy_amount);
     }
 
-    function buyAllAmount(ERC20 buy_gem, uint buy_amt, ERC20 pay_gem)
+    function buyAllAmount(ERC20 buy_gem, uint buy_amt, ERC20 pay_gem, uint max_pay_amount)
         public
         returns (uint pay_amt)
     {
@@ -371,6 +372,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
                 buy_amt = 0; // All amount is bought
             }
         }
+        assert(pay_amt <= max_pay_amount);
     }
 
     function getBuyAmount(ERC20 buy_gem, ERC20 pay_gem, uint pay_amt) public constant returns (uint buy_amt) {

@@ -1375,7 +1375,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
 
         uint expectedResult = 10 ether * 2800 / 2800 + 10 ether * 1200 / 3200;
         assertEq(otc.getBuyAmount(mkr, dai, 4000 ether), expectedResult);
-        assertEq(otc.sellAllAmount(dai, 4000 ether, mkr), expectedResult);
+        assertEq(otc.sellAllAmount(dai, 4000 ether, mkr, expectedResult), expectedResult);
 
         otc.offer(10 ether, mkr, 3200 ether, dai, 0);
         otc.offer(10 ether, mkr, 2800 ether, dai, 0);
@@ -1383,13 +1383,13 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         // With 319 wei DAI is not possible to buy 1 wei MKR, then 319 wei DAI can not be sold
         expectedResult = 10 ether * 2800 / 2800;
         assertEq(otc.getBuyAmount(mkr, dai, 2800 ether + 319), expectedResult);
-        assertEq(otc.sellAllAmount(dai, 2800 ether + 319, mkr), expectedResult);
+        assertEq(otc.sellAllAmount(dai, 2800 ether + 319, mkr, expectedResult), expectedResult);
 
         otc.offer(10 ether, mkr, 2800 ether, dai, 0);
         // This time we should be able to buy 1 wei MKR more
         expectedResult = 10 ether * 2800 / 2800 + 1;
         assertEq(otc.getBuyAmount(mkr, dai, 2800 ether + 320), expectedResult);
-        assertEq(otc.sellAllAmount(dai, 2800 ether + 320, mkr), expectedResult);
+        assertEq(otc.sellAllAmount(dai, 2800 ether + 320, mkr, expectedResult), expectedResult);
     }
 
     function testSellAllMkr() public {
@@ -1400,7 +1400,17 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
 
         uint expectedResult = 3200 ether * 10 / 10 + 2800 ether * 8 / 10;
         assertEq(otc.getBuyAmount(dai, mkr, 18 ether), expectedResult);
-        assertEq(otc.sellAllAmount(mkr, 18 ether, dai), expectedResult);
+        assertEq(otc.sellAllAmount(mkr, 18 ether, dai, expectedResult), expectedResult);
+    }
+
+    function testFailSellAllMkr() public {
+        mkr.approve(otc, uint(-1));
+        dai.approve(otc, uint(-1));
+        otc.offer(3200 ether, dai, 10 ether, mkr, 0);
+        otc.offer(2800 ether, dai, 10 ether, mkr, 0);
+
+        uint expectedResult = 3200 ether * 10 / 10 + 2800 ether * 8 / 10;
+        assertEq(otc.sellAllAmount(mkr, 18 ether, dai, expectedResult + 1), expectedResult);
     }
 
     function testBuyAllMkr() public {
@@ -1411,7 +1421,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
 
         uint expectedResult = 2800 ether * 10 / 10 + 3200 ether * 5 / 10;
         assertEq(otc.getPayAmount(dai, mkr, 15 ether), expectedResult);
-        assertEq(otc.buyAllAmount(mkr, 15 ether, dai), expectedResult);
+        assertEq(otc.buyAllAmount(mkr, 15 ether, dai, expectedResult), expectedResult);
     }
 
     function testBuyAllDai() public {
@@ -1422,6 +1432,16 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
 
         uint expectedResult = 10 ether * 3200 / 3200 + 10 ether * 1400 / 2800;
         assertEq(otc.getPayAmount(mkr, dai, 4600 ether), expectedResult);
-        assertEq(otc.buyAllAmount(dai, 4600 ether, mkr), expectedResult);
+        assertEq(otc.buyAllAmount(dai, 4600 ether, mkr, expectedResult), expectedResult);
+    }
+
+    function testFailBuyAllDai() public {
+        mkr.approve(otc, uint(-1));
+        dai.approve(otc, uint(-1));
+        otc.offer(3200 ether, dai, 10 ether, mkr, 0);
+        otc.offer(2800 ether, dai, 10 ether, mkr, 0);
+
+        uint expectedResult = 10 ether * 3200 / 3200 + 10 ether * 1400 / 2800;
+        assertEq(otc.buyAllAmount(dai, 4600 ether, mkr, expectedResult - 1), expectedResult);
     }
 }
