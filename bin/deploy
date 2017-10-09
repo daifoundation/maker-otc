@@ -21,7 +21,7 @@ dapp build
 
 OTC=$(dapp create MatchingMarket $1)
 
-export SETH_ASYNC=no
+export SETH_ASYNC=yes
 
 for pair in $pairs; do
     addr1=$(echo $pair | cut -f1 -d-)
