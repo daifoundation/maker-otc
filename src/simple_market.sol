@@ -88,7 +88,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
     }
 
     modifier synchronized {
-        assert(!locked);
+        require(!locked);
         locked = true;
         _;
         locked = false;
@@ -150,8 +150,8 @@ contract SimpleMarket is EventfulMarket, DSMath {
 
         offers[id].pay_amt = sub(offer.pay_amt, quantity);
         offers[id].buy_amt = sub(offer.buy_amt, spend);
-        assert( offer.buy_gem.transferFrom(msg.sender, offer.owner, spend) );
-        assert( offer.pay_gem.transfer(msg.sender, quantity) );
+        require( offer.buy_gem.transferFrom(msg.sender, offer.owner, spend) );
+        require( offer.pay_gem.transfer(msg.sender, quantity) );
 
         LogItemUpdate(id);
         LogTake(
@@ -185,7 +185,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
         OfferInfo memory offer = offers[id];
         delete offers[id];
 
-        assert( offer.pay_gem.transfer(offer.owner, offer.pay_amt) );
+        require( offer.pay_gem.transfer(offer.owner, offer.pay_amt) );
 
         LogItemUpdate(id);
         LogKill(
@@ -205,7 +205,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
     function kill(bytes32 id)
         public
     {
-        assert(cancel(uint256(id)));
+        require(cancel(uint256(id)));
     }
 
     function make(
@@ -246,7 +246,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
         id = _next_id();
         offers[id] = info;
 
-        assert( pay_gem.transferFrom(msg.sender, this, pay_amt) );
+        require( pay_gem.transferFrom(msg.sender, this, pay_amt) );
 
         LogItemUpdate(id);
         LogMake(
@@ -264,7 +264,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
     function take(bytes32 id, uint128 maxTakeAmount)
         public
     {
-        assert(buy(uint256(id), maxTakeAmount));
+        require(buy(uint256(id), maxTakeAmount));
     }
 
     function _next_id()

@@ -13,7 +13,7 @@ contract ExpiringMarket is DSAuth, SimpleMarket {
 
     // after close_time has been reached, no new offers are allowed
     modifier can_offer {
-        assert(!isClosed());
+        require(!isClosed());
         _;
     }
 
