@@ -326,19 +326,21 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         public
         returns (uint buy_amt)
     {
-        var offerId = getBestOffer(buy_gem, pay_gem); // Get the best offer for the token pair
+        uint offerId;
         while (pay_amt > 0) { // Meanwhile there is amount to sell
+            offerId = getBestOffer(buy_gem, pay_gem); // Get the best offer for the token pair
+            require(offerId != 0); // Fails if there are not more offers
+
+             // There is a chance that pay_amt is smaller than 1 wei of the other token
+            if (pay_amt * 1 ether < wdiv(offers[offerId].buy_amt, offers[offerId].pay_amt)) {
+                break; // We consider that all amount is sold
+            }
+
             if (pay_amt >= offers[offerId].buy_amt) { // If amount to sell is higher or equal than current offer amount to buy
                 buy_amt = add(buy_amt, offers[offerId].pay_amt); // Add amount bought to acumulator
                 pay_amt = sub(pay_amt, offers[offerId].buy_amt); // Decrease amount to sell
                 take(bytes32(offerId), uint128(offers[offerId].pay_amt)); // We take the whole offer
-                if (pay_amt > 0) { // If we still need more offers
-                    offerId = getBestOffer(buy_gem, pay_gem); // We look for the next best offer
-                    require(offerId != 0); // Fails if there are not more offers
-                    if (pay_amt * 1 ether < wdiv(offers[offerId].buy_amt, offers[offerId].pay_amt)) { // There is a chance that some remaining pay_amt is smaller than 1 wei of the other token
-                        pay_amt = 0; // We consider that all amount is sold
-                    }
-                }
+
             } else { // if lower
                 var baux = rmul(pay_amt * 10 ** 9, rdiv(offers[offerId].pay_amt, offers[offerId].buy_amt)) / 10 ** 9;
                 buy_amt = add(buy_amt, baux); // Add amount bought to acumulator
@@ -624,7 +626,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         internal
         returns (bool)
     {
-        uint uid = _head;               //id of an offer in unsorted offers list 
+        uint uid = _head;               //id of an offer in unsorted offers list
         uint pre = uid;                 //id of previous offer in unsorted offers list
 
         require(!isOfferSorted(id));    //make sure offer id is not in sorted offers list
