@@ -360,7 +360,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             offerId = getBestOffer(buy_gem, pay_gem); // Get the best offer for the token pair
             require(offerId != 0);
 
-            // There is a chance that pay_amt is smaller than 1 wei of the other token
+            // There is a chance that buy_amt is smaller than 1 wei of the other token
             if (buy_amt * 1 ether < wdiv(offers[offerId].pay_amt, offers[offerId].buy_amt)) {
                 break; // We consider that all amount is sold
             }
