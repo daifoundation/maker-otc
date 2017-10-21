@@ -9,22 +9,22 @@ import "./simple_market.t.sol";
 contract WarpingExpiringMarket is ExpiringMarket {
     uint64 _now;
 
-    function WarpingExpiringMarket(uint64 close_time) ExpiringMarket(close_time) {
+    function WarpingExpiringMarket(uint64 close_time) ExpiringMarket(close_time) public {
         _now = uint64(now);
     }
 
-    function warp(uint64 w) {
+    function warp(uint64 w) public {
         _now += w;
     }
 
-    function getTime() returns (uint64) {
+    function getTime() public constant returns (uint64) {
         return _now;
     }
 }
 
 // Test expiring market retains behaviour of simple market
 contract ExpiringSimpleMarketTest is SimpleMarketTest {
-    function setUp() {
+    function setUp() public {
         otc = new WarpingExpiringMarket(uint64(now) + 1 weeks);
         user1 = new MarketTester(otc);
 
@@ -45,7 +45,7 @@ contract ExpiringMarketTest is DSTest {
     WarpingExpiringMarket otc;
     uint64 constant LIFETIME = 1 weeks;
 
-    function setUp() {
+    function setUp() public {
         otc = new WarpingExpiringMarket(uint64(now) + LIFETIME);
         user1 = new MarketTester(otc);
 
@@ -56,29 +56,29 @@ contract ExpiringMarketTest is DSTest {
         user1.doApprove(otc, 100, dai);
         mkr.approve(otc, 30);
     }
-    function testIsClosedBeforeExpiry() {
+    function testIsClosedBeforeExpiry() public constant {
         assert(!otc.isClosed());
     }
-    function testIsClosedAfterExpiry() {
+    function testIsClosedAfterExpiry() public {
         otc.warp(LIFETIME + 1 seconds);
         assert(otc.isClosed());
     }
-    function testOfferBeforeExpiry() {
+    function testOfferBeforeExpiry() public {
         otc.offer(30, mkr, 100, dai);
     }
-    function testFailOfferAfterExpiry() {
+    function testFailOfferAfterExpiry() public {
         otc.warp(LIFETIME + 1 seconds);
         otc.offer(30, mkr, 100, dai);
     }
-    function testCancelBeforeExpiry() {
+    function testCancelBeforeExpiry() public {
         var id = otc.offer(30, mkr, 100, dai);
         otc.cancel(id);
     }
-    function testFailCancelNonOwnerBeforeExpiry() {
+    function testFailCancelNonOwnerBeforeExpiry() public {
         var id = otc.offer(30, mkr, 100, dai);
         user1.doCancel(id);
     }
-    function testCancelNonOwnerAfterExpiry() {
+    function testCancelNonOwnerAfterExpiry() public {
         var id = otc.offer(30, mkr, 100, dai);
         otc.warp(LIFETIME + 1 seconds);
 
@@ -86,11 +86,11 @@ contract ExpiringMarketTest is DSTest {
         assert(user1.doCancel(id));
         assert(!otc.isActive(id));
     }
-    function testBuyBeforeExpiry() {
+    function testBuyBeforeExpiry() public {
         var id = otc.offer(30, mkr, 100, dai);
         assert(user1.doBuy(id, 30));
     }
-    function testFailBuyAfterExpiry() {
+    function testFailBuyAfterExpiry() public {
         var id = otc.offer(30, mkr, 100, dai);
         otc.warp(LIFETIME + 1 seconds);
         user1.doBuy(id, 30);
@@ -98,7 +98,7 @@ contract ExpiringMarketTest is DSTest {
 }
 
 contract ExpiringTransferTest is TransferTest {
-    function setUp() {
+    function setUp() public {
         otc = new WarpingExpiringMarket(uint64(now) + 1 weeks);
         user1 = new MarketTester(otc);
 
@@ -120,7 +120,7 @@ contract ExpiringCancelTransferTest is CancelTransferTest
 {
     uint64 constant LIFETIME = 1 weeks;
 
-    function testCancelAfterExpiryTransfersFromMarket() {
+    function testCancelAfterExpiryTransfersFromMarket() public {
         var id = otc.offer(30, mkr, 100, dai);
         WarpingExpiringMarket(otc).warp(LIFETIME + 1 seconds);
 
@@ -130,7 +130,7 @@ contract ExpiringCancelTransferTest is CancelTransferTest
 
         assertEq(balance_before - balance_after, 30);
     }
-    function testCancelAfterExpiryTransfersToSeller() {
+    function testCancelAfterExpiryTransfersToSeller() public {
         var id = otc.offer(30, mkr, 100, dai);
         WarpingExpiringMarket(otc).warp(LIFETIME + 1 seconds);
 
