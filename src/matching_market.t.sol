@@ -174,14 +174,14 @@ contract OrderMatchingGasTest is DSTest {
             insertOffer(1, dai, 1, mkr, 1);
             assertEq(otc.getOfferCount(dai,mkr), offer_index + 2);
         } else if (kind == 2){            // with frontend aid outdated pos new offer is better 
-	    user1.doCancel(2);
+            user1.doCancel(2);
             insertOffer(2, dai, 1, mkr, 2);
             assertEq(otc.getOfferCount(dai,mkr), offer_index + 1);
-	} else if (kind == 3){            // with frontend aid outdated pos new offer is worse
-	    user1.doCancel(3);
+        } else if (kind == 3){            // with frontend aid outdated pos new offer is worse
+            user1.doCancel(3);
             insertOffer(2, dai, 1, mkr, 2);
             assertEq(otc.getOfferCount(dai,mkr), offer_index + 1);
-	}	
+        }    
     }
     function testGasMatchOneOrder() {
         var match_order_count = match_count[0]; // 1
@@ -566,27 +566,27 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testErroneousPosStillWorks() {
         dai.transfer(user1, 10);
         user1.doApprove(otc, 10, dai);
-        offer_id[1] =  user1.doOffer(1,	dai, 1,	mkr);
-        offer_id[2] =  user1.doOffer(2, dai, 1,	mkr);
-        offer_id[3] =  user1.doOffer(4, dai, 1,	mkr);
-        offer_id[4] =  user1.doOffer(3,	dai, 1,	mkr, offer_id[2]);
+        offer_id[1] =  user1.doOffer(1,    dai, 1,    mkr);
+        offer_id[2] =  user1.doOffer(2, dai, 1,    mkr);
+        offer_id[3] =  user1.doOffer(4, dai, 1,    mkr);
+        offer_id[4] =  user1.doOffer(3,    dai, 1,    mkr, offer_id[2]);
     }
     function testErroneousPosStillWorksOther() {
         dai.transfer(user1, 11);
         user1.doApprove(otc, 11, dai);
-        offer_id[1] =  user1.doOffer(2, dai, 1,	mkr);
-        offer_id[2] =  user1.doOffer(3, dai, 1,	mkr);
-        offer_id[3] =  user1.doOffer(5, dai, 1,	mkr);
-        offer_id[4] =  user1.doOffer(1,	dai, 1,	mkr, offer_id[3]);
+        offer_id[1] =  user1.doOffer(2, dai, 1,    mkr);
+        offer_id[2] =  user1.doOffer(3, dai, 1,    mkr);
+        offer_id[3] =  user1.doOffer(5, dai, 1,    mkr);
+        offer_id[4] =  user1.doOffer(1,    dai, 1,    mkr, offer_id[3]);
     }
     function testNonExistentOffersPosStillWorks() {
         dai.transfer(user1, 10);
         user1.doApprove(otc, 10, dai);
         uint non_existent_offer_id = 4;
-        offer_id[1] =  user1.doOffer(1, dai, 1,	mkr);
-        offer_id[2] =  user1.doOffer(2, dai, 1,	mkr);
-        offer_id[3] =  user1.doOffer(4, dai, 1,	mkr);
-        offer_id[4] =  user1.doOffer(3,	dai, 1,	mkr, non_existent_offer_id);
+        offer_id[1] =  user1.doOffer(1, dai, 1,    mkr);
+        offer_id[2] =  user1.doOffer(2, dai, 1,    mkr);
+        offer_id[3] =  user1.doOffer(4, dai, 1,    mkr);
+        offer_id[4] =  user1.doOffer(3,    dai, 1,    mkr, non_existent_offer_id);
     }
 
     // Derived from error on Kovan, transaction ID:
@@ -1089,12 +1089,21 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assert(!otc.isActive(offer_id[3]));
         assert(!otc.isActive(offer_id[4]));
     }
-    function testFailInsertOfferWithUserProvidedIdOfADifferentToken() {
+    function testFailInsertOfferWithUserProvidedIdOfADifferentTokenLower() {
         dai.transfer(user1, 13);
         user1.doApprove(otc, 13, dai);
         mkr.approve(otc, 11);
+        dgd.approve(otc,1);
         offer_id[1] = user1.doOffer(13, dai, 1, mkr);
         offer_id[2] = otc.offer(11, mkr, 1, dgd, offer_id[1]);
+    }
+    function testFailInsertOfferWithUserProvidedIdOfADifferentTokenHigher() {
+        dai.transfer(user1, 13);
+        user1.doApprove(otc, 13, dai);
+        mkr.approve(otc, 14);
+        dgd.approve(otc,1);
+        offer_id[1] = user1.doOffer(13, dai, 1, mkr);
+        offer_id[2] = otc.offer(14, mkr, 1, dgd, offer_id[1]);
     }
     function testOfferMatchOneOnOneSendAmounts() {
         dai.transfer(user1, 100);
