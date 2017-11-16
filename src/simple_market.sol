@@ -87,21 +87,21 @@ contract SimpleMarket is EventfulMarket, DSMath {
     }
 
     modifier synchronized {
-        assert(!locked);
+        require(!locked);
         locked = true;
         _;
         locked = false;
     }
 
-    function isActive(uint id) constant returns (bool active) {
+    function isActive(uint id) public constant returns (bool active) {
         return offers[id].timestamp > 0;
     }
 
-    function getOwner(uint id) constant returns (address owner) {
+    function getOwner(uint id) public constant returns (address owner) {
         return offers[id].owner;
     }
 
-    function getOffer(uint id) constant returns (uint, ERC20, uint, ERC20) {
+    function getOffer(uint id) public constant returns (uint, ERC20, uint, ERC20) {
       var offer = offers[id];
       return (offer.pay_amt, offer.pay_gem,
               offer.buy_amt, offer.buy_gem);
@@ -110,12 +110,13 @@ contract SimpleMarket is EventfulMarket, DSMath {
     // ---- Public entrypoints ---- //
 
     function bump(bytes32 id_)
+        public
         can_buy(uint256(id_))
     {
         var id = uint256(id_);
         LogBump(
             id_,
-            sha3(offers[id].pay_gem, offers[id].buy_gem),
+            keccak256(offers[id].pay_gem, offers[id].buy_gem),
             offers[id].owner,
             offers[id].pay_gem,
             offers[id].buy_gem,
@@ -128,6 +129,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
     // Accept given `quantity` of an offer. Transfers funds from caller to
     // offer maker, and from market to caller.
     function buy(uint id, uint quantity)
+        public
         can_buy(id)
         synchronized
         returns (bool)
@@ -147,13 +149,13 @@ contract SimpleMarket is EventfulMarket, DSMath {
 
         offers[id].pay_amt = sub(offer.pay_amt, quantity);
         offers[id].buy_amt = sub(offer.buy_amt, spend);
-        assert( offer.buy_gem.transferFrom(msg.sender, offer.owner, spend) );
-        assert( offer.pay_gem.transfer(msg.sender, quantity) );
+        require( offer.buy_gem.transferFrom(msg.sender, offer.owner, spend) );
+        require( offer.pay_gem.transfer(msg.sender, quantity) );
 
         LogItemUpdate(id);
         LogTake(
             bytes32(id),
-            sha3(offer.pay_gem, offer.buy_gem),
+            keccak256(offer.pay_gem, offer.buy_gem),
             offer.owner,
             offer.pay_gem,
             offer.buy_gem,
@@ -173,6 +175,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
 
     // Cancel an offer. Refunds offer maker.
     function cancel(uint id)
+        public
         can_cancel(id)
         synchronized
         returns (bool success)
@@ -181,12 +184,12 @@ contract SimpleMarket is EventfulMarket, DSMath {
         OfferInfo memory offer = offers[id];
         delete offers[id];
 
-        assert( offer.pay_gem.transfer(offer.owner, offer.pay_amt) );
+        require( offer.pay_gem.transfer(offer.owner, offer.pay_amt) );
 
         LogItemUpdate(id);
         LogKill(
             bytes32(id),
-            sha3(offer.pay_gem, offer.buy_gem),
+            keccak256(offer.pay_gem, offer.buy_gem),
             offer.owner,
             offer.pay_gem,
             offer.buy_gem,
@@ -198,8 +201,10 @@ contract SimpleMarket is EventfulMarket, DSMath {
         success = true;
     }
 
-    function kill(bytes32 id) {
-        assert(cancel(uint256(id)));
+    function kill(bytes32 id)
+        public
+    {
+        require(cancel(uint256(id)));
     }
 
     function make(
@@ -207,12 +212,16 @@ contract SimpleMarket is EventfulMarket, DSMath {
         ERC20    buy_gem,
         uint128  pay_amt,
         uint128  buy_amt
-    ) returns (bytes32 id) {
+    )
+        public
+        returns (bytes32 id)
+    {
         return bytes32(offer(pay_amt, pay_gem, buy_amt, buy_gem));
     }
 
     // Make a new offer. Takes funds from the caller into market escrow.
     function offer(uint pay_amt, ERC20 pay_gem, uint buy_amt, ERC20 buy_gem)
+        public
         can_offer
         synchronized
         returns (uint id)
@@ -235,12 +244,12 @@ contract SimpleMarket is EventfulMarket, DSMath {
         id = _next_id();
         offers[id] = info;
 
-        assert( pay_gem.transferFrom(msg.sender, this, pay_amt) );
+        require( pay_gem.transferFrom(msg.sender, this, pay_amt) );
 
         LogItemUpdate(id);
         LogMake(
             bytes32(id),
-            sha3(pay_gem, buy_gem),
+            keccak256(pay_gem, buy_gem),
             msg.sender,
             pay_gem,
             buy_gem,
@@ -250,11 +259,16 @@ contract SimpleMarket is EventfulMarket, DSMath {
         );
     }
 
-    function take(bytes32 id, uint128 maxTakeAmount) {
-        assert(buy(uint256(id), maxTakeAmount));
+    function take(bytes32 id, uint128 maxTakeAmount)
+        public
+    {
+        require(buy(uint256(id), maxTakeAmount));
     }
 
-    function _next_id() internal returns (uint) {
+    function _next_id()
+        internal
+        returns (uint)
+    {
         last_offer_id++; return last_offer_id;
     }
 }

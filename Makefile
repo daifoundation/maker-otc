@@ -1,6 +1,6 @@
 SHELL = bash
 
-export ETH_GAS = 3500000
+export ETH_GAS = 4000000
 export SOLC_FLAGS = --optimize
 export ETH_GAS_PRICE=4000000000
 export ETH_FROM ?= $(shell seth rpc eth_coinbase)
