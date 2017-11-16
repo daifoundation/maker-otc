@@ -583,10 +583,10 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(user1, 10);
         user1.doApprove(otc, 10, dai);
         uint non_existent_offer_id = 4;
-        offer_id[1] =  user1.doOffer(1, dai, 1,    mkr);
-        offer_id[2] =  user1.doOffer(2, dai, 1,    mkr);
-        offer_id[3] =  user1.doOffer(4, dai, 1,    mkr);
-        offer_id[4] =  user1.doOffer(3,    dai, 1,    mkr, non_existent_offer_id);
+        offer_id[1] =  user1.doOffer(1, dai, 1, mkr);
+        offer_id[2] =  user1.doOffer(2, dai, 1, mkr);
+        offer_id[3] =  user1.doOffer(4, dai, 1, mkr);
+        offer_id[4] =  user1.doOffer(3, dai, 1, mkr, non_existent_offer_id);
     }
 
     // Derived from error on Kovan, transaction ID:
