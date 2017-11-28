@@ -334,7 +334,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         return _near[id];
     }
 
-    function isOfferSorted(uint id) constant returns(bool) {
+    function isOfferSorted(uint id) public constant returns(bool) {
         return _rank[id].next != 0
                || _rank[id].prev != 0
                || _best[offers[id].pay_gem][offers[id].buy_gem] == id;
