@@ -194,116 +194,206 @@ contract OrderMatchingGasTest is DSTest {
     offer matching.*/
     function execOrderInsertGasTest(uint offer_index, bool frontend_aid) public {
         createOffers(offer_index + 1);
-        if (frontend_aid) {
-            insertOffer(1, dai, 1, mkr, 1);
-        } else {
+        if (kind == 0) {                  // no frontend aid
             insertOffer(1, dai, 1, mkr);
-        }
-        assertEq(otc.getOfferCount(dai,mkr), offer_index + 2);
+            assertEq(otc.getOfferCount(dai,mkr), offer_index + 2);
+        } else if (kind == 1){            // with frontend aid
+            insertOffer(1, dai, 1, mkr, 1);
+            assertEq(otc.getOfferCount(dai,mkr), offer_index + 2);
+        } else if (kind == 2){            // with frontend aid outdated pos new offer is better 
+            user1.doCancel(2);
+            insertOffer(2, dai, 1, mkr, 2);
+            assertEq(otc.getOfferCount(dai,mkr), offer_index + 1);
+        } else if (kind == 3){            // with frontend aid outdated pos new offer is worse
+            user1.doCancel(3);
+            insertOffer(2, dai, 1, mkr, 2);
+            assertEq(otc.getOfferCount(dai,mkr), offer_index + 1);
+        }    
     }
     function testGasMatchOneOrder() public {
         var match_order_count = match_count[0]; // 1
         execOrderMatchingGasTest(match_order_count);
+// uncomment following line to run this test!
 //        assert(false);
     }
     function testGasMatchFiveOrders() public {
         var match_order_count = match_count[1]; // 5
         execOrderMatchingGasTest(match_order_count);
+// uncomment following line to run this test!
 //        assert(false);
     }
     function testGasMatchTenOrders() public {
         var match_order_count = match_count[2]; // 10
         execOrderMatchingGasTest(match_order_count);
+// uncomment following line to run this test!
 //        assert(false);
     }
     function testGasMatchFifteenOrders() public {
         var match_order_count = match_count[3]; // 15
         execOrderMatchingGasTest(match_order_count);
+// uncomment following line to run this test!
 //        assert(false);
     }
     function testGasMatchTwentyOrders() public {
         var match_order_count = match_count[4]; // 20
         execOrderMatchingGasTest(match_order_count);
+// uncomment following line to run this test!
 //        assert(false);
     }
     function testGasMatchTwentyfiveOrders() public {
         var match_order_count = match_count[5]; // 25
         execOrderMatchingGasTest(match_order_count);
+// uncomment following line to run this test!
 //        assert(false);
     }
     function testGasMatchThirtyOrders() public {
         var match_order_count = match_count[6]; // 30
         execOrderMatchingGasTest(match_order_count);
+// uncomment following line to run this test!
 //        assert(false);
     }
     function testGasMatchFiftyOrders() public {
         var match_order_count = match_count[7]; // 50
         execOrderMatchingGasTest(match_order_count);
+// uncomment following line to run this test!
 //        assert(false);
     }
     function testGasMatchHundredOrders() public {
         var match_order_count = match_count[8]; // 100
         execOrderMatchingGasTest(match_order_count);
+// uncomment following line to run this test!
 //        assert(false);
     }
     function testGasMakeOfferInsertAsFirstNoFrontendAid() public {
         uint offer_index = 1 - 1;
-        execOrderInsertGasTest(offer_index,false);
+        execOrderInsertGasTest(offer_index, 0);
+// uncomment following line to run this test!
 //        assert(false);
     }
     function testGasMakeOfferInsertAsFirstWithFrontendAid() public {
         uint offer_index = 1 - 1;
-        execOrderInsertGasTest(offer_index,true);
+        execOrderInsertGasTest(offer_index, 1);
+// uncomment following line to run this test!
 //        assert(false);
     }
     function testGasMakeOfferInsertAsTenthNoFrontendAid() public {
         uint offer_index = 10 - 1;
-        execOrderInsertGasTest(offer_index,false);
+        execOrderInsertGasTest(offer_index, 0);
+// uncomment following line to run this test!
 //        assert(false);
     }
     function testGasMakeOfferInsertAsTenthWithFrontendAid() public {
         uint offer_index = 10 - 1;
-        execOrderInsertGasTest(offer_index,true);
+        execOrderInsertGasTest(offer_index, 1);
+// uncomment following line to run this test!
+//        assert(false);
+    }
+    function testGasMakeOfferInsertAsTenthWithFrontendAidOldPos() {
+        uint offer_index = 10 - 1;
+        execOrderInsertGasTest(offer_index, 2);
+// uncomment following line to run this test!
+//        assert(false);
+    }
+    function testGasMakeOfferInsertAsTenthWithFrontendAidOldPosWorse() {
+        uint offer_index = 10 - 1;
+        execOrderInsertGasTest(offer_index, 3);
+// uncomment following line to run this test!
 //        assert(false);
     }
     function testGasMakeOfferInsertAsTwentiethNoFrontendAid() public {
         uint offer_index = 20 - 1;
-        execOrderInsertGasTest(offer_index,false);
+        execOrderInsertGasTest(offer_index, 0);
+// uncomment following line to run this test!
 //        assert(false);
     }
     function testGasMakeOfferInsertAsTwentiethWithFrontendAid() public {
         uint offer_index = 20 - 1;
-        execOrderInsertGasTest(offer_index,true);
+        execOrderInsertGasTest(offer_index, 1);
+// uncomment following line to run this test!
+//        assert(false);
+    }
+    function testGasMakeOfferInsertAsTwentiethWithFrontendAidOldPos() {
+        uint offer_index = 20 - 1;
+        execOrderInsertGasTest(offer_index, 2);
+// uncomment following line to run this test!
+//        assert(false);
+    }
+    function testGasMakeOfferInsertAsTwentiethWithFrontendAidOldPosWorse() {
+        uint offer_index = 20 - 1;
+        execOrderInsertGasTest(offer_index, 3);
+// uncomment following line to run this test!
 //        assert(false);
     }
     function testGasMakeOfferInsertAsFiftiethNoFrontendAid() public {
         uint offer_index = 50 - 1;
-        execOrderInsertGasTest(offer_index,false);
+        execOrderInsertGasTest(offer_index, 0);
+// uncomment following line to run this test!
 //        assert(false);
     }
     function testGasMakeOfferInsertAsFiftiethWithFrontendAid() public {
         uint offer_index = 50 - 1;
-        execOrderInsertGasTest(offer_index,true);
+        execOrderInsertGasTest(offer_index, 1);
+// uncomment following line to run this test!
+//        assert(false);
+    }
+    function testGasMakeOfferInsertAsFiftiethWithFrontendAidOldPos() {
+        uint offer_index = 50 - 1;
+        execOrderInsertGasTest(offer_index, 2);
+// uncomment following line to run this test!
+//        assert(false);
+    }
+    function testGasMakeOfferInsertAsFiftiethWithFrontendAidOldPosWorse() {
+        uint offer_index = 50 - 1;
+        execOrderInsertGasTest(offer_index, 3);
+// uncomment following line to run this test!
 //        assert(false);
     }
     function testGasMakeOfferInsertAsHundredthNoFrontendAid() public {
         uint offer_index = 100 - 1;
-        execOrderInsertGasTest(offer_index,false);
+        execOrderInsertGasTest(offer_index, 0);
+// uncomment following line to run this test!
 //        assert(false);
     }
     function testGasMakeOfferInsertAsHundredthWithFrontendAid() public {
         uint offer_index = 100 - 1;
-        execOrderInsertGasTest(offer_index,true);
+        execOrderInsertGasTest(offer_index, 1);
+// uncomment following line to run this test!
+//        assert(false);
+    }
+    function testGasMakeOfferInsertAsHundredthWithFrontendAidOldPos() {
+        uint offer_index = 100 - 1;
+        execOrderInsertGasTest(offer_index, 2);
+// uncomment following line to run this test!
+//        assert(false);
+    }
+    function testGasMakeOfferInsertAsHundredthWithFrontendAidOldPoWorses() {
+        uint offer_index = 100 - 1;
+        execOrderInsertGasTest(offer_index, 3);
+// uncomment following line to run this test!
 //        assert(false);
     }
     function testGasMakeOfferInsertAsTwohundredthNoFrontendAid() public {
         uint offer_index = 200 -1;
-        execOrderInsertGasTest(offer_index,false);
+        execOrderInsertGasTest(offer_index, 0);
+// uncomment following line to run this test!
 //        assert(false);
     }
     function testGasMakeOfferInsertAsTwohundredthWithFrontendAid() public {
         uint offer_index = 200 -1;
-        execOrderInsertGasTest(offer_index,true);
+        execOrderInsertGasTest(offer_index, 1);
+// uncomment following line to run this test!
+//        assert(false);
+    }
+    function testGasMakeOfferInsertAsTwohundredthWithFrontendAidOldPos() {
+        uint offer_index = 200 -1;
+        execOrderInsertGasTest(offer_index, 2);
+// uncomment following line to run this test!
+//        assert(false);
+    }
+    function testGasMakeOfferInsertAsTwohundredthWithFrontendAidOldPosWorse() {
+        uint offer_index = 200 -1;
+        execOrderInsertGasTest(offer_index, 3);
+// uncomment following line to run this test!
 //        assert(false);
     }
 }
@@ -500,30 +590,33 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(otc.getMinSell(mkr), 30);
         offer_id[1] = otc.offer(30, mkr, 90, dai, 0);
     }
+
     function testErroneousUserHigherIdStillWorks() public {
         dai.transfer(user1, 10);
         user1.doApprove(otc, 10, dai);
-        offer_id[1] =  user1.doOffer(1,	dai, 1,	mkr);
-        offer_id[2] =  user1.doOffer(2, dai, 1,	mkr);
-        offer_id[3] =  user1.doOffer(4, dai, 1,	mkr);
-        offer_id[4] =  user1.doOffer(3,	dai, 1,	mkr, offer_id[2]);
+        offer_id[1] =  user1.doOffer(1,    dai, 1,    mkr);
+        offer_id[2] =  user1.doOffer(2, dai, 1,    mkr);
+        offer_id[3] =  user1.doOffer(4, dai, 1,    mkr);
+        offer_id[4] =  user1.doOffer(3,    dai, 1,    mkr, offer_id[2]);
     }
+
     function testErroneousUserHigherIdStillWorksOther() public {
         dai.transfer(user1, 11);
         user1.doApprove(otc, 11, dai);
-        offer_id[1] =  user1.doOffer(2, dai, 1,	mkr);
-        offer_id[2] =  user1.doOffer(3, dai, 1,	mkr);
-        offer_id[3] =  user1.doOffer(5, dai, 1,	mkr);
-        offer_id[4] =  user1.doOffer(1,	dai, 1,	mkr, offer_id[3]);
+        offer_id[1] =  user1.doOffer(2, dai, 1,    mkr);
+        offer_id[2] =  user1.doOffer(3, dai, 1,    mkr);
+        offer_id[3] =  user1.doOffer(5, dai, 1,    mkr);
+        offer_id[4] =  user1.doOffer(1,    dai, 1,    mkr, offer_id[3]);
     }
-    function testNonExistentOffersUserHigherIdStillWorks() public {
+    
+    function testNonExistentOffersPosStillWorks() public {
         dai.transfer(user1, 10);
         user1.doApprove(otc, 10, dai);
-        uint non_existent_offer_id = 100000;
-        offer_id[1] =  user1.doOffer(1, dai, 1,	mkr);
-        offer_id[2] =  user1.doOffer(2, dai, 1,	mkr);
-        offer_id[3] =  user1.doOffer(4, dai, 1,	mkr);
-        offer_id[4] =  user1.doOffer(3,	dai, 1,	mkr, non_existent_offer_id);
+        uint non_existent_offer_id = 4;
+        offer_id[1] =  user1.doOffer(1, dai, 1, mkr);
+        offer_id[2] =  user1.doOffer(2, dai, 1, mkr);
+        offer_id[3] =  user1.doOffer(4, dai, 1, mkr);
+        offer_id[4] =  user1.doOffer(3, dai, 1, mkr, non_existent_offer_id);
     }
 
     // Derived from error on Kovan, transaction ID:
@@ -702,11 +795,11 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(otc.getBestOffer(dai, mkr), offer_id[4]);
         assertEq(otc.getWorseOffer(offer_id[1]), 0);
         assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
-        assertEq(otc.getWorseOffer(offer_id[3]), 0);
+        assertEq(otc.getWorseOffer(offer_id[3]), offer_id[2]);
         assertEq(otc.getWorseOffer(offer_id[4]), offer_id[2]);
         assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
         assertEq(otc.getBetterOffer(offer_id[2]), offer_id[4]);
-        assertEq(otc.getBetterOffer(offer_id[3]), 0);
+        assertEq(otc.getBetterOffer(offer_id[3]), offer_id[4]);
         assertEq(otc.getBetterOffer(offer_id[4]), 0);
         assertEq(otc.getOfferCount(dai, mkr), 3);
     }
@@ -758,7 +851,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(otc.getBestOffer(dai, mkr), offer_id[2]);
         assertEq(otc.getWorseOffer(offer_id[1]), 0);
         assertEq(otc.getWorseOffer(offer_id[2]), 0);
-        assertEq(otc.getBetterOffer(offer_id[1]), 0);
+        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
         assertEq(otc.getBetterOffer(offer_id[2]), 0);
         assertEq(otc.getOfferCount(dai,mkr), 1);
         assert(!otc.isActive( offer_id[1]));
@@ -772,7 +865,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
 
         assertEq(otc.getBestOffer(dai, mkr), offer_id[1]);
         assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), 0);
+        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
         assertEq(otc.getBetterOffer(offer_id[1]), 0);
         assertEq(otc.getBetterOffer(offer_id[2]), 0);
         assertEq(otc.getOfferCount(dai, mkr), 1);
@@ -789,7 +882,9 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(otc.getWorseOffer(offer_id[1]), 0);
         assertEq(otc.getWorseOffer(offer_id[2]), 0);
         assertEq(otc.getWorseOffer(offer_id[3]), offer_id[2]);
-        assertEq(otc.getBetterOffer(offer_id[1]), 0);
+
+        // make sure we retained our offer information.
+        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
         assertEq(otc.getBetterOffer(offer_id[2]), offer_id[3]);
         assertEq(otc.getBetterOffer(offer_id[3]), 0);
         assertEq(otc.getOfferCount(dai, mkr), 2);
@@ -805,7 +900,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(otc.getBestOffer(dai, mkr), offer_id[2]);
         assertEq(otc.getWorseOffer(offer_id[1]), 0);
         assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
-        assertEq(otc.getWorseOffer(offer_id[3]), 0);
+        assertEq(otc.getWorseOffer(offer_id[3]), offer_id[2]);
         assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
         assertEq(otc.getBetterOffer(offer_id[2]), 0);
         assertEq(otc.getBetterOffer(offer_id[3]), 0);
@@ -925,9 +1020,9 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
 
         assertEq(otc.getBestOffer(dai, mkr), offer_id[2]);
         assertEq(otc.getBestOffer(dai, dgd), offer_id[4]);
-        assertEq(otc.getBetterOffer(offer_id[1]), 0);
+        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
         assertEq(otc.getBetterOffer(offer_id[2]), 0);
-        assertEq(otc.getBetterOffer(offer_id[3]), 0);
+        assertEq(otc.getBetterOffer(offer_id[3]), offer_id[4]);
         assertEq(otc.getBetterOffer(offer_id[4]), 0);
         assertEq(otc.getWorseOffer(offer_id[1]), 0);
         assertEq(otc.getWorseOffer(offer_id[2]), 0);
@@ -954,9 +1049,9 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(otc.getBetterOffer(offer_id[3]), 0);
         assertEq(otc.getBetterOffer(offer_id[4]), 0);
         assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), 0);
+        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
         assertEq(otc.getWorseOffer(offer_id[3]), 0);
-        assertEq(otc.getWorseOffer(offer_id[4]), 0);
+        assertEq(otc.getWorseOffer(offer_id[4]), offer_id[3]);
         assertEq(otc.getOfferCount(dai,mkr), 1);
         assertEq(otc.getOfferCount(dai,dgd), 1);
         assert(!otc.isActive(offer_id[2]));
@@ -976,7 +1071,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
 
         assertEq(otc.getBestOffer(dai, mkr), offer_id[3]);
         assertEq(otc.getBestOffer(dai, dgd), offer_id[5]);
-        assertEq(otc.getBetterOffer(offer_id[1]), 0);
+        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
         assertEq(otc.getBetterOffer(offer_id[2]), offer_id[3]);
         assertEq(otc.getBetterOffer(offer_id[3]), 0);
         assertEq(otc.getBetterOffer(offer_id[4]), offer_id[5]);
@@ -987,7 +1082,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(otc.getWorseOffer(offer_id[3]), offer_id[2]);
         assertEq(otc.getWorseOffer(offer_id[4]), 0);
         assertEq(otc.getWorseOffer(offer_id[5]), offer_id[4]);
-        assertEq(otc.getWorseOffer(offer_id[6]), 0);
+        assertEq(otc.getWorseOffer(offer_id[6]), offer_id[5]);
         assertEq(otc.getOfferCount(dai,mkr), 2);
         assertEq(otc.getOfferCount(dai,dgd), 2);
         assert(!otc.isActive( offer_id[1]));
@@ -1009,13 +1104,13 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(otc.getBestOffer(dai, dgd), offer_id[6]);
         assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
         assertEq(otc.getBetterOffer(offer_id[2]), 0);
-        assertEq(otc.getBetterOffer(offer_id[3]), 0);
-        assertEq(otc.getBetterOffer(offer_id[4]), 0);
+        assertEq(otc.getBetterOffer(offer_id[3]), 0); // was best when cancelled
+        assertEq(otc.getBetterOffer(offer_id[4]), offer_id[5]);
         assertEq(otc.getBetterOffer(offer_id[5]), offer_id[6]);
         assertEq(otc.getBetterOffer(offer_id[6]), 0);
         assertEq(otc.getWorseOffer(offer_id[1]), 0);
         assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
-        assertEq(otc.getWorseOffer(offer_id[3]), 0);
+        assertEq(otc.getWorseOffer(offer_id[3]), offer_id[2]);
         assertEq(otc.getWorseOffer(offer_id[4]), 0);
         assertEq(otc.getWorseOffer(offer_id[5]), 0);
         assertEq(otc.getWorseOffer(offer_id[6]), offer_id[5]);
@@ -1024,13 +1119,25 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assert(!otc.isActive(offer_id[3]));
         assert(!otc.isActive(offer_id[4]));
     }
-    function testFailInsertOfferWithUserProvidedIdOfADifferentToken() public {
+
+    function testFailInsertOfferWithUserProvidedIdOfADifferentTokenLower() public {
         dai.transfer(user1, 13);
         user1.doApprove(otc, 13, dai);
         mkr.approve(otc, 11);
+        dgd.approve(otc,1);
         offer_id[1] = user1.doOffer(13, dai, 1, mkr);
         offer_id[2] = otc.offer(11, mkr, 1, dgd, offer_id[1]);
     }
+    
+    function testFailInsertOfferWithUserProvidedIdOfADifferentTokenHigher() public {
+        dai.transfer(user1, 13);
+        user1.doApprove(otc, 13, dai);
+        mkr.approve(otc, 14);
+        dgd.approve(otc,1);
+        offer_id[1] = user1.doOffer(13, dai, 1, mkr);
+        offer_id[2] = otc.offer(14, mkr, 1, dgd, offer_id[1]);
+    }
+    
     function testOfferMatchOneOnOneSendAmounts() public {
         dai.transfer(user1, 100);
         user1.doApprove(otc, 100, dai);
@@ -1263,7 +1370,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(otc.getBestOffer(mkr, dai), offer_id[1]);
         assertEq(otc.getBestOffer(dai, mkr), offer_id[3]);
         assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), 0);
+        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
         assertEq(otc.getWorseOffer(offer_id[3]), 0);
         assertEq(otc.getBetterOffer(offer_id[1]), 0);
         assertEq(otc.getBetterOffer(offer_id[2]), 0);
@@ -1294,7 +1401,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(otc.getBestOffer(mkr, dai), offer_id[3]);
         assertEq(otc.getBestOffer(dai, mkr), 0);
         assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), 0);
+        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[3]);
         assertEq(otc.getWorseOffer(offer_id[3]), offer_id[1]);
         assertEq(otc.getWorseOffer(offer_id[4]), 0);
         assertEq(otc.getBetterOffer(offer_id[1]), offer_id[3]);

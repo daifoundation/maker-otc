@@ -68,7 +68,6 @@ contract SimpleMarket is EventfulMarket, DSMath {
         uint     buy_amt;
         ERC20    buy_gem;
         address  owner;
-        bool     active;
         uint64   timestamp;
     }
 
@@ -95,7 +94,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
     }
 
     function isActive(uint id) public constant returns (bool active) {
-        return offers[id].active;
+        return offers[id].timestamp > 0;
     }
 
     function getOwner(uint id) public constant returns (address owner) {
@@ -241,7 +240,6 @@ contract SimpleMarket is EventfulMarket, DSMath {
         info.buy_amt = buy_amt;
         info.buy_gem = buy_gem;
         info.owner = msg.sender;
-        info.active = true;
         info.timestamp = uint64(now);
         id = _next_id();
         offers[id] = info;

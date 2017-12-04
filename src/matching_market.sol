@@ -11,6 +11,8 @@ contract MatchingEvents {
     event LogSortedOffer(uint id);
     event LogAddTokenPairWhitelist(ERC20 baseToken, ERC20 quoteToken);
     event LogRemTokenPairWhitelist(ERC20 baseToken, ERC20 quoteToken);
+    event LogInsert(address keeper, uint id);
+    event LogDelete(address keeper, uint id);
 }
 
 contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
@@ -20,6 +22,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     struct sortInfo {
         uint next;  //points to id of next higher offer
         uint prev;  //points to id of previous lower offer
+        uint delb;  //the blocknumber where this entry was marked for delete
     }
     mapping(uint => sortInfo) public _rank;                     //doubly linked lists of sorted offer ids
     mapping(address => mapping(address => uint)) public _best;  //id of the highest offer for a token pair
@@ -171,6 +174,18 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
         require(_hide(id));             //remove offer from unsorted offers list
         _sort(id, pos);                 //put offer into the sorted offers list
+        LogInsert(msg.sender, id);
+        return true;
+    }
+
+    //deletes _rank [id]
+    //  Function should be called by keepers.
+    function del_rank(uint id)
+    returns (bool)
+    {
+        require(!isActive(id) && _rank[id].delb != 0 && _rank[id].delb < block.number - 10);
+        delete _rank[id];
+        LogDelete(msg.sender, id);
         return true;
     }
 
@@ -284,15 +299,18 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
     //return the next worse offer in the sorted list
     //      the worse offer is the higher one if its an ask,
-    //      and lower one if its a bid offer
+    //      a lower one if its a bid offer,
+    //      and in both cases the newer one if they're equal.
     function getWorseOffer(uint id) public constant returns(uint) {
         return _rank[id].prev;
     }
 
     //return the next better offer in the sorted list
     //      the better offer is in the lower priced one if its an ask,
-    //      and next higher priced one if its a bid offer
+    //      the next higher priced one if its a bid offer
+    //      and in both cases the older one if they're equal.
     function getBetterOffer(uint id) public constant returns(uint) {
+
         return _rank[id].next;
     }
 
@@ -317,9 +335,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     }
 
     function isOfferSorted(uint id) public constant returns(bool) {
-        address buy_gem = address(offers[id].buy_gem);
-        address pay_gem = address(offers[id].pay_gem);
-        return (_rank[id].next != 0 || _rank[id].prev != 0 || _best[pay_gem][buy_gem] == id) ? true : false;
+        return _rank[id].next != 0
+               || _rank[id].prev != 0
+               || _best[offers[id].pay_gem][offers[id].buy_gem] == id;
     }
 
     function sellAllAmount(ERC20 pay_gem, uint pay_amt, ERC20 buy_gem, uint min_fill_amount)
@@ -430,15 +448,55 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint old_top = 0;
 
         // Find the larger-than-id order whose successor is less-than-id.
-        while (top != 0 && _isLtOrEq(id, top)) {
+        while (top != 0 && _isPricedLtOrEq(id, top)) {
             old_top = top;
             top = _rank[top].prev;
         }
         return old_top;
     }
 
+    //find the id of the next higher offer after offers[id]
+    function _findpos(uint id, uint pos)
+    internal
+    returns (uint)
+    {
+        require(id > 0);
+
+        // Look for an active order.
+        while (pos != 0 && !isActive(pos)) {
+            pos = _rank[pos].prev;
+        }
+
+        if (pos == 0) {
+            //if we got to the end of list without a single active offer
+            return _find(id);
+
+        } else {
+            // if we did find a nearby active offer
+            // Walk the order book down from there...
+            if(_isPricedLtOrEq(id, pos)) {
+                uint old_pos;
+
+                // Guaranteed to run at least once because of
+                // the prior if statements.
+                while (pos != 0 && _isPricedLtOrEq(id, pos)) {
+                    old_pos = pos;
+                    pos = _rank[pos].prev;
+                }
+                return old_pos;
+
+            // ...or walk it up.
+            } else {
+                while (pos != 0 && !_isPricedLtOrEq(id, pos)) {
+                    pos = _rank[pos].next;
+                }
+                return pos;
+            }
+        }
+    }
+
     //return true if offers[low] priced less than or equal to offers[high]
-    function _isLtOrEq(
+    function _isPricedLtOrEq(
         uint low,   //lower priced offer's id
         uint high   //higher priced offer's id
     )
@@ -543,39 +601,36 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
         address buy_gem = address(offers[id].buy_gem);
         address pay_gem = address(offers[id].pay_gem);
-        uint prev_id; //maker (ask) id
+        uint prev_id;                                      //maker (ask) id
 
-        if (pos == 0
-            || !isActive(pos)
-            || !_isLtOrEq(id, pos)
-            || (_rank[pos].prev != 0 && _isLtOrEq(id, _rank[pos].prev))
-        ) {
-            //client did not provide valid position, so we have to find it
+        if (pos == 0 || !isOfferSorted(pos)) {
             pos = _find(id);
+        } else {
+            pos = _findpos(id, pos);
+
+            require(offers[pos].pay_gem == offers[id].pay_gem
+                 && offers[pos].buy_gem == offers[id].buy_gem);
         }
 
-        //require `pos` is in the sorted list or is 0
-        require(pos == 0 || _rank[pos].next != 0 || _rank[pos].prev != 0 || _best[pay_gem][buy_gem] == pos);
 
-        if (pos != 0) {
-            //offers[id] is not the highest offer
-            require(_isLtOrEq(id, pos));
+        //requirement below is satisfied by statements above
+	      //require(pos == 0 || isOfferSorted(pos));
+
+
+        if (pos != 0) {                                    //offers[id] is not the highest offer
+            //requirement below is satisfied by statements above
+            //require(_isPricedLtOrEq(id, pos));
             prev_id = _rank[pos].prev;
             _rank[pos].prev = id;
             _rank[id].next = pos;
-
-        } else {
-            //offers[id] is the highest offer
+        } else {                                           //offers[id] is the highest offer
             prev_id = _best[pay_gem][buy_gem];
             _best[pay_gem][buy_gem] = id;
         }
 
-        require(prev_id == 0 || offers[prev_id].pay_gem == offers[id].pay_gem);
-        require(prev_id == 0 || offers[prev_id].buy_gem == offers[id].buy_gem);
-
-        if (prev_id != 0) {
-            //if lower offer does exist
-            require(!_isLtOrEq(id, prev_id));
+        if (prev_id != 0) {                               //if lower offer does exist
+            //requirement below is satisfied by statements above
+            //require(!_isPricedLtOrEq(id, prev_id));
             _rank[prev_id].next = id;
             _rank[id].prev = prev_id;
         }
@@ -595,25 +650,23 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         address pay_gem = address(offers[id].pay_gem);
         require(_span[pay_gem][buy_gem] > 0);
 
-        //require id is in the sorted list
-        require(_rank[id].next != 0 || _rank[id].prev != 0 || _best[pay_gem][buy_gem] == id);
+        require(_rank[id].delb == 0 &&                    //assert id is in the sorted list
+                 isOfferSorted(id));
 
-        if (id != _best[pay_gem][buy_gem]) {
-            // offers[id] is not the highest offer
+        if (id != _best[pay_gem][buy_gem]) {              // offers[id] is not the highest offer
+            require(_rank[_rank[id].next].prev == id);
             _rank[_rank[id].next].prev = _rank[id].prev;
-
-        } else {
-            //offers[id] is the highest offer
+        } else {                                          //offers[id] is the highest offer
             _best[pay_gem][buy_gem] = _rank[id].prev;
         }
 
-        if (_rank[id].prev != 0) {
-            //offers[id] is not the lowest offer
+        if (_rank[id].prev != 0) {                        //offers[id] is not the lowest offer
+            require(_rank[_rank[id].prev].next == id);
             _rank[_rank[id].prev].next = _rank[id].next;
         }
 
         _span[pay_gem][buy_gem]--;
-        delete _rank[id];
+        _rank[id].delb = block.number;                    //mark _rank[id] for deletion
         return true;
     }
 
