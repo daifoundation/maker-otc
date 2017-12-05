@@ -181,6 +181,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     //deletes _rank [id]
     //  Function should be called by keepers.
     function del_rank(uint id)
+        public
     returns (bool)
     {
         require(!isActive(id) && _rank[id].delb != 0 && _rank[id].delb < block.number - 10);
@@ -438,6 +439,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     //find the id of the next higher offer after offers[id]
     function _find(uint id)
         internal
+        view
         returns (uint)
     {
         require( id > 0 );
@@ -457,7 +459,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
     //find the id of the next higher offer after offers[id]
     function _findpos(uint id, uint pos)
-    internal
+        internal
+        view
     returns (uint)
     {
         require(id > 0);
@@ -501,6 +504,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint high   //higher priced offer's id
     )
         internal
+        view
         returns (bool)
     {
         return mul(offers[low].buy_amt, offers[high].pay_amt)

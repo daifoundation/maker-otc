@@ -146,7 +146,7 @@ contract OrderMatchingGasTest is DSTest {
         //to match a certain number(match_count) of offers
     }
     // non overflowing multiplication
-    function safeMul(uint a, uint b) internal constant returns (uint c) {
+    function safeMul(uint a, uint b) internal pure returns (uint c) {
         c = a * b;
         assert(a == 0 || c / a == b);
     }
@@ -192,7 +192,7 @@ contract OrderMatchingGasTest is DSTest {
     logs the gas usage of inserting one additional offer. This
     function is useful to test the cost of sorting in order to do
     offer matching.*/
-    function execOrderInsertGasTest(uint offer_index, bool frontend_aid) public {
+    function execOrderInsertGasTest(uint offer_index, uint kind) public {
         createOffers(offer_index + 1);
         if (kind == 0) {                  // no frontend aid
             insertOffer(1, dai, 1, mkr);
@@ -288,13 +288,13 @@ contract OrderMatchingGasTest is DSTest {
 // uncomment following line to run this test!
 //        assert(false);
     }
-    function testGasMakeOfferInsertAsTenthWithFrontendAidOldPos() {
+    function testGasMakeOfferInsertAsTenthWithFrontendAidOldPos() public {
         uint offer_index = 10 - 1;
         execOrderInsertGasTest(offer_index, 2);
 // uncomment following line to run this test!
 //        assert(false);
     }
-    function testGasMakeOfferInsertAsTenthWithFrontendAidOldPosWorse() {
+    function testGasMakeOfferInsertAsTenthWithFrontendAidOldPosWorse() public {
         uint offer_index = 10 - 1;
         execOrderInsertGasTest(offer_index, 3);
 // uncomment following line to run this test!
@@ -312,13 +312,13 @@ contract OrderMatchingGasTest is DSTest {
 // uncomment following line to run this test!
 //        assert(false);
     }
-    function testGasMakeOfferInsertAsTwentiethWithFrontendAidOldPos() {
+    function testGasMakeOfferInsertAsTwentiethWithFrontendAidOldPos() public {
         uint offer_index = 20 - 1;
         execOrderInsertGasTest(offer_index, 2);
 // uncomment following line to run this test!
 //        assert(false);
     }
-    function testGasMakeOfferInsertAsTwentiethWithFrontendAidOldPosWorse() {
+    function testGasMakeOfferInsertAsTwentiethWithFrontendAidOldPosWorse() public {
         uint offer_index = 20 - 1;
         execOrderInsertGasTest(offer_index, 3);
 // uncomment following line to run this test!
@@ -336,13 +336,13 @@ contract OrderMatchingGasTest is DSTest {
 // uncomment following line to run this test!
 //        assert(false);
     }
-    function testGasMakeOfferInsertAsFiftiethWithFrontendAidOldPos() {
+    function testGasMakeOfferInsertAsFiftiethWithFrontendAidOldPos() public {
         uint offer_index = 50 - 1;
         execOrderInsertGasTest(offer_index, 2);
 // uncomment following line to run this test!
 //        assert(false);
     }
-    function testGasMakeOfferInsertAsFiftiethWithFrontendAidOldPosWorse() {
+    function testGasMakeOfferInsertAsFiftiethWithFrontendAidOldPosWorse() public {
         uint offer_index = 50 - 1;
         execOrderInsertGasTest(offer_index, 3);
 // uncomment following line to run this test!
@@ -360,13 +360,13 @@ contract OrderMatchingGasTest is DSTest {
 // uncomment following line to run this test!
 //        assert(false);
     }
-    function testGasMakeOfferInsertAsHundredthWithFrontendAidOldPos() {
+    function testGasMakeOfferInsertAsHundredthWithFrontendAidOldPos() public {
         uint offer_index = 100 - 1;
         execOrderInsertGasTest(offer_index, 2);
 // uncomment following line to run this test!
 //        assert(false);
     }
-    function testGasMakeOfferInsertAsHundredthWithFrontendAidOldPoWorses() {
+    function testGasMakeOfferInsertAsHundredthWithFrontendAidOldPoWorses() public {
         uint offer_index = 100 - 1;
         execOrderInsertGasTest(offer_index, 3);
 // uncomment following line to run this test!
@@ -384,13 +384,13 @@ contract OrderMatchingGasTest is DSTest {
 // uncomment following line to run this test!
 //        assert(false);
     }
-    function testGasMakeOfferInsertAsTwohundredthWithFrontendAidOldPos() {
+    function testGasMakeOfferInsertAsTwohundredthWithFrontendAidOldPos() public {
         uint offer_index = 200 -1;
         execOrderInsertGasTest(offer_index, 2);
 // uncomment following line to run this test!
 //        assert(false);
     }
-    function testGasMakeOfferInsertAsTwohundredthWithFrontendAidOldPosWorse() {
+    function testGasMakeOfferInsertAsTwohundredthWithFrontendAidOldPosWorse() public {
         uint offer_index = 200 -1;
         execOrderInsertGasTest(offer_index, 3);
 // uncomment following line to run this test!
