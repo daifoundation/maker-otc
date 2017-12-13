@@ -1,4 +1,4 @@
-pragma solidity ^0.4.13;
+pragma solidity ^0.4.18;
 
 import "ds-math/math.sol";
 import "erc20/erc20.sol";
