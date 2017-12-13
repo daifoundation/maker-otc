@@ -13,7 +13,7 @@ export ETH_FROM=$(seth rpc eth_coinbase)
 export NETWORK=$(seth chain)
 
 . ./bin/$NETWORK-pairs
-. ./bin/dustlimits
+. ./bin/$NETWORK-dustlimits
 
 test -z $NETWORK && exit 1
 
