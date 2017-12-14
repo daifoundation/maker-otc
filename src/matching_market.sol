@@ -127,8 +127,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
         if (matchingEnabled) {
           return _matcho(pay_amt, pay_gem, buy_amt, buy_gem, pos, rounding);
+        } else {
+          return super.offer(pay_amt, pay_gem, buy_amt, buy_gem);
         }
-        return super.offer(pay_amt, pay_gem, buy_amt, buy_gem);
     }
 
     //Transfers funds from caller to offer maker, and from market to caller.
