@@ -535,6 +535,12 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
                || t_buy_gem == offers[pos].buy_gem
                   && t_pay_gem == offers[pos].pay_gem);
 
+        if (t_buy_gem != offers[pos].buy_gem
+            || t_pay_gem != offers[pos].pay_gem)
+				{
+					pos = 0;
+				}
+
         // there is at least one offer stored for token pair
         while (_best[t_buy_gem][t_pay_gem] > 0) {
             best_maker_id = _best[t_buy_gem][t_pay_gem];
@@ -612,8 +618,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         } else {
             pos = _findpos(id, pos);
 
-            require(offers[pos].pay_gem == offers[id].pay_gem
-                 && offers[pos].buy_gem == offers[id].buy_gem);
+            require((offers[pos].pay_gem == offers[id].pay_gem
+                 && offers[pos].buy_gem == offers[id].buy_gem) || pos == 0);
         }
 
 
