@@ -526,20 +526,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         returns (uint id)
     {
         uint best_maker_id;    //highest maker id
-        uint t_buy_amt_old;              //taker buy how much saved
+        uint t_buy_amt_old;    //taker buy how much saved
         uint m_buy_amt;        //maker offer wants to buy this much token
         uint m_pay_amt;        //maker offer wants to sell this much token
-
-        require(pos == 0
-               || !isActive(pos)
-               || t_buy_gem == offers[pos].buy_gem
-                  && t_pay_gem == offers[pos].pay_gem);
-
-        if (t_buy_gem != offers[pos].buy_gem
-            || t_pay_gem != offers[pos].pay_gem)
-				{
-					pos = 0;
-				}
 
         // there is at least one offer stored for token pair
         while (_best[t_buy_gem][t_pay_gem] > 0) {
@@ -618,8 +607,13 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         } else {
             pos = _findpos(id, pos);
 
-            require((offers[pos].pay_gem == offers[id].pay_gem
-                 && offers[pos].buy_gem == offers[id].buy_gem) || pos == 0);
+	    //if user has entered a `pos` that belongs to another currency pair
+	    //we start from scratch
+	    if(pos != 0 && (offers[pos].pay_gem != offers[id].pay_gem
+		            || offers[pos].buy_gem != offers[id].buy_gem)) {
+		pos = 0;
+		pos=_find(id);
+	    }
         }
 
 
@@ -709,3 +703,4 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         return true;
     }
 }
+
