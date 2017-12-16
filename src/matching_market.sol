@@ -607,13 +607,14 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         } else {
             pos = _findpos(id, pos);
 
-	    //if user has entered a `pos` that belongs to another currency pair
-	    //we start from scratch
-	    if(pos != 0 && (offers[pos].pay_gem != offers[id].pay_gem
-		            || offers[pos].buy_gem != offers[id].buy_gem)) {
-		pos = 0;
-		pos=_find(id);
-	    }
+						//if user has entered a `pos` that belongs to another currency pair
+						//we start from scratch
+						if(pos != 0 && (offers[pos].pay_gem != offers[id].pay_gem
+											|| offers[pos].buy_gem != offers[id].buy_gem))
+						{
+								pos = 0;
+								pos=_find(id);
+						}
         }
 
 
