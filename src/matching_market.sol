@@ -170,9 +170,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     {
         require(!isOfferSorted(id));    //make sure offers[id] is not yet sorted
         require(isActive(id));          //make sure offers[id] is active
-        require(pos == 0 || isActive(pos));
 
-        require(_hide(id));             //remove offer from unsorted offers list
+        _hide(id);                      //remove offer from unsorted offers list
         _sort(id, pos);                 //put offer into the sorted offers list
         LogInsert(msg.sender, id);
         return true;
@@ -607,19 +606,19 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         } else {
             pos = _findpos(id, pos);
 
-						//if user has entered a `pos` that belongs to another currency pair
-						//we start from scratch
-						if(pos != 0 && (offers[pos].pay_gem != offers[id].pay_gem
-											|| offers[pos].buy_gem != offers[id].buy_gem))
-						{
-								pos = 0;
-								pos=_find(id);
-						}
+            //if user has entered a `pos` that belongs to another currency pair
+            //we start from scratch
+            if(pos != 0 && (offers[pos].pay_gem != offers[id].pay_gem
+                      || offers[pos].buy_gem != offers[id].buy_gem))
+            {
+                pos = 0;
+                pos=_find(id);
+            }
         }
 
 
         //requirement below is satisfied by statements above
-	      //require(pos == 0 || isOfferSorted(pos));
+        //require(pos == 0 || isOfferSorted(pos));
 
 
         if (pos != 0) {                                    //offers[id] is not the highest offer

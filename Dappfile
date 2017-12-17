@@ -1,10 +1,13 @@
 name            maker-otc
 description     Simple on-chain market for ERC20 tokens
-version         0.4
+version         1.0.1
 
 author          Nikolai Mushegian <nikolai@nexusdev.us>
 author          Joris Bontje <jorisbontje@gmail.com>
 author          Rain <rainbeam@riseup.net>
 author          Daniel Brockman <daniel@brockman.se>
 author          Ryan Casey <ryan@ryepdx.com>
+author          Niklas Kunkel <nik@makerdao.com>
+author          Gonzalo Balabasquer <gbalabasquer@gmail.com>
+author          Robert Horvath <rob@nyar.eu>
 license         Apache-2.0
