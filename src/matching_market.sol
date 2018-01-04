@@ -128,7 +128,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         if (matchingEnabled) {
           return _matcho(pay_amt, pay_gem, buy_amt, buy_gem, pos, rounding);
         }
-        return super.offer(pay_amt, pay_gem, buy_amt, buy_gem);
+        var id = super.offer(pay_amt, pay_gem, buy_amt, buy_gem);
+        _sort(id,pos);
+        return id;
     }
 
     //Transfers funds from caller to offer maker, and from market to caller.
@@ -138,8 +140,14 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         can_buy(id)
         returns (bool)
     {
-        var fn = matchingEnabled ? _buys : super.buy;
-        return fn(id, amount);
+        require((matchingEnabled && buyEnabled) || !matchingEnabled);
+
+        if (amount == offers[id].pay_amt && isOfferSorted(id)) {
+            //offers[id] must be removed from sorted list because all of it is bought
+            _unsort(id);
+        }
+        require(super.buy(id, amount));
+        return true;
     }
 
     // Cancel an offer. Refunds offer maker.
@@ -149,12 +157,10 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         can_cancel(id)
         returns (bool success)
     {
-        if (matchingEnabled) {
-            if (isOfferSorted(id)) {
-                require(_unsort(id));
-            } else {
-                require(_hide(id));
-            }
+        if (isOfferSorted(id)) {
+            require(_unsort(id));
+        } else {
+            require(_hide(id));
         }
         return super.cancel(id);    //delete the offer.
     }
@@ -171,7 +177,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         require(!isOfferSorted(id));    //make sure offers[id] is not yet sorted
         require(isActive(id));          //make sure offers[id] is active
 
-        _hide(id);                      //remove offer from unsorted offers list
+        require(_hide(id));             //remove offer from unsorted offers list
         _sort(id, pos);                 //put offer into the sorted offers list
         LogInsert(msg.sender, id);
         return true;
@@ -421,18 +427,33 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
     // ---- Internal Functions ---- //
 
-    function _buys(uint id, uint amount)
+    function _buys(uint id, uint quantity)
         internal
         returns (bool)
     {
-        require(buyEnabled);
-
-        if (amount == offers[id].pay_amt && isOfferSorted(id)) {
-            //offers[id] must be removed from sorted list because all of it is bought
+        OfferInfo memory offer = offers[id];
+        if(quantity < offer.pay_amt){
+            buy(id,quantity);
+        }else{
+            require( quantity == offer.pay_amt );
+            require( offer.buy_gem.transferFrom(msg.sender, offer.owner, offer.buy_amt) );
+            require( offer.pay_gem.transfer(msg.sender, offer.pay_amt) );
+            LogItemUpdate(id);
+            LogTake(
+                bytes32(id),
+                keccak256(offer.pay_gem, offer.buy_gem),
+                offer.owner,
+                offer.pay_gem,
+                offer.buy_gem,
+                msg.sender,
+                uint128(offer.pay_amt),
+                uint128(offer.buy_amt),
+                uint64(now)
+            );
+            LogTrade(quantity, offer.pay_gem, offer.buy_amt, offer.buy_gem);
             _unsort(id);
+            delete offers[id];
         }
-        require(super.buy(id, amount));
-        return true;
     }
 
     //find the id of the next higher offer after offers[id]
@@ -549,7 +570,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             // ^ The `rounding` parameter is a compromise borne of a couple days
             // of discussion.
 
-            buy(best_maker_id, min(m_pay_amt, t_buy_amt));
+            _buys(best_maker_id, min(m_pay_amt, t_buy_amt));
             t_buy_amt_old = t_buy_amt;
             t_buy_amt = sub(t_buy_amt, min(m_pay_amt, t_buy_amt));
             t_pay_amt = mul(t_buy_amt, t_pay_amt) / t_buy_amt_old;

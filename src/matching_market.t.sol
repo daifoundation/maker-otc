@@ -214,25 +214,25 @@ contract OrderMatchingGasTest is DSTest {
         var match_order_count = match_count[0]; // 1
         execOrderMatchingGasTest(match_order_count);
 // uncomment following line to run this test!
-//        assert(false);
+        assert(false);
     }
     function testGasMatchFiveOrders() public {
         var match_order_count = match_count[1]; // 5
         execOrderMatchingGasTest(match_order_count);
 // uncomment following line to run this test!
-//        assert(false);
+        assert(false);
     }
     function testGasMatchTenOrders() public {
         var match_order_count = match_count[2]; // 10
         execOrderMatchingGasTest(match_order_count);
 // uncomment following line to run this test!
-//        assert(false);
+        assert(false);
     }
     function testGasMatchFifteenOrders() public {
         var match_order_count = match_count[3]; // 15
         execOrderMatchingGasTest(match_order_count);
 // uncomment following line to run this test!
-//        assert(false);
+        assert(false);
     }
     function testGasMatchTwentyOrders() public {
         var match_order_count = match_count[4]; // 20
@@ -262,7 +262,7 @@ contract OrderMatchingGasTest is DSTest {
         var match_order_count = match_count[8]; // 100
         execOrderMatchingGasTest(match_order_count);
 // uncomment following line to run this test!
-//        assert(false);
+        assert(false);
     }
     function testGasMakeOfferInsertAsFirstNoFrontendAid() public {
         uint offer_index = 1 - 1;
@@ -569,7 +569,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assert(otc.setMatchingEnabled(false));
         assert(!otc.matchingEnabled());
         otc.cancel(offer_id[1]);
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[1]);
+        assertEq(otc.getBestOffer(dai, mkr), 0 );
     }
     function testSetGetMinSellAmout() public {
         otc.setMinSell(dai, 100);
