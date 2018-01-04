@@ -63,33 +63,28 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         require(cancel(uint256(id)));
     }
 
-    // Make a new offer. Takes funds from the caller into market escrow.
+    // Make a new offer without putting it in the sorted list.
+    // Takes funds from the caller into market escrow.
     //
-    // If matching is enabled:
     //     * creates new offer without putting it in
     //       the sorted list.
-    //     * available to authorized contracts only!
     //     * keepers should call insert(id,pos)
     //       to put offer in the sorted list.
-    //
-    // If matching is disabled:
-    //     * calls expiring market's offer().
-    //     * available to everyone without authorization.
-    //     * no sorting is done.
-    //
     function offer(
-        uint pay_amt,    //maker (ask) sell how much
-        ERC20 pay_gem,   //maker (ask) sell which token
-        uint buy_amt,    //taker (ask) buy how much
-        ERC20 buy_gem    //taker (ask) buy which token
+        uint pay_amt,      //maker (ask) sell how much
+        ERC20 pay_gem,     //maker (ask) sell which token
+        uint buy_amt,      //maker (ask) buy how much
+        ERC20 buy_gem      //maker (ask) buy which token
     )
         public
-        isWhitelist(pay_gem, buy_gem)
-        /* NOT synchronized!!! */
-        returns (uint)
+        /*NOT synchronized!!! */
+        returns (uint id)
     {
-        var fn = matchingEnabled ? _offeru : super.offer;
-        return fn(pay_amt, pay_gem, buy_amt, buy_gem);
+        require(_dust[pay_gem] <= pay_amt);
+        id = super.offer(pay_amt, pay_gem, buy_amt, buy_gem);
+        _near[id] = _head;
+        _head = id;
+        LogUnsortedOffer(id);
     }
 
     // Make a new offer. Takes funds from the caller into market escrow.
@@ -432,9 +427,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         returns (bool)
     {
         OfferInfo memory offer = offers[id];
-        if(quantity < offer.pay_amt){
+        if(quantity < offer.pay_amt) {
             buy(id,quantity);
-        }else{
+        } else {
             require( quantity == offer.pay_amt );
             require( offer.buy_gem.transferFrom(msg.sender, offer.owner, offer.buy_amt) );
             require( offer.pay_gem.transfer(msg.sender, offer.pay_amt) );
@@ -586,27 +581,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             //insert offer into the sorted list
             _sort(id, pos);
         }
-    }
-
-    // Make a new offer without putting it in the sorted list.
-    // Takes funds from the caller into market escrow.
-    // ****Available to authorized contracts only!**********
-    // Keepers should call insert(id,pos) to put offer in the sorted list.
-    function _offeru(
-        uint pay_amt,      //maker (ask) sell how much
-        ERC20 pay_gem,     //maker (ask) sell which token
-        uint buy_amt,      //maker (ask) buy how much
-        ERC20 buy_gem      //maker (ask) buy which token
-    )
-        internal
-        /*NOT synchronized!!! */
-        returns (uint id)
-    {
-        require(_dust[pay_gem] <= pay_amt);
-        id = super.offer(pay_amt, pay_gem, buy_amt, buy_gem);
-        _near[id] = _head;
-        _head = id;
-        LogUnsortedOffer(id);
     }
 
     //put offer into the sorted list
