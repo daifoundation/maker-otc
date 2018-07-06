@@ -426,6 +426,39 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         otc.addTokenPairWhitelist(dgd, dai);
         user1 = new MarketTester(otc);
     }
+    function testDustMakerOfferCanceled() public {
+        dai.transfer(user1, 30);
+        user1.doApprove(otc, 30, dai);
+        mkr.approve(otc, 25);
+        otc.setMinSell(dai, 10);
+        uint id0 = user1.doOffer(30, dai, 30, mkr, 0);
+        uint id1 = otc.offer(25, mkr, 25, dai, 0);
+        assert( !otc.isActive(id0));
+        assert( !otc.isActive(id1));
+    }
+    function testDustTakerOfferNotCreated() public {
+        dai.transfer(user1, 25);
+        user1.doApprove(otc, 25, dai);
+        mkr.approve(otc, 30);
+        otc.setMinSell(mkr, 10);
+        uint id0 = user1.doOffer(25, dai, 25, mkr, 0);
+        uint id1 = otc.offer(30, mkr, 30, dai, 0);
+        assert( !otc.isActive(id0));
+        assert( id1 == 0);
+    }
+    function testFailTooBigOffersToMatch() public {
+        uint maker_pay=uint128(-1);
+        uint maker_buy=uint64(-1);
+        uint taker_pay=uint128(-1);
+        uint taker_buy=uint64(-1);
+        dai.transfer(user1, maker_pay);
+        user1.doApprove(otc, maker_pay, dai);
+        mkr.approve(otc, taker_pay);
+        otc.setMinSell(mkr, taker_pay);
+        uint id0 = user1.doOffer(maker_pay, dai, maker_buy, mkr);
+        //the below should fail at matching because of overflow
+        uint id1 = otc.offer(taker_pay, mkr, taker_buy, dai);
+    }
     function testGetFirstNextUnsortedOfferOneOffer() public {
         mkr.approve(otc, 30);
         offer_id[1] = otc.offer(30, mkr, 100, dai);
@@ -594,10 +627,10 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testErroneousUserHigherIdStillWorks() public {
         dai.transfer(user1, 10);
         user1.doApprove(otc, 10, dai);
-        offer_id[1] =  user1.doOffer(1,    dai, 1,    mkr);
+        offer_id[1] =  user1.doOffer(1, dai, 1,    mkr);
         offer_id[2] =  user1.doOffer(2, dai, 1,    mkr);
         offer_id[3] =  user1.doOffer(4, dai, 1,    mkr);
-        offer_id[4] =  user1.doOffer(3,    dai, 1,    mkr, offer_id[2]);
+        offer_id[4] =  user1.doOffer(3, dai, 1,    mkr, offer_id[2]);
     }
 
     function testErroneousUserHigherIdStillWorksOther() public {
@@ -641,7 +674,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         uint dai_pay = 1230000000000000000;
         uint dgd_buy = 100000000;
 
-        // `true` allows rounding to a slightly higher price
+        // `false` and `true` both allow rounding to a slightly higher price
         // in order to find a match.
         user1.doOffer(dai_pay, dai, dgd_buy, dgd, 0, true);
 
@@ -664,18 +697,21 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         mkr.approve(otc, MKR_SUPPLY);
 
         // Does not divide cleanly.
-        otc.offer(1504155374, dgd, 18501111110000000000, dai, 0);
+        otc.offer(1504155374, dgd, 18501111110000000000, dai, 0, false);
 
         uint old_dai_bal = dai.balanceOf(user1);
         uint old_dgd_bal = dgd.balanceOf(user1);
         uint dai_pay = 1230000000000000000;
         uint dgd_buy = 100000000;
 
-        user1.doOffer(dai_pay, dai, dgd_buy, dgd, 0);
+        // `false` and `true` both allow rounding to a slightly higher price
+        // in order to find a match.
+        user1.doOffer(dai_pay, dai, dgd_buy, dgd, 0, true);
 
-        // Order should not have matched this time.
-        assertEq(dgd.balanceOf(user1), old_dgd_bal);
-        assertEq(old_dai_bal - dai.balanceOf(user1), dai_pay);
+        // We should have paid a bit more than we offered to pay.
+        uint expected_overpay = 651528437;
+        assertEq(dgd.balanceOf(user1) - old_dgd_bal, dgd_buy);
+        assertEq(old_dai_bal - dai.balanceOf(user1), dai_pay + expected_overpay);
     }
 
     function testBestOfferWithOneOffer() public {

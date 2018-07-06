@@ -109,13 +109,16 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         return offer(pay_amt, pay_gem, buy_amt, buy_gem, pos, false);
     }
 
+    //deprecated as 'rounding' is now the default behavior
+    //will be removed in next version!
+    //use offer(pay_amt, pay_gem, buy_amt, buy_gem, pos) instead!
     function offer(
         uint pay_amt,    //maker (ask) sell how much
         ERC20 pay_gem,   //maker (ask) sell which token
         uint buy_amt,    //maker (ask) buy how much
         ERC20 buy_gem,   //maker (ask) buy which token
         uint pos,        //position to insert offer, 0 should be used if unknown
-        bool rounding    //match "close enough" orders?
+        bool rounding    //not used, since we always match "close enough" orders
     )
         public
         isWhitelist(pay_gem, buy_gem)
@@ -126,7 +129,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         require(_dust[pay_gem] <= pay_amt);
 
         if (matchingEnabled) {
-          return _matcho(pay_amt, pay_gem, buy_amt, buy_gem, pos, rounding);
+          return _matcho(pay_amt, pay_gem, buy_amt, buy_gem, pos);
         }
         return super.offer(pay_amt, pay_gem, buy_amt, buy_gem);
     }
@@ -350,7 +353,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             require(offerId != 0);                      //Fails if there are not more offers
 
             // There is a chance that pay_amt is smaller than 1 wei of the other token
-            if (pay_amt * 1 ether < wdiv(offers[offerId].buy_amt, offers[offerId].pay_amt)) {
+            if (pay_amt * 1 ether < wdiv(offers[offerId].o_buy_amt, offers[offerId].o_pay_amt)) {
                 break;                                  //We consider that all amount is sold
             }
             if (pay_amt >= offers[offerId].buy_amt) {                       //If amount to sell is higher or equal than current offer amount to buy
@@ -358,7 +361,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
                 pay_amt = sub(pay_amt, offers[offerId].buy_amt);            //Decrease amount to sell
                 take(bytes32(offerId), uint128(offers[offerId].pay_amt));   //We take the whole offer
             } else { // if lower
-                var baux = rmul(pay_amt * 10 ** 9, rdiv(offers[offerId].pay_amt, offers[offerId].buy_amt)) / 10 ** 9;
+                var baux = rmul(pay_amt * 10 ** 9, rdiv(offers[offerId].o_pay_amt, offers[offerId].o_buy_amt)) / 10 ** 9;
                 fill_amt = add(fill_amt, baux);         //Add amount bought to acumulator
                 take(bytes32(offerId), uint128(baux));  //We take the portion of the offer that we need
                 pay_amt = 0;                            //All amount is sold
@@ -377,7 +380,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             require(offerId != 0);
 
             // There is a chance that buy_amt is smaller than 1 wei of the other token
-            if (buy_amt * 1 ether < wdiv(offers[offerId].pay_amt, offers[offerId].buy_amt)) {
+            if (buy_amt * 1 ether < wdiv(offers[offerId].o_pay_amt, offers[offerId].o_buy_amt)) {
                 break;                                  //We consider that all amount is sold
             }
             if (buy_amt >= offers[offerId].pay_amt) {                       //If amount to buy is higher or equal than current offer amount to sell
@@ -385,7 +388,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
                 buy_amt = sub(buy_amt, offers[offerId].pay_amt);            //Decrease amount to buy
                 take(bytes32(offerId), uint128(offers[offerId].pay_amt));   //We take the whole offer
             } else {                                                        //if lower
-                fill_amt = add(fill_amt, rmul(buy_amt * 10 ** 9, rdiv(offers[offerId].buy_amt, offers[offerId].pay_amt)) / 10 ** 9); //Add amount sold to acumulator
+                fill_amt = add(fill_amt, rmul(buy_amt * 10 ** 9, rdiv(offers[offerId].o_buy_amt, offers[offerId].o_pay_amt)) / 10 ** 9); //Add amount sold to acumulator
                 take(bytes32(offerId), uint128(buy_amt));                   //We take the portion of the offer that we need
                 buy_amt = 0;                                                //All amount is bought
             }
@@ -506,11 +509,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         view
         returns (bool)
     {
-        return mul(offers[low].buy_amt, offers[high].pay_amt)
-          >= mul(offers[high].buy_amt, offers[low].pay_amt);
+        return mul(offers[low].o_buy_amt, offers[high].o_pay_amt)
+          >= mul(offers[high].o_buy_amt, offers[low].o_pay_amt);
     }
-
-    //these variables are global only because of solidity local variable limit
 
     //match offers with taker offer, and execute token transactions
     function _matcho(
@@ -518,21 +519,23 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         ERC20 t_pay_gem,   //taker sell which token
         uint t_buy_amt,    //taker buy how much
         ERC20 t_buy_gem,   //taker buy which token
-        uint pos,          //position id
-        bool rounding      //match "close enough" orders?
+        uint pos           //position id
     )
         internal
         returns (uint id)
     {
-        uint best_maker_id;    //highest maker id
-        uint t_buy_amt_old;    //taker buy how much saved
-        uint m_buy_amt;        //maker offer wants to buy this much token
-        uint m_pay_amt;        //maker offer wants to sell this much token
+        uint best_maker_id;         //highest maker id
+        uint t_o_buy_amt=t_buy_amt; //taker original buy amount 
+        uint t_o_pay_amt=t_pay_amt; //taker original pay amount 
+        uint m_o_buy_amt;           //maker offer wants to buy this much token
+        uint m_o_pay_amt;           //maker offer wants to sell this much token
+        uint m_pay_amt;             //maker offer wants to sell this much token
 
         // there is at least one offer stored for token pair
         while (_best[t_buy_gem][t_pay_gem] > 0) {
             best_maker_id = _best[t_buy_gem][t_pay_gem];
-            m_buy_amt = offers[best_maker_id].buy_amt;
+            m_o_buy_amt = offers[best_maker_id].o_buy_amt;
+            m_o_pay_amt = offers[best_maker_id].o_pay_amt;
             m_pay_amt = offers[best_maker_id].pay_amt;
 
             // Ugly hack to work around rounding errors. Based on the idea that
@@ -541,27 +544,33 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             // their "correct" values and m_buy_amt and t_buy_amt at -1.
             // Since (c - 1) * (d - 1) > (a + 1) * (b + 1) is equivalent to
             // c * d > a * b + a + b + c + d, we write...
-            if (mul(m_buy_amt, t_buy_amt) > mul(t_pay_amt, m_pay_amt) +
-                (rounding ? m_buy_amt + t_buy_amt + t_pay_amt + m_pay_amt : 0))
+            if (mul(m_o_buy_amt, t_o_buy_amt) > add(add(add(add(mul(t_o_pay_amt, m_o_pay_amt) ,
+                m_o_buy_amt), t_o_buy_amt), t_o_pay_amt), m_o_pay_amt) )
             {
                 break;
             }
-            // ^ The `rounding` parameter is a compromise borne of a couple days
-            // of discussion.
 
             buy(best_maker_id, min(m_pay_amt, t_buy_amt));
-            t_buy_amt_old = t_buy_amt;
             t_buy_amt = sub(t_buy_amt, min(m_pay_amt, t_buy_amt));
-            t_pay_amt = mul(t_buy_amt, t_pay_amt) / t_buy_amt_old;
+            t_pay_amt = mul(t_buy_amt, t_o_pay_amt) / t_o_buy_amt;
 
             if (t_pay_amt == 0 || t_buy_amt == 0) {
                 break;
             }
         }
 
-        if (t_buy_amt > 0 && t_pay_amt > 0) {
+        //if maker offer has become dust during matching, we cancel it 
+        if ( isActive(best_maker_id) && offers[best_maker_id].pay_amt < _dust[t_buy_gem] ) {
+            dust_id = best_maker_id;
+            cancel(best_maker_id);
+        }
+        
+        //create new taker offer if necessary
+        if (t_buy_amt > 0 && t_pay_amt > _dust[t_pay_gem] ) {
             //new offer should be created
             id = super.offer(t_pay_amt, t_pay_gem, t_buy_amt, t_buy_gem);
+            offers[id].o_pay_amt = t_o_pay_amt; //set original taker pay amount
+            offers[id].o_buy_amt = t_o_buy_amt; //set original taker buy amount
             //insert offer into the sorted list
             _sort(id, pos);
         }
@@ -569,7 +578,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
     // Make a new offer without putting it in the sorted list.
     // Takes funds from the caller into market escrow.
-    // ****Available to authorized contracts only!**********
     // Keepers should call insert(id,pos) to put offer in the sorted list.
     function _offeru(
         uint pay_amt,      //maker (ask) sell how much
