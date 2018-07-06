@@ -62,7 +62,11 @@ contract SimpleMarket is EventfulMarket, DSMath {
 
     bool locked;
 
+    uint dust_id;
+
     struct OfferInfo {
+        uint     o_pay_amt; //original pay_amt, always calculate price with this
+        uint     o_buy_amt; //original buy_amt, always calculate price with this
         uint     pay_amt;
         ERC20    pay_gem;
         uint     buy_amt;
@@ -78,7 +82,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
 
     modifier can_cancel(uint id) {
         require(isActive(id));
-        require(getOwner(id) == msg.sender);
+        require(getOwner(id) == msg.sender || id == dust_id);
         _;
     }
 
@@ -107,24 +111,12 @@ contract SimpleMarket is EventfulMarket, DSMath {
               offer.buy_amt, offer.buy_gem);
     }
 
-    // ---- Public entrypoints ---- //
-
-    function bump(bytes32 id_)
-        public
-        can_buy(uint256(id_))
-    {
-        var id = uint256(id_);
-        LogBump(
-            id_,
-            keccak256(offers[id].pay_gem, offers[id].buy_gem),
-            offers[id].owner,
-            offers[id].pay_gem,
-            offers[id].buy_gem,
-            uint128(offers[id].pay_amt),
-            uint128(offers[id].buy_amt),
-            offers[id].timestamp
-        );
+    function getOfferAll(uint id) public constant returns (uint, uint, ERC20, uint, uint, ERC20) {
+      var offer = offers[id];
+      return (offer.o_pay_amt, offer.pay_amt, offer.pay_gem,
+              offer.o_buy_amt, offer.buy_amt, offer.buy_gem);
     }
+    // ---- Public entrypoints ---- //
 
     // Accept given `quantity` of an offer. Transfers funds from caller to
     // offer maker, and from market to caller.
@@ -135,7 +127,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
         returns (bool)
     {
         OfferInfo memory offer = offers[id];
-        uint spend = mul(quantity, offer.buy_amt) / offer.pay_amt;
+        uint spend = mul(quantity, offer.o_buy_amt) / offer.o_pay_amt;
 
         require(uint128(spend) == spend);
         require(uint128(quantity) == quantity);
@@ -235,6 +227,8 @@ contract SimpleMarket is EventfulMarket, DSMath {
         require(pay_gem != buy_gem);
 
         OfferInfo memory info;
+        info.o_pay_amt = pay_amt;
+        info.o_buy_amt = buy_amt;
         info.pay_amt = pay_amt;
         info.pay_gem = pay_gem;
         info.buy_amt = buy_amt;
