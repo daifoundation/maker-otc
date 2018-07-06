@@ -97,6 +97,15 @@ contract SimpleMarket is EventfulMarket, DSMath {
         locked = false;
     }
 
+    function _next_id()
+        internal
+        returns (uint)
+    {
+        last_offer_id++; return last_offer_id;
+    }
+
+    // ---- Public entrypoints ---- //
+
     function isActive(uint id) public constant returns (bool active) {
         return offers[id].timestamp > 0;
     }
@@ -116,7 +125,6 @@ contract SimpleMarket is EventfulMarket, DSMath {
       return (offer.o_pay_amt, offer.pay_amt, offer.pay_gem,
               offer.o_buy_amt, offer.buy_amt, offer.buy_gem);
     }
-    // ---- Public entrypoints ---- //
 
     // Accept given `quantity` of an offer. Transfers funds from caller to
     // offer maker, and from market to caller.
@@ -257,12 +265,5 @@ contract SimpleMarket is EventfulMarket, DSMath {
         public
     {
         require(buy(uint256(id), maxTakeAmount));
-    }
-
-    function _next_id()
-        internal
-        returns (uint)
-    {
-        last_offer_id++; return last_offer_id;
     }
 }
