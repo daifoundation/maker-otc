@@ -13,6 +13,14 @@ contract MarketTester {
     function doApprove(address spender, uint value, ERC20 token) public {
         token.approve(spender, value);
     }
+    function doOffer(uint pay_amt, ERC20 pay_gem,
+                    uint buy_amt,  ERC20 buy_gem)
+        public
+        returns (uint)
+    {
+        return market.offer(pay_amt, pay_gem,
+                  buy_amt, buy_gem);
+    }
     function doBuy(uint id, uint buy_how_much) public returns (bool _success) {
         return market.buy(id, buy_how_much);
     }
@@ -33,6 +41,29 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         dai = new DSTokenBase(10 ** 9);
         mkr = new DSTokenBase(10 ** 6);
     }
+    function testOriginalPayAndBuySet() public {
+        uint o_pay_amt;
+        uint o_buy_amt;
+        dai.transfer(user1, 100);
+        user1.doApprove(otc, 100, dai);
+        uint id0 = user1.doOffer(100, dai, 100, mkr);
+        (o_pay_amt,o_buy_amt,,,,)=otc.getOffer(id0);
+        assert( o_pay_amt == 100 );
+        assert( o_buy_amt == 100 );
+    }
+    function testOriginalPayAndBuyUnchanged() public {
+        uint o_pay_amt;
+        uint o_buy_amt;
+        dai.transfer(user1, 100);
+        user1.doApprove(otc, 100, dai);
+        mkr.approve(otc, 10);
+        uint id0 = user1.doOffer(100, dai, 100, mkr);
+        otc.offer(10, mkr, 10, dai);
+        (o_pay_amt,o_buy_amt,,,,)=otc.getOffer(id0);
+        assert( o_pay_amt == 100 );
+        assert( o_buy_amt == 100 );
+    }
+
     function testBasicTrade() public {
         dai.transfer(user1, 100);
         user1.doApprove(otc, 100, dai);
@@ -75,7 +106,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         var my_dai_balance_after = dai.balanceOf(this);
         var user1_mkr_balance_after = mkr.balanceOf(user1);
         var user1_dai_balance_after = dai.balanceOf(user1);
-        var (sell_val, sell_token, buy_val, buy_token) = otc.getOffer(id);
+        var (, sell_val, sell_token, , buy_val, buy_token) = otc.getOffer(id);
 
         assertEq(200, my_mkr_balance_before - my_mkr_balance_after);
         assertEq(25, my_dai_balance_after - my_dai_balance_before);
@@ -107,7 +138,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         var my_dai_balance_after = dai.balanceOf(this);
         var user1_mkr_balance_after = mkr.balanceOf(user1);
         var user1_dai_balance_after = dai.balanceOf(user1);
-        var (sell_val, sell_token, buy_val, buy_token) = otc.getOffer(id);
+        var (, sell_val, sell_token, , buy_val, buy_token) = otc.getOffer(id);
 
         assertEq(500, my_dai_balance_before - my_dai_balance_after);
         assertEq(4, my_mkr_balance_after - my_mkr_balance_before);
@@ -140,7 +171,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         var my_dai_balance_after = dai.balanceOf(this);
         var user1_mkr_balance_after = mkr.balanceOf(user1);
         var user1_dai_balance_after = dai.balanceOf(user1);
-        var (sell_val, sell_token, buy_val, buy_token) = otc.getOffer(id);
+        var (, sell_val, sell_token, , buy_val, buy_token) = otc.getOffer(id);
 
         assertEq(0, my_dai_balance_before - my_dai_balance_after);
         assertEq(200, my_mkr_balance_before - my_mkr_balance_after);

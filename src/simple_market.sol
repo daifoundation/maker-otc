@@ -63,6 +63,8 @@ contract SimpleMarket is EventfulMarket, DSMath {
     bool locked;
 
     struct OfferInfo {
+        uint     o_pay_amt; //original pay_amt, always calculate price with this
+        uint     o_buy_amt; //original buy_amt, always calculate price with this
         uint     pay_amt;
         ERC20    pay_gem;
         uint     buy_amt;
@@ -93,6 +95,15 @@ contract SimpleMarket is EventfulMarket, DSMath {
         locked = false;
     }
 
+    function _next_id()
+        internal
+        returns (uint)
+    {
+        last_offer_id++; return last_offer_id;
+    }
+
+    // ---- Public entrypoints ---- //
+
     function isActive(uint id) public constant returns (bool active) {
         return offers[id].timestamp > 0;
     }
@@ -101,29 +112,10 @@ contract SimpleMarket is EventfulMarket, DSMath {
         return offers[id].owner;
     }
 
-    function getOffer(uint id) public constant returns (uint, ERC20, uint, ERC20) {
+    function getOffer(uint id) public constant returns (uint, uint, ERC20, uint, uint, ERC20) {
       var offer = offers[id];
-      return (offer.pay_amt, offer.pay_gem,
-              offer.buy_amt, offer.buy_gem);
-    }
-
-    // ---- Public entrypoints ---- //
-
-    function bump(bytes32 id_)
-        public
-        can_buy(uint256(id_))
-    {
-        var id = uint256(id_);
-        LogBump(
-            id_,
-            keccak256(offers[id].pay_gem, offers[id].buy_gem),
-            offers[id].owner,
-            offers[id].pay_gem,
-            offers[id].buy_gem,
-            uint128(offers[id].pay_amt),
-            uint128(offers[id].buy_amt),
-            offers[id].timestamp
-        );
+      return (offer.o_pay_amt, offer.pay_amt, offer.pay_gem,
+              offer.o_buy_amt, offer.buy_amt, offer.buy_gem);
     }
 
     // Accept given `quantity` of an offer. Transfers funds from caller to
@@ -135,7 +127,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
         returns (bool)
     {
         OfferInfo memory offer = offers[id];
-        uint spend = mul(quantity, offer.buy_amt) / offer.pay_amt;
+        uint spend = mul(quantity, offer.o_buy_amt) / offer.o_pay_amt;
 
         require(uint128(spend) == spend);
         require(uint128(quantity) == quantity);
@@ -235,6 +227,8 @@ contract SimpleMarket is EventfulMarket, DSMath {
         require(pay_gem != buy_gem);
 
         OfferInfo memory info;
+        info.o_pay_amt = pay_amt;
+        info.o_buy_amt = buy_amt;
         info.pay_amt = pay_amt;
         info.pay_gem = pay_gem;
         info.buy_amt = buy_amt;
@@ -263,12 +257,5 @@ contract SimpleMarket is EventfulMarket, DSMath {
         public
     {
         require(buy(uint256(id), maxTakeAmount));
-    }
-
-    function _next_id()
-        internal
-        returns (uint)
-    {
-        last_offer_id++; return last_offer_id;
     }
 }
