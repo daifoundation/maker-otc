@@ -94,15 +94,6 @@ contract MarketTester {
         return market.offer(pay_amt, pay_gem,
                   buy_amt, buy_gem, pos);
     }
-    function doOffer(uint pay_amt, ERC20 pay_gem,
-                    uint buy_amt,  ERC20 buy_gem,
-                    uint pos, bool rounding)
-        public
-        returns (uint)
-    {
-        return market.offer(pay_amt, pay_gem,
-                  buy_amt, buy_gem, pos, rounding);
-    }
     function doCancel(uint id) public returns (bool _success) {
         return market.cancel(id);
     }
@@ -676,7 +667,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
 
         // `false` and `true` both allow rounding to a slightly higher price
         // in order to find a match.
-        user1.doOffer(dai_pay, dai, dgd_buy, dgd, 0, true);
+        user1.doOffer(dai_pay, dai, dgd_buy, dgd, 0);
 
         // We should have paid a bit more than we offered to pay.
         uint expected_overpay = 651528437;
@@ -697,7 +688,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         mkr.approve(otc, MKR_SUPPLY);
 
         // Does not divide cleanly.
-        otc.offer(1504155374, dgd, 18501111110000000000, dai, 0, false);
+        otc.offer(1504155374, dgd, 18501111110000000000, dai, 0);
 
         uint old_dai_bal = dai.balanceOf(user1);
         uint old_dgd_bal = dgd.balanceOf(user1);
@@ -706,7 +697,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
 
         // `false` and `true` both allow rounding to a slightly higher price
         // in order to find a match.
-        user1.doOffer(dai_pay, dai, dgd_buy, dgd, 0, true);
+        user1.doOffer(dai_pay, dai, dgd_buy, dgd, 0);
 
         // We should have paid a bit more than we offered to pay.
         uint expected_overpay = 651528437;
@@ -1452,7 +1443,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         var my_dai_balance_after = dai.balanceOf(this);
         var user1_mkr_balance_after = mkr.balanceOf(user1);
         var user1_dai_balance_after = dai.balanceOf(user1);
-        (sell_val, sell_token, buy_val, buy_token) = otc.getOffer(offer_id[1]);
+        (, sell_val, sell_token, , buy_val, buy_token) = otc.getOffer(offer_id[1]);
 
         assertEq(my_mkr_balance_before - my_mkr_balance_after, 200);
         assertEq(my_dai_balance_after - my_dai_balance_before, 50);
@@ -1484,8 +1475,8 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         var my_dai_balance_after = dai.balanceOf(this);
         var user1_mkr_balance_after = mkr.balanceOf(user1);
         var user1_dai_balance_after = dai.balanceOf(user1);
-         (sell_val, sell_token, buy_val, buy_token) = otc.getOffer(offer_id[1]);
-         (sell_val1, sell_token1, buy_val1, buy_token1) = otc.getOffer(offer_id[2]);
+         (, sell_val, sell_token, , buy_val, buy_token) = otc.getOffer(offer_id[1]);
+         (, sell_val1, sell_token1, , buy_val1, buy_token1) = otc.getOffer(offer_id[2]);
 
         assertEq(my_mkr_balance_before - my_mkr_balance_after, 200);
         assertEq(my_dai_balance_after - my_dai_balance_before, 500 );
@@ -1521,7 +1512,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         mkr.approve(otc, 10);
         offer_id[1] = user1.doOffer(5, dai, 1, mkr);
         offer_id[2] = otc.offer(10, mkr, 10, dai, 0);
-        (sell_val, sell_token, buy_val, buy_token) = otc.getOffer(offer_id[2]);
+        (,sell_val, sell_token, , buy_val, buy_token) = otc.getOffer(offer_id[2]);
 
         assertEq(otc.getBestOffer(dai, mkr), 0);
         assertEq(otc.getBetterOffer(offer_id[1]), 0);
@@ -1541,7 +1532,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.approve(otc, 5);
         offer_id[1] = user1.doOffer( 10, mkr, 10, dai);
         offer_id[2] = otc.offer(5, dai, 5, mkr, 0);
-        (sell_val, sell_token, buy_val, buy_token) = otc.getOffer(offer_id[1]);
+        (,sell_val, sell_token, , buy_val, buy_token) = otc.getOffer(offer_id[1]);
 
         assertEq(otc.getBestOffer(dai, mkr), 0);
         assertEq(otc.getBestOffer(mkr, dai), offer_id[1]);
@@ -1564,7 +1555,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         offer_id[1] = user1.doOffer(5, dai, 1, mkr);
         offer_id[1] = user1.doOffer(4, dai, 1, mkr);
         offer_id[2] = otc.offer(10, mkr, 10, dai, 0);
-        (sell_val, sell_token, buy_val, buy_token) = otc.getOffer(offer_id[2]);
+        (,sell_val, sell_token, , buy_val, buy_token) = otc.getOffer(offer_id[2]);
 
         assertEq(otc.getBestOffer(dai, mkr), 0);
         assertEq(otc.getBetterOffer(offer_id[1]), 0);
@@ -1584,7 +1575,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.approve(otc, 10);
         offer_id[1] = user1.doOffer(5, mkr, 5, dai);
         offer_id[2] = otc.offer(10, dai, 10, mkr, 0);
-        (sell_val, sell_token, buy_val, buy_token) = otc.getOffer(offer_id[2]);
+        (,sell_val, sell_token, ,buy_val, buy_token) = otc.getOffer(offer_id[2]);
 
         assertEq( otc.getBestOffer(dai, mkr), offer_id[2]);
         assertEq( otc.getBestOffer(mkr, dai), 0);
@@ -1607,8 +1598,8 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         offer_id[1] = user1.doOffer(5, mkr, 10, dai);
         offer_id[2] = user1.doOffer(10, mkr, 10, dai);
         offer_id[3] = otc.offer(1, dai, 1, mkr, 0);
-        (sell_val, sell_token, buy_val, buy_token) = otc.getOffer(offer_id[1]);
-        (sell_val1, sell_token1, buy_val1, buy_token1) = otc.getOffer(offer_id[2]);
+        (, sell_val, sell_token, , buy_val, buy_token) = otc.getOffer(offer_id[1]);
+        (, sell_val1, sell_token1, , buy_val1, buy_token1) = otc.getOffer(offer_id[2]);
 
         assertEq(otc.getBestOffer(mkr, dai), offer_id[2]);
         assertEq(otc.getBestOffer(dai, mkr), 0);
@@ -1635,8 +1626,8 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         offer_id[1] = user1.doOffer(5, mkr, 10, dai);
         offer_id[2] = user1.doOffer(1, mkr, 1, dai);
         offer_id[3] = otc.offer(10, dai, 10, mkr, 0);
-        (sell_val, sell_token, buy_val, buy_token) = otc.getOffer(offer_id[1]);
-        (sell_val1, sell_token1, buy_val1, buy_token1) = otc.getOffer(offer_id[3]);
+        (, sell_val, sell_token, , buy_val, buy_token) = otc.getOffer(offer_id[1]);
+        (, sell_val1, sell_token1, , buy_val1, buy_token1) = otc.getOffer(offer_id[3]);
 
         assertEq(otc.getBestOffer(mkr, dai), offer_id[1]);
         assertEq(otc.getBestOffer(dai, mkr), offer_id[3]);
@@ -1666,8 +1657,8 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         offer_id[2] = otc.offer(1, mkr,  1, dai, 0);
         offer_id[3] = otc.offer(10, mkr, 10, dai, 0);
         offer_id[4] = user1.doOffer(3, dai, 3, mkr);
-        (sell_val, sell_token, buy_val, buy_token) = otc.getOffer(offer_id[3]);
-        (sell_val1, sell_token1, buy_val1, buy_token1) = otc.getOffer(offer_id[1]);
+        (,sell_val, sell_token, , buy_val, buy_token) = otc.getOffer(offer_id[3]);
+        (,sell_val1, sell_token1, , buy_val1, buy_token1) = otc.getOffer(offer_id[1]);
 
         assertEq(otc.getBestOffer(mkr, dai), offer_id[3]);
         assertEq(otc.getBestOffer(dai, mkr), 0);
