@@ -31,6 +31,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     mapping(uint => uint) public _near;         //next unsorted offer id
     mapping(bytes32 => bool) public _menu;      //whitelist tracking which token pairs can be traded
     uint _head;                                 //first unsorted offer id
+    uint dust_id;                               //id of the latest offer marked as dust
 
     //check if token pair is enabled
     modifier isWhitelist(ERC20 buy_gem, ERC20 pay_gem) {
@@ -41,6 +42,13 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     function MatchingMarket(uint64 close_time) ExpiringMarket(close_time) public {
     }
 
+    // after close, anyone can cancel an offer
+    modifier can_cancel(uint id) {
+        require(isActive(id));
+        require(isClosed() || (msg.sender == getOwner(id) || id == dust_id));
+        _;
+    }
+    
     // ---- Public entrypoints ---- //
 
     function make(
@@ -99,26 +107,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint buy_amt,    //maker (ask) buy how much
         ERC20 buy_gem,   //maker (ask) buy which token
         uint pos         //position to insert offer, 0 should be used if unknown
-    )
-        public
-        isWhitelist(pay_gem, buy_gem)
-        /*NOT synchronized!!! */
-        can_offer
-        returns (uint)
-    {
-        return offer(pay_amt, pay_gem, buy_amt, buy_gem, pos, false);
-    }
-
-    //deprecated as 'rounding' is now the default behavior
-    //will be removed in next version!
-    //use offer(pay_amt, pay_gem, buy_amt, buy_gem, pos) instead!
-    function offer(
-        uint pay_amt,    //maker (ask) sell how much
-        ERC20 pay_gem,   //maker (ask) sell which token
-        uint buy_amt,    //maker (ask) buy how much
-        ERC20 buy_gem,   //maker (ask) buy which token
-        uint pos,        //position to insert offer, 0 should be used if unknown
-        bool rounding    //not used, since we always match "close enough" orders
     )
         public
         isWhitelist(pay_gem, buy_gem)

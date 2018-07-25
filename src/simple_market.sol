@@ -62,8 +62,6 @@ contract SimpleMarket is EventfulMarket, DSMath {
 
     bool locked;
 
-    uint dust_id;
-
     struct OfferInfo {
         uint     o_pay_amt; //original pay_amt, always calculate price with this
         uint     o_buy_amt; //original buy_amt, always calculate price with this
@@ -82,7 +80,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
 
     modifier can_cancel(uint id) {
         require(isActive(id));
-        require(getOwner(id) == msg.sender || id == dust_id);
+        require(getOwner(id) == msg.sender);
         _;
     }
 
@@ -114,13 +112,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
         return offers[id].owner;
     }
 
-    function getOffer(uint id) public constant returns (uint, ERC20, uint, ERC20) {
-      var offer = offers[id];
-      return (offer.pay_amt, offer.pay_gem,
-              offer.buy_amt, offer.buy_gem);
-    }
-
-    function getOfferAll(uint id) public constant returns (uint, uint, ERC20, uint, uint, ERC20) {
+    function getOffer(uint id) public constant returns (uint, uint, ERC20, uint, uint, ERC20) {
       var offer = offers[id];
       return (offer.o_pay_amt, offer.pay_amt, offer.pay_gem,
               offer.o_buy_amt, offer.buy_amt, offer.buy_gem);

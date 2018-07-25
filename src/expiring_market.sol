@@ -27,7 +27,7 @@ contract ExpiringMarket is DSAuth, SimpleMarket {
     // after close, anyone can cancel an offer
     modifier can_cancel(uint id) {
         require(isActive(id));
-        require(isClosed() || (msg.sender == getOwner(id) || dust_id == id));
+        require(isClosed() || (msg.sender == getOwner(id)));
         _;
     }
 

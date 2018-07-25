@@ -47,7 +47,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         dai.transfer(user1, 100);
         user1.doApprove(otc, 100, dai);
         uint id0 = user1.doOffer(100, dai, 100, mkr);
-        (o_pay_amt,o_buy_amt,,,,)=otc.getOfferAll(id0);
+        (o_pay_amt,o_buy_amt,,,,)=otc.getOffer(id0);
         assert( o_pay_amt == 100 );
         assert( o_buy_amt == 100 );
     }
@@ -59,7 +59,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         mkr.approve(otc, 10);
         uint id0 = user1.doOffer(100, dai, 100, mkr);
         otc.offer(10, mkr, 10, dai);
-        (o_pay_amt,o_buy_amt,,,,)=otc.getOfferAll(id0);
+        (o_pay_amt,o_buy_amt,,,,)=otc.getOffer(id0);
         assert( o_pay_amt == 100 );
         assert( o_buy_amt == 100 );
     }
@@ -106,7 +106,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         var my_dai_balance_after = dai.balanceOf(this);
         var user1_mkr_balance_after = mkr.balanceOf(user1);
         var user1_dai_balance_after = dai.balanceOf(user1);
-        var (sell_val, sell_token, buy_val, buy_token) = otc.getOffer(id);
+        var (, sell_val, sell_token, , buy_val, buy_token) = otc.getOffer(id);
 
         assertEq(200, my_mkr_balance_before - my_mkr_balance_after);
         assertEq(25, my_dai_balance_after - my_dai_balance_before);
@@ -138,7 +138,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         var my_dai_balance_after = dai.balanceOf(this);
         var user1_mkr_balance_after = mkr.balanceOf(user1);
         var user1_dai_balance_after = dai.balanceOf(user1);
-        var (sell_val, sell_token, buy_val, buy_token) = otc.getOffer(id);
+        var (, sell_val, sell_token, , buy_val, buy_token) = otc.getOffer(id);
 
         assertEq(500, my_dai_balance_before - my_dai_balance_after);
         assertEq(4, my_mkr_balance_after - my_mkr_balance_before);
@@ -171,7 +171,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         var my_dai_balance_after = dai.balanceOf(this);
         var user1_mkr_balance_after = mkr.balanceOf(user1);
         var user1_dai_balance_after = dai.balanceOf(user1);
-        var (sell_val, sell_token, buy_val, buy_token) = otc.getOffer(id);
+        var (, sell_val, sell_token, , buy_val, buy_token) = otc.getOffer(id);
 
         assertEq(0, my_dai_balance_before - my_dai_balance_after);
         assertEq(200, my_mkr_balance_before - my_mkr_balance_after);
