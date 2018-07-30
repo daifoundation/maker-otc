@@ -113,7 +113,6 @@ contract OrderMatchingGasTest is DSTest {
         dai = new DSTokenBase(DAI_SUPPLY);
         mkr = new DSTokenBase(MKR_SUPPLY);
         dgd = new DSTokenBase(DGD_SUPPLY);
-        otc.addTokenPairWhitelist(dai, mkr);
         user1 = new MarketTester(otc);
         dai.transfer(user1, (DAI_SUPPLY / 3) * 2);
         user1.doApprove(otc, DAI_SUPPLY / 3, dai );
@@ -400,8 +399,6 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         mkr = new DSTokenBase(MKR_SUPPLY);
         dgd = new DSTokenBase(DGD_SUPPLY);
         otc = new MatchingMarket(uint64(now + 1 weeks));
-        otc.addTokenPairWhitelist(dai, mkr);
-        otc.addTokenPairWhitelist(dgd, dai);
         user1 = new MarketTester(otc);
     }
     function testDustMakerOfferCanceled() public {
@@ -1628,58 +1625,6 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assert(address(buy_token) > 0x0);
         assert(address(sell_token1) > 0x0);
         assert(address(buy_token1) > 0x0);
-    }
-    //check if a token pair is whitelisted
-    function testIsTokenPairWhitelisted() public view {
-        ERC20 baseToken = mkr;
-        ERC20 quoteToken = dai;
-        assert(otc.isTokenPairWhitelisted(baseToken, quoteToken));
-    }
-    //check if a token pair in reverse order is whitelisted
-    function testIsTokenPairWhitelisted2() public view {
-        ERC20 baseToken = dai;
-        ERC20 quoteToken = mkr;
-        assert(otc.isTokenPairWhitelisted(baseToken, quoteToken));
-    }
-    //check if a token pair that is not in whitelist is whitelisted
-    function testIsTokenPairWhitelisted3() public {
-        ERC20 gnt = new DSTokenBase(10 ** 9);
-        ERC20 baseToken = dgd;
-        ERC20 quoteToken = gnt;
-        assert(!otc.isTokenPairWhitelisted(baseToken, quoteToken));
-    }
-    //remove token pair in same order it was added
-    function testRemTokenPairFromWhitelist() public {
-        ERC20 baseToken = dai;
-        ERC20 quoteToken = mkr;
-        assert(otc.isTokenPairWhitelisted(baseToken, quoteToken));
-        assert(otc.remTokenPairWhitelist(baseToken, quoteToken));
-        assert(!otc.isTokenPairWhitelisted(baseToken, quoteToken));
-    }
-    //remove token pair in reverse order of which it was added
-    function testRemTokenPairFromWhitelist2() public {
-        ERC20 baseToken = dai;
-        ERC20 quoteToken = dgd;
-        assert(otc.isTokenPairWhitelisted(baseToken, quoteToken));
-        assert(otc.remTokenPairWhitelist(baseToken, quoteToken));
-        assert(!otc.isTokenPairWhitelisted(baseToken, quoteToken));
-    }
-    //add new token pair to whitelist
-    function testAddTokenPairToWhitelist() public {
-        ERC20 baseToken = mkr;
-        ERC20 quoteToken = dgd;
-        assert(!otc.isTokenPairWhitelisted(baseToken, quoteToken));
-        assert(otc.addTokenPairWhitelist(baseToken, quoteToken));
-        assert(otc.isTokenPairWhitelisted(baseToken, quoteToken));
-    }
-    //add token pair that was previously added and removed from whitelist
-    function testAddTokenPairToWhitelist2() public {
-        ERC20 baseToken = mkr;
-        ERC20 quoteToken = dai;
-        assert(otc.remTokenPairWhitelist(baseToken, quoteToken));
-        assert(!otc.isTokenPairWhitelisted(baseToken, quoteToken));
-        assert(otc.addTokenPairWhitelist(baseToken, quoteToken));
-        assert(otc.isTokenPairWhitelisted(baseToken, quoteToken));
     }
 
     function testSellAllDai() public {
