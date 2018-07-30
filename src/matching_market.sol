@@ -4,7 +4,6 @@ import "./expiring_market.sol";
 import "ds-note/note.sol";
 
 contract MatchingEvents {
-    event LogBuyEnabled(bool isEnabled);
     event LogMinSell(address pay_gem, uint min_amount);
     event LogUnsortedOffer(uint id);
     event LogSortedOffer(uint id);
@@ -13,8 +12,6 @@ contract MatchingEvents {
 }
 
 contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
-    bool public buyEnabled = true;      //buy enabled
-
     struct sortInfo {
         uint next;  //points to id of next higher offer
         uint prev;  //points to id of previous lower offer
@@ -154,8 +151,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         canBuy(id)
         returns (bool)
     {
-        require(buyEnabled);
-
         if (amount == offers[id].pay_amt && isOfferSorted(id)) {
             //offers[id] must be removed from sorted list because all of it is bought
             _unsort(id);
@@ -235,13 +230,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         returns (uint)
     {
         return _dust[pay_gem];
-    }
-
-    //set buy functionality enabled/disabled
-    function setBuyEnabled(bool buyEnabled_) public auth returns (bool) {
-        buyEnabled = buyEnabled_;
-        emit LogBuyEnabled(buyEnabled);
-        return true;
     }
 
     //return the best offer for a token pair
