@@ -35,11 +35,11 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
     //check if token pair is enabled
     modifier isWhitelist(ERC20 buy_gem, ERC20 pay_gem) {
-        require(_menu[keccak256(buy_gem, pay_gem)] || _menu[keccak256(pay_gem, buy_gem)]);
+        require(_menu[keccak256(abi.encodePacked(buy_gem, pay_gem))] || _menu[keccak256(abi.encodePacked(pay_gem, buy_gem))]);
         _;
     }
 
-    function MatchingMarket(uint64 close_time) ExpiringMarket(close_time) public {
+    constructor(uint64 close_time) ExpiringMarket(close_time) public {
     }
 
     // after close, anyone can cancel an offer
@@ -195,7 +195,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         require(!isTokenPairWhitelisted(baseToken, quoteToken));
         require(address(baseToken) != 0x0 && address(quoteToken) != 0x0);
 
-        _menu[keccak256(baseToken, quoteToken)] = true;
+        _menu[keccak256(abi.encodePacked(baseToken, quoteToken))] = true;
         LogAddTokenPairWhitelist(baseToken, quoteToken);
         return true;
     }
@@ -214,8 +214,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     {
         require(isTokenPairWhitelisted(baseToken, quoteToken));
 
-        delete _menu[keccak256(baseToken, quoteToken)];
-        delete _menu[keccak256(quoteToken, baseToken)];
+        delete _menu[keccak256(abi.encodePacked(baseToken, quoteToken))];
+        delete _menu[keccak256(abi.encodePacked(quoteToken, baseToken))];
         LogRemTokenPairWhitelist(baseToken, quoteToken);
         return true;
     }
@@ -228,7 +228,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         constant
         returns (bool)
     {
-        return (_menu[keccak256(baseToken, quoteToken)] || _menu[keccak256(quoteToken, baseToken)]);
+        return (_menu[keccak256(abi.encodePacked(baseToken, quoteToken))] || _menu[keccak256(abi.encodePacked(quoteToken, baseToken))]);
     }
 
     //set the minimum sell amount for a token
@@ -277,7 +277,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     //    and matching is not done, and sorted lists are disabled.
     function setMatchingEnabled(bool matchingEnabled_) public auth returns (bool) {
         matchingEnabled = matchingEnabled_;
-        LogMatchingEnabled(matchingEnabled);
+        emit LogMatchingEnabled(matchingEnabled);
         return true;
     }
 
@@ -349,7 +349,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
                 pay_amt = sub(pay_amt, offers[offerId].buy_amt);            //Decrease amount to sell
                 take(bytes32(offerId), uint128(offers[offerId].pay_amt));   //We take the whole offer
             } else { // if lower
-                var baux = rmul(pay_amt * 10 ** 9, rdiv(offers[offerId].o_pay_amt, offers[offerId].o_buy_amt)) / 10 ** 9;
+                uint baux = rmul(pay_amt * 10 ** 9, rdiv(offers[offerId].o_pay_amt, offers[offerId].o_buy_amt)) / 10 ** 9;
                 fill_amt = add(fill_amt, baux);         //Add amount bought to acumulator
                 take(bytes32(offerId), uint128(baux));  //We take the portion of the offer that we need
                 pay_amt = 0;                            //All amount is sold
@@ -385,7 +385,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     }
 
     function getBuyAmount(ERC20 buy_gem, ERC20 pay_gem, uint pay_amt) public constant returns (uint fill_amt) {
-        var offerId = getBestOffer(buy_gem, pay_gem);           //Get best offer for the token pair
+        uint offerId = getBestOffer(buy_gem, pay_gem);           //Get best offer for the token pair
         while (pay_amt > offers[offerId].buy_amt) {
             fill_amt = add(fill_amt, offers[offerId].pay_amt);  //Add amount to buy accumulator
             pay_amt = sub(pay_amt, offers[offerId].buy_amt);    //Decrease amount to pay
@@ -398,7 +398,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     }
 
     function getPayAmount(ERC20 pay_gem, ERC20 buy_gem, uint buy_amt) public constant returns (uint fill_amt) {
-        var offerId = getBestOffer(buy_gem, pay_gem);           //Get best offer for the token pair
+        uint offerId = getBestOffer(buy_gem, pay_gem);           //Get best offer for the token pair
         while (buy_amt > offers[offerId].pay_amt) {
             fill_amt = add(fill_amt, offers[offerId].buy_amt);  //Add amount to pay accumulator
             buy_amt = sub(buy_amt, offers[offerId].pay_amt);    //Decrease amount to buy

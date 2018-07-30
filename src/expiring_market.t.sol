@@ -9,7 +9,7 @@ import "./simple_market.t.sol";
 contract WarpingExpiringMarket is ExpiringMarket {
     uint64 _now;
 
-    function WarpingExpiringMarket(uint64 close_time) ExpiringMarket(close_time) public {
+    constructor(uint64 close_time) ExpiringMarket(close_time) public {
         _now = uint64(now);
     }
 
@@ -71,15 +71,15 @@ contract ExpiringMarketTest is DSTest {
         otc.offer(30, mkr, 100, dai);
     }
     function testCancelBeforeExpiry() public {
-        var id = otc.offer(30, mkr, 100, dai);
+        uint id = otc.offer(30, mkr, 100, dai);
         otc.cancel(id);
     }
     function testFailCancelNonOwnerBeforeExpiry() public {
-        var id = otc.offer(30, mkr, 100, dai);
+        uint id = otc.offer(30, mkr, 100, dai);
         user1.doCancel(id);
     }
     function testCancelNonOwnerAfterExpiry() public {
-        var id = otc.offer(30, mkr, 100, dai);
+        uint id = otc.offer(30, mkr, 100, dai);
         otc.warp(LIFETIME + 1 seconds);
 
         assert(otc.isActive(id));
@@ -87,11 +87,11 @@ contract ExpiringMarketTest is DSTest {
         assert(!otc.isActive(id));
     }
     function testBuyBeforeExpiry() public {
-        var id = otc.offer(30, mkr, 100, dai);
+        uint id = otc.offer(30, mkr, 100, dai);
         assert(user1.doBuy(id, 30));
     }
     function testFailBuyAfterExpiry() public {
-        var id = otc.offer(30, mkr, 100, dai);
+        uint id = otc.offer(30, mkr, 100, dai);
         otc.warp(LIFETIME + 1 seconds);
         user1.doBuy(id, 30);
     }
@@ -121,22 +121,22 @@ contract ExpiringCancelTransferTest is CancelTransferTest
     uint64 constant LIFETIME = 1 weeks;
 
     function testCancelAfterExpiryTransfersFromMarket() public {
-        var id = otc.offer(30, mkr, 100, dai);
+        uint id = otc.offer(30, mkr, 100, dai);
         WarpingExpiringMarket(otc).warp(LIFETIME + 1 seconds);
 
-        var balance_before = mkr.balanceOf(otc);
+        uint balance_before = mkr.balanceOf(otc);
         otc.cancel(id);
-        var balance_after = mkr.balanceOf(otc);
+        uint balance_after = mkr.balanceOf(otc);
 
         assertEq(balance_before - balance_after, 30);
     }
     function testCancelAfterExpiryTransfersToSeller() public {
-        var id = otc.offer(30, mkr, 100, dai);
+        uint id = otc.offer(30, mkr, 100, dai);
         WarpingExpiringMarket(otc).warp(LIFETIME + 1 seconds);
 
-        var balance_before = mkr.balanceOf(this);
+        uint balance_before = mkr.balanceOf(this);
         user1.doCancel(id);
-        var balance_after = mkr.balanceOf(this);
+        uint balance_after = mkr.balanceOf(this);
 
         assertEq(balance_after - balance_before, 30);
     }
