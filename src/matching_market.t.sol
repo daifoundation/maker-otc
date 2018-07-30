@@ -7,7 +7,7 @@ import "./matching_market.sol";
 
 contract MarketTester {
     MatchingMarket market;
-    function MarketTester(MatchingMarket  market_) public {
+    constructor(MatchingMarket  market_) public {
         market = market_;
     }
     function doGetFirstUnsortedOffer()

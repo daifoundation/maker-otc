@@ -96,8 +96,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         /* NOT synchronized!!! */
         returns (uint)
     {
-        var fn = matchingEnabled ? _offeru : super.offer;
-        return fn(pay_amt, pay_gem, buy_amt, buy_gem);
+        return (matchingEnabled ? _offeru : super.offer)(pay_amt, pay_gem, buy_amt, buy_gem);
     }
 
     // Make a new offer. Takes funds from the caller into market escrow.
@@ -129,8 +128,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         can_buy(id)
         returns (bool)
     {
-        var fn = matchingEnabled ? _buys : super.buy;
-        return fn(id, amount);
+        return (matchingEnabled ? _buys : super.buy)(id, amount);
     }
 
     // Cancel an offer. Refunds offer maker.
@@ -164,7 +162,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
         _hide(id);                      //remove offer from unsorted offers list
         _sort(id, pos);                 //put offer into the sorted offers list
-        LogInsert(msg.sender, id);
+        emit LogInsert(msg.sender, id);
         return true;
     }
 
@@ -176,7 +174,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     {
         require(!isActive(id) && _rank[id].delb != 0 && _rank[id].delb < block.number - 10);
         delete _rank[id];
-        LogDelete(msg.sender, id);
+        emit LogDelete(msg.sender, id);
         return true;
     }
 
@@ -196,7 +194,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         require(address(baseToken) != 0x0 && address(quoteToken) != 0x0);
 
         _menu[keccak256(abi.encodePacked(baseToken, quoteToken))] = true;
-        LogAddTokenPairWhitelist(baseToken, quoteToken);
+        emit LogAddTokenPairWhitelist(baseToken, quoteToken);
         return true;
     }
 
@@ -216,7 +214,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
         delete _menu[keccak256(abi.encodePacked(baseToken, quoteToken))];
         delete _menu[keccak256(abi.encodePacked(quoteToken, baseToken))];
-        LogRemTokenPairWhitelist(baseToken, quoteToken);
+        emit LogRemTokenPairWhitelist(baseToken, quoteToken);
         return true;
     }
 
@@ -246,7 +244,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         returns (bool)
     {
         _dust[pay_gem] = dust;
-        LogMinSell(pay_gem, dust);
+        emit LogMinSell(pay_gem, dust);
         return true;
     }
 
@@ -264,7 +262,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     //set buy functionality enabled/disabled
     function setBuyEnabled(bool buyEnabled_) public auth returns (bool) {
         buyEnabled = buyEnabled_;
-        LogBuyEnabled(buyEnabled);
+        emit LogBuyEnabled(buyEnabled);
         return true;
     }
 
@@ -581,7 +579,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         id = super.offer(pay_amt, pay_gem, buy_amt, buy_gem);
         _near[id] = _head;
         _head = id;
-        LogUnsortedOffer(id);
+        emit LogUnsortedOffer(id);
     }
 
     //put offer into the sorted list
@@ -636,7 +634,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         }
 
         _span[pay_gem][buy_gem]++;
-        LogSortedOffer(id);
+        emit LogSortedOffer(id);
     }
 
     // Remove offer from the sorted list (does not cancel offer)
