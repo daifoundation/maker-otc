@@ -9,7 +9,6 @@ import "./simple_market.sol";
 
 contract ExpiringMarket is DSAuth, SimpleMarket {
     uint64 public close_time;
-    bool public stopped;
 
     // after close_time has been reached, no new offers are allowed
     modifier canOffer {
@@ -38,14 +37,10 @@ contract ExpiringMarket is DSAuth, SimpleMarket {
     }
 
     function isClosed() public view returns (bool closed) {
-        return stopped || getTime() > close_time;
+        return getTime() > close_time;
     }
 
     function getTime() public view returns (uint64) {
         return uint64(now);
-    }
-
-    function stop() public auth {
-        stopped = true;
     }
 }

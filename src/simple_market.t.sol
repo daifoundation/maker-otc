@@ -222,8 +222,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
     }
     function testFailOfferNotEnoughFunds() public {
         mkr.transfer(address(0x0), mkr.balanceOf(this) - 29);
-        uint id = otc.offer(30, mkr, 100, dai);
-        assert(id >= 0);     //ugly hack to stop compiler from throwing a warning for unused uint id
+        otc.offer(30, mkr, 100, dai);
     }
     function testFailBuyNotEnoughFunds() public {
         uint id = otc.offer(30, mkr, 101, dai);
