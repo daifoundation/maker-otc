@@ -106,7 +106,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         uint my_dai_balance_after = dai.balanceOf(this);
         uint user1_mkr_balance_after = mkr.balanceOf(user1);
         uint user1_dai_balance_after = dai.balanceOf(user1);
-        var (, , sell_val, sell_token, buy_val, buy_token, , ) = otc.offers(id);
+        (, , uint sell_val, ERC20 sell_token, uint buy_val, ERC20 buy_token, , ) = otc.offers(id);
 
         assertEq(200, my_mkr_balance_before - my_mkr_balance_after);
         assertEq(25, my_dai_balance_after - my_dai_balance_before);
@@ -138,7 +138,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         uint my_dai_balance_after = dai.balanceOf(this);
         uint user1_mkr_balance_after = mkr.balanceOf(user1);
         uint user1_dai_balance_after = dai.balanceOf(user1);
-        var (, , sell_val, sell_token, buy_val, buy_token, , ) = otc.offers(id);
+        (, , uint sell_val, ERC20 sell_token, uint buy_val, ERC20 buy_token, , ) = otc.offers(id);
 
         assertEq(500, my_dai_balance_before - my_dai_balance_after);
         assertEq(4, my_mkr_balance_after - my_mkr_balance_before);
@@ -171,7 +171,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         uint my_dai_balance_after = dai.balanceOf(this);
         uint user1_mkr_balance_after = mkr.balanceOf(user1);
         uint user1_dai_balance_after = dai.balanceOf(user1);
-        var (, , sell_val, sell_token, buy_val, buy_token, , ) = otc.offers(id);
+        (, , uint sell_val, ERC20 sell_token, uint buy_val, ERC20 buy_token, , ) = otc.offers(id);
 
         assertEq(0, my_dai_balance_before - my_dai_balance_after);
         assertEq(200, my_mkr_balance_before - my_mkr_balance_after);
@@ -191,7 +191,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
 
         dai.transfer(user1, 1);
         user1.doApprove(otc, 1, dai);
-        var success = user1.doBuy(id, 1);
+        bool success = user1.doBuy(id, 1);
         assert(!success);
     }
     function testCancel() public {
