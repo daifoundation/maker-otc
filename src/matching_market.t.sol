@@ -12,30 +12,17 @@ contract MarketTester {
     }
     function doGetFirstUnsortedOffer()
         public
-        constant
+        view
         returns (uint)
     {
         return market.getFirstUnsortedOffer();
     }
     function doGetNextUnsortedOffer(uint mid)
         public
-        constant
+        view
         returns (uint)
     {
         return market.getNextUnsortedOffer(mid);
-    }
-    function doSetMatchingEnabled(bool ema_)
-        public
-        returns (bool)
-    {
-        return market.setMatchingEnabled(ema_);
-    }
-    function doIsMatchingEnabled()
-        public
-        constant
-        returns (bool)
-    {
-        return market.matchingEnabled();
     }
     function doSetBuyEnabled(bool ebu_)
         public
@@ -45,7 +32,7 @@ contract MarketTester {
     }
     function doIsBuyEnabled()
         public
-        constant
+        view
         returns (bool)
     {
         return market.buyEnabled();
@@ -58,7 +45,7 @@ contract MarketTester {
     }
     function doGetMinSellAmount(ERC20 pay_gem)
         public
-        constant
+        view
         returns (uint)
     {
         return market.getMinSell(pay_gem);
@@ -99,7 +86,7 @@ contract MarketTester {
     }
     function getMarket()
         public
-        constant
+        view
         returns (MatchingMarket)
     {
         return market;
@@ -514,7 +501,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         offer_id[1] = otc.offer(30, mkr, 100, dai, 0);
         otc.insert(offer_id[1],7);  //there is no active offer at pos 7
     }
-    function testBuyEnabledByDefault() public constant {
+    function testBuyEnabledByDefault() public view {
         assert(otc.buyEnabled());
     }
     function testSetBuyDisabled() public {
@@ -553,47 +540,6 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         emit LogItemUpdate(offer_id[1]);
         emit LogTrade(30, mkr, 100, dai);
         emit LogItemUpdate(offer_id[1]);
-    }
-    function testMatchingEnabledByDefault() public constant {
-        assert(otc.matchingEnabled());
-    }
-    function testDisableMatching() public {
-        assert(otc.setMatchingEnabled(false));
-        assert(!otc.matchingEnabled());
-        expectEventsExact(otc);
-        emit LogMatchingEnabled(false);
-    }
-    function testFailMatchingEnabledUserCantMakeUnsortedOffer() public {
-        assert(otc.matchingEnabled());
-        dai.transfer(user1, 1);
-        offer_id[1] = user1.doUnsortedOffer(1, dai, 1, mkr);
-    }
-    function testMatchingDisabledUserCanMakeUnsortedOffer() public {
-        assert(otc.setMatchingEnabled(false));
-        assert(!otc.matchingEnabled());
-        dai.transfer(user1, 1);
-        user1.doApprove(otc, 1, dai);
-        offer_id[1] = user1.doUnsortedOffer(1, dai, 1, mkr);
-        assert(offer_id[1] > 0);
-        assertEq(otc.getFirstUnsortedOffer(), 0);
-        assertEq(otc.getBestOffer(dai, mkr), 0);
-    }
-    function testMatchingEnabledAuthUserCanMakeUnsortedOffer() public {
-        assert(otc.setMatchingEnabled(true));
-        assert(otc.matchingEnabled());
-        dai.approve(otc, 1);
-        offer_id[1] = otc.offer(1, dai, 1, mkr);
-        assert(offer_id[1] > 0);
-    }
-    function testMatchingDisabledCancelDoesNotChangeSortedList() public {
-        assert(otc.setMatchingEnabled(true));
-        assert(otc.matchingEnabled());
-        dai.approve(otc, 1);
-        offer_id[1] = otc.offer(1, dai, 1, mkr, 0);
-        assert(otc.setMatchingEnabled(false));
-        assert(!otc.matchingEnabled());
-        otc.cancel(offer_id[1]);
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[1]);
     }
     function testSetGetMinSellAmout() public {
         otc.setMinSell(dai, 100);
@@ -1684,13 +1630,13 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assert(address(buy_token1) > 0x0);
     }
     //check if a token pair is whitelisted
-    function testIsTokenPairWhitelisted() public constant {
+    function testIsTokenPairWhitelisted() public view {
         ERC20 baseToken = mkr;
         ERC20 quoteToken = dai;
         assert(otc.isTokenPairWhitelisted(baseToken, quoteToken));
     }
     //check if a token pair in reverse order is whitelisted
-    function testIsTokenPairWhitelisted2() public constant {
+    function testIsTokenPairWhitelisted2() public view {
         ERC20 baseToken = dai;
         ERC20 quoteToken = mkr;
         assert(otc.isTokenPairWhitelisted(baseToken, quoteToken));

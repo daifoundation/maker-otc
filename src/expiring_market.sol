@@ -12,20 +12,20 @@ contract ExpiringMarket is DSAuth, SimpleMarket {
     bool public stopped;
 
     // after close_time has been reached, no new offers are allowed
-    modifier can_offer {
+    modifier canOffer {
         require(!isClosed());
         _;
     }
 
     // after close, no new buys are allowed
-    modifier can_buy(uint id) {
+    modifier canBuy(uint id) {
         require(isActive(id));
         require(!isClosed());
         _;
     }
 
     // after close, anyone can cancel an offer
-    modifier can_cancel(uint id) {
+    modifier canCancel(uint id) {
         require(isActive(id));
         require(isClosed() || (msg.sender == getOwner(id)));
         _;
@@ -37,11 +37,11 @@ contract ExpiringMarket is DSAuth, SimpleMarket {
         close_time = _close_time;
     }
 
-    function isClosed() public constant returns (bool closed) {
+    function isClosed() public view returns (bool closed) {
         return stopped || getTime() > close_time;
     }
 
-    function getTime() public constant returns (uint64) {
+    function getTime() public view returns (uint64) {
         return uint64(now);
     }
 

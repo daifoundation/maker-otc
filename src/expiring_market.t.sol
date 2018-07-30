@@ -17,7 +17,7 @@ contract WarpingExpiringMarket is ExpiringMarket {
         _now += w;
     }
 
-    function getTime() public constant returns (uint64) {
+    function getTime() public view returns (uint64) {
         return _now;
     }
 }
@@ -56,7 +56,7 @@ contract ExpiringMarketTest is DSTest {
         user1.doApprove(otc, 100, dai);
         mkr.approve(otc, 30);
     }
-    function testIsClosedBeforeExpiry() public constant {
+    function testIsClosedBeforeExpiry() public view {
         assert(!otc.isClosed());
     }
     function testIsClosedAfterExpiry() public {
