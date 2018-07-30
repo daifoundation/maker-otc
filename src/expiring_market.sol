@@ -31,7 +31,7 @@ contract ExpiringMarket is DSAuth, SimpleMarket {
         _;
     }
 
-    function ExpiringMarket(uint64 _close_time)
+    constructor(uint64 _close_time)
         public
     {
         close_time = _close_time;
