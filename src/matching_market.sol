@@ -23,7 +23,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     mapping(address => uint) public _dust;                      //minimum sell amount for a token to avoid dust offers
     mapping(uint => uint) public _near;         //next unsorted offer id
     uint _head;                                 //first unsorted offer id
-    uint dust_id;                               //id of the latest offer marked as dust
+    uint public dust_id;                        //id of the latest offer marked as dust
 
     constructor(uint64 close_time) ExpiringMarket(close_time) public {
     }
@@ -156,6 +156,12 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             _unsort(id);
         }
         require(super.buy(id, amount));
+
+        //if offer has become dust during buy, we cancel it
+        if ( isActive(id) && offers[id].pay_amt < _dust[offers[id].pay_gem] ) {
+            dust_id = id;
+            cancel(id);
+        }
         return true;
     }
 
