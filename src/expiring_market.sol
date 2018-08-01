@@ -9,6 +9,10 @@ import "./simple_market.sol";
 contract ExpiringMarket is DSAuth, SimpleMarket {
     uint64 public closeTime;
 
+    constructor(uint64 closeTime_) public {
+        closeTime = closeTime_;
+    }
+
     // After closeTime has been reached, no new offers are allowed
     modifier canOffer {
         require(!isClosed());
@@ -27,12 +31,6 @@ contract ExpiringMarket is DSAuth, SimpleMarket {
         require(isActive(id));
         require(isClosed() || (msg.sender == getOwner(id)));
         _;
-    }
-
-    constructor(uint64 closeTime_)
-        public
-    {
-        closeTime = closeTime_;
     }
 
     function isClosed() public view returns (bool closed) {
