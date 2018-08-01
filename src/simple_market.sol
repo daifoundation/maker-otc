@@ -5,37 +5,42 @@ import "erc20/erc20.sol";
 
 contract EventfulMarket {
     event LogItemUpdate(uint id);
-    event LogTrade(uint sellAmt, address indexed sellGem, uint buyAmt, address indexed buyGem);
+    event LogTrade(
+        uint                sellAmt,
+        address indexed     sellGem,
+        uint                buyAmt,
+        address indexed     buyGem
+    );
     event LogMake(
-        bytes32  indexed  id,
-        bytes32  indexed  pair,
-        address  indexed  maker,
-        ERC20             sellGem,
-        ERC20             buyGem,
-        uint128           sellAmt,
-        uint128           buyAmt,
-        uint64            timestamp
+        bytes32  indexed    id,
+        bytes32  indexed    pair,
+        address  indexed    maker,
+        ERC20               sellGem,
+        ERC20               buyGem,
+        uint128             sellAmt,
+        uint128             buyAmt,
+        uint64              timestamp
     );
     event LogTake(
-        bytes32           id,
-        bytes32  indexed  pair,
-        address  indexed  maker,
-        ERC20             sellGem,
-        ERC20             buyGem,
-        address  indexed  taker,
-        uint128           takeAmt,
-        uint128           giveAmt,
-        uint64            timestamp
+        bytes32             id,
+        bytes32  indexed    pair,
+        address  indexed    maker,
+        ERC20               sellGem,
+        ERC20               buyGem,
+        address  indexed    taker,
+        uint128             takeAmt,
+        uint128             giveAmt,
+        uint64              timestamp
     );
     event LogKill(
-        bytes32  indexed  id,
-        bytes32  indexed  pair,
-        address  indexed  maker,
-        ERC20             sellGem,
-        ERC20             buyGem,
-        uint128           sellAmt,
-        uint128           buyAmt,
-        uint64            timestamp
+        bytes32  indexed    id,
+        bytes32  indexed    pair,
+        address  indexed    maker,
+        ERC20               sellGem,
+        ERC20               buyGem,
+        uint128             sellAmt,
+        uint128             buyAmt,
+        uint64              timestamp
     );
 }
 
@@ -85,6 +90,48 @@ contract SimpleMarket is EventfulMarket, DSMath {
         return offers[id].owner;
     }
 
+    // Make a new offer. Takes funds from the caller into market escrow.
+    function offer(uint sellAmt, ERC20 sellGem, uint buyAmt, ERC20 buyGem)
+        public
+        canOffer
+        synchronized
+        returns (uint id)
+    {
+        require(uint128(sellAmt) == sellAmt);
+        require(uint128(buyAmt) == buyAmt);
+        require(sellAmt > 0);
+        require(sellGem != ERC20(0x0));
+        require(buyAmt > 0);
+        require(buyGem != ERC20(0x0));
+        require(sellGem != buyGem);
+
+        OfferInfo memory offerInfo;
+        offerInfo.oSellAmt = sellAmt;
+        offerInfo.oBuyAmt = buyAmt;
+        offerInfo.sellAmt = sellAmt;
+        offerInfo.sellGem = sellGem;
+        offerInfo.buyAmt = buyAmt;
+        offerInfo.buyGem = buyGem;
+        offerInfo.owner = msg.sender;
+        offerInfo.timestamp = uint64(now);
+        id = ++lastOfferId;
+        offers[id] = offerInfo;
+
+        require(sellGem.transferFrom(msg.sender, this, sellAmt));
+
+        emit LogItemUpdate(id);
+        emit LogMake(
+            bytes32(id),
+            keccak256(abi.encodePacked(sellGem, buyGem)),
+            msg.sender,
+            sellGem,
+            buyGem,
+            uint128(sellAmt),
+            uint128(buyAmt),
+            uint64(now)
+        );
+    }
+
     // Accept given `quantity` of an offer. Transfers funds from caller to
     // offer maker, and from market to caller.
     function buy(uint id, uint quantity)
@@ -93,36 +140,35 @@ contract SimpleMarket is EventfulMarket, DSMath {
         synchronized
         returns (bool)
     {
-        OfferInfo memory offer = offers[id];
-        uint spend = mul(quantity, offer.oBuyAmt) / offer.oSellAmt;
+        OfferInfo memory offerInfo = offers[id];
+        uint spend = mul(quantity, offerInfo.oBuyAmt) / offerInfo.oSellAmt;
 
         require(uint128(spend) == spend);
         require(uint128(quantity) == quantity);
 
         // For backwards semantic compatibility.
-        if (quantity == 0 || spend == 0 || quantity > offer.sellAmt || spend > offer.buyAmt)
-        {
+        if (quantity == 0 || spend == 0 || quantity > offerInfo.sellAmt || spend > offerInfo.buyAmt) {
             return false;
         }
 
-        offers[id].sellAmt = sub(offer.sellAmt, quantity);
-        offers[id].buyAmt = sub(offer.buyAmt, spend);
-        require(offer.buyGem.transferFrom(msg.sender, offer.owner, spend));
-        require(offer.sellGem.transfer(msg.sender, quantity));
+        offers[id].sellAmt = sub(offerInfo.sellAmt, quantity);
+        offers[id].buyAmt = sub(offerInfo.buyAmt, spend);
+        require(offerInfo.buyGem.transferFrom(msg.sender, offerInfo.owner, spend));
+        require(offerInfo.sellGem.transfer(msg.sender, quantity));
 
         emit LogItemUpdate(id);
         emit LogTake(
             bytes32(id),
-            keccak256(abi.encodePacked(offer.sellGem, offer.buyGem)),
-            offer.owner,
-            offer.sellGem,
-            offer.buyGem,
+            keccak256(abi.encodePacked(offerInfo.sellGem, offerInfo.buyGem)),
+            offerInfo.owner,
+            offerInfo.sellGem,
+            offerInfo.buyGem,
             msg.sender,
             uint128(quantity),
             uint128(spend),
             uint64(now)
         );
-        emit LogTrade(quantity, offer.sellGem, spend, offer.buyGem);
+        emit LogTrade(quantity, offerInfo.sellGem, spend, offerInfo.buyGem);
 
         if (offers[id].sellAmt == 0) {
             delete offers[id];
@@ -139,65 +185,23 @@ contract SimpleMarket is EventfulMarket, DSMath {
         returns (bool success)
     {
         // Read-only offer. Modify an offer by directly accessing offers[id]
-        OfferInfo memory offer = offers[id];
+        OfferInfo memory offerInfo = offers[id];
         delete offers[id];
 
-        require(offer.sellGem.transfer(offer.owner, offer.sellAmt));
+        require(offerInfo.sellGem.transfer(offerInfo.owner, offerInfo.sellAmt));
 
         emit LogItemUpdate(id);
         emit LogKill(
             bytes32(id),
-            keccak256(abi.encodePacked(offer.sellGem, offer.buyGem)),
-            offer.owner,
-            offer.sellGem,
-            offer.buyGem,
-            uint128(offer.sellAmt),
-            uint128(offer.buyAmt),
+            keccak256(abi.encodePacked(offerInfo.sellGem, offerInfo.buyGem)),
+            offerInfo.owner,
+            offerInfo.sellGem,
+            offerInfo.buyGem,
+            uint128(offerInfo.sellAmt),
+            uint128(offerInfo.buyAmt),
             uint64(now)
         );
 
         success = true;
-    }
-
-    // Make a new offer. Takes funds from the caller into market escrow.
-    function offer(uint sellAmt, ERC20 sellGem, uint buyAmt, ERC20 buyGem)
-        public
-        canOffer
-        synchronized
-        returns (uint id)
-    {
-        require(uint128(sellAmt) == sellAmt);
-        require(uint128(buyAmt) == buyAmt);
-        require(sellAmt > 0);
-        require(sellGem != ERC20(0x0));
-        require(buyAmt > 0);
-        require(buyGem != ERC20(0x0));
-        require(sellGem != buyGem);
-
-        OfferInfo memory info;
-        info.oSellAmt = sellAmt;
-        info.oBuyAmt = buyAmt;
-        info.sellAmt = sellAmt;
-        info.sellGem = sellGem;
-        info.buyAmt = buyAmt;
-        info.buyGem = buyGem;
-        info.owner = msg.sender;
-        info.timestamp = uint64(now);
-        id = ++lastOfferId;
-        offers[id] = info;
-
-        require(sellGem.transferFrom(msg.sender, this, sellAmt));
-
-        emit LogItemUpdate(id);
-        emit LogMake(
-            bytes32(id),
-            keccak256(abi.encodePacked(sellGem, buyGem)),
-            msg.sender,
-            sellGem,
-            buyGem,
-            uint128(sellAmt),
-            uint128(buyAmt),
-            uint64(now)
-        );
     }
 }

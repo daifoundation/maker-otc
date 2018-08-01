@@ -66,7 +66,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint pos                        // position to insert offer, 0 should be used if unknown
     )
         public
-        /*NOT synchronized!!! */
         canOffer
         returns (uint id)
     {
@@ -127,7 +126,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     // Transfers funds from caller to offer maker, and from market to caller.
     function buy(uint id, uint amount)
         public
-        /*NOT synchronized!!! */
         canBuy(id)
         returns (bool)
     {
@@ -148,7 +146,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     // Cancel an offer. Refunds offer maker.
     function cancel(uint id)
         public
-        /*NOT synchronized!!! */
         canCancel(id)
         returns (bool success)
     {
@@ -246,21 +243,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         return span[sellGem][buyGem];
     }
 
-    // Get the first unsorted offer that was inserted by a contract
-    // Contracts can't calculate the insertion position of their offer because it is not an O(1) operation.
-    // Their offers get put in the unsorted list of offers.
-    // Keepers can calculate the insertion position offchain and pass it to the insert() function to insert
-    // the unsorted offer into the sorted list. Unsorted offers will not be matched, but can be bought with buy().
-    function getFirstUnsortedOffer() public view returns(uint) {
-        return head;
-    }
-
-    // Get the next unsorted offer
-    // Can be used to cycle through all the unsorted offers.
-    function getNextUnsortedOffer(uint id) public view returns(uint) {
-        return near[id];
-    }
-
     function isOfferSorted(uint id) public view returns(bool) {
         return rank[id].next != 0
                || rank[id].prev != 0
@@ -285,7 +267,10 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
                 sellAmt = sub(sellAmt, offers[offerId].buyAmt);             // Decrease amount to sell
                 buy(offerId, uint128(offers[offerId].sellAmt));             // We take the whole offer
             } else {                                                        // if lower
-                uint baux = rmul(sellAmt * 10 ** 9, rdiv(offers[offerId].oSellAmt, offers[offerId].oBuyAmt)) / 10 ** 9;
+                uint baux = rmul(
+                    sellAmt * 10 ** 9,
+                    rdiv(offers[offerId].oSellAmt, offers[offerId].oBuyAmt)
+                ) / 10 ** 9;
                 fillAmt = add(fillAmt, baux);                               // Add amount bought to acumulator
                 buy(offerId, uint128(baux));                                // We take the portion of the offer that we need
                 sellAmt = 0;                                                // All amount is sold
@@ -312,7 +297,13 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
                 buyAmt = sub(buyAmt, offers[offerId].sellAmt);              // Decrease amount to buy
                 buy(offerId, uint128(offers[offerId].sellAmt));             // We take the whole offer
             } else {                                                        // if lower
-                fillAmt = add(fillAmt, rmul(buyAmt * 10 ** 9, rdiv(offers[offerId].oBuyAmt, offers[offerId].oSellAmt)) / 10 ** 9); //Add amount sold to acumulator
+                fillAmt = add(
+                    fillAmt,
+                    rmul(
+                        buyAmt * 10 ** 9,
+                        rdiv(offers[offerId].oBuyAmt, offers[offerId].oSellAmt)
+                    ) / 10 ** 9
+                );                                                          // Add amount sold to acumulator
                 buy(offerId, uint128(buyAmt));                              // We take the portion of the offer that we need
                 buyAmt = 0;                                                 // All amount is bought
             }
@@ -330,7 +321,13 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
                 require(offerId != 0);                                      // Fails if there are not enough offers to complete
             }
         }
-        fillAmt = add(fillAmt, rmul(sellAmt * 10 ** 9, rdiv(offers[offerId].sellAmt, offers[offerId].buyAmt)) / 10 ** 9); //Add proportional amount of last offer to buy accumulator
+        fillAmt = add(
+            fillAmt,
+            rmul(
+                sellAmt * 10 ** 9,
+                rdiv(offers[offerId].sellAmt, offers[offerId].buyAmt)
+            ) / 10 ** 9
+        );                                                                  // Add proportional amount of last offer to buy accumulator
     }
 
     function getPayAmount(ERC20 sellGem, ERC20 buyGem, uint buyAmt) public view returns (uint fillAmt) {
@@ -343,7 +340,13 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
                 require(offerId != 0);                                      // Fails if there are not enough offers to complete
             }
         }
-        fillAmt = add(fillAmt, rmul(buyAmt * 10 ** 9, rdiv(offers[offerId].buyAmt, offers[offerId].sellAmt)) / 10 ** 9); //Add proportional amount of last offer to pay accumulator
+        fillAmt = add(
+            fillAmt,
+            rmul(
+                buyAmt * 10 ** 9,
+                rdiv(offers[offerId].buyAmt, offers[offerId].sellAmt)
+            ) / 10 ** 9
+        );                                                                  // Add proportional amount of last offer to pay accumulator
     }
 
     // ---- Internal Functions ---- //

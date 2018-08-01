@@ -10,20 +10,6 @@ contract MarketTester {
     constructor(MatchingMarket  market_) public {
         market = market_;
     }
-    function doGetFirstUnsortedOffer()
-        public
-        view
-        returns (uint)
-    {
-        return market.getFirstUnsortedOffer();
-    }
-    function doGetNextUnsortedOffer(uint mid)
-        public
-        view
-        returns (uint)
-    {
-        return market.getNextUnsortedOffer(mid);
-    }
     function doSetMinSellAmount(ERC20 sellGem, uint minAmt)
         public
         returns (bool)
@@ -431,18 +417,18 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testGetFirstNextUnsortedOfferOneOffer() public {
         mkr.approve(otc, 30);
         offerId[1] = otc.offer(30, mkr, 100, dai);
-        assertEq(otc.getFirstUnsortedOffer(), offerId[1]);
-        assertEq(otc.getNextUnsortedOffer(offerId[1]), 0);
+        assertEq(otc.head(), offerId[1]);
+        assertEq(otc.near(offerId[1]), 0);
     }
     function testGetFirstNextUnsortedOfferThreeOffers() public {
         mkr.approve(otc, 90);
         offerId[1] = otc.offer(30, mkr, 100, dai);
         offerId[2] = otc.offer(30, mkr, 100, dai);
         offerId[3] = otc.offer(30, mkr, 100, dai);
-        assertEq(otc.getFirstUnsortedOffer(), offerId[3]);
-        assertEq(otc.getNextUnsortedOffer(offerId[1]), 0);
-        assertEq(otc.getNextUnsortedOffer(offerId[2]), offerId[1]);
-        assertEq(otc.getNextUnsortedOffer(offerId[3]), offerId[2]);
+        assertEq(otc.head(), offerId[3]);
+        assertEq(otc.near(offerId[1]), 0);
+        assertEq(otc.near(offerId[2]), offerId[1]);
+        assertEq(otc.near(offerId[3]), offerId[2]);
     }
     function testGetFirstNextUnsortedOfferAfterInsertOne() public {
         mkr.approve(otc, 90);
@@ -451,10 +437,10 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         offerId[3] = otc.offer(30, mkr, 100, dai);
         otc.insert(offerId[3], 0);
         assertEq(otc.getBestOffer(mkr, dai), offerId[3]);
-        assertEq(otc.getFirstUnsortedOffer(), offerId[2]);
-        assertEq(otc.getNextUnsortedOffer(offerId[1]), 0);
-        assertEq(otc.getNextUnsortedOffer(offerId[2]), offerId[1]);
-        assertEq(otc.getNextUnsortedOffer(offerId[3]), 0);
+        assertEq(otc.head(), offerId[2]);
+        assertEq(otc.near(offerId[1]), 0);
+        assertEq(otc.near(offerId[2]), offerId[1]);
+        assertEq(otc.near(offerId[3]), 0);
     }
     function testGetFirstNextUnsortedOfferAfterInsertTwo() public {
         mkr.approve(otc, 90);
@@ -463,10 +449,10 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         offerId[3] = otc.offer(30, mkr, 100, dai);
         otc.insert(offerId[3],0);
         otc.insert(offerId[2],0);
-        assertEq(otc.getFirstUnsortedOffer(), offerId[1]);
-        assertEq(otc.getNextUnsortedOffer(offerId[1]), 0);
-        assertEq(otc.getNextUnsortedOffer(offerId[2]), 0);
-        assertEq(otc.getNextUnsortedOffer(offerId[3]), 0);
+        assertEq(otc.head(), offerId[1]);
+        assertEq(otc.near(offerId[1]), 0);
+        assertEq(otc.near(offerId[2]), 0);
+        assertEq(otc.near(offerId[3]), 0);
     }
     function testGetFirstNextUnsortedOfferAfterInsertTheree() public {
         mkr.approve(otc, 90);
@@ -476,10 +462,10 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         otc.insert(offerId[3],0);
         otc.insert(offerId[2],0);
         otc.insert(offerId[1],0);
-        assertEq(otc.getFirstUnsortedOffer(), 0);
-        assertEq(otc.getNextUnsortedOffer(offerId[1]), 0);
-        assertEq(otc.getNextUnsortedOffer(offerId[2]), 0);
-        assertEq(otc.getNextUnsortedOffer(offerId[3]), 0);
+        assertEq(otc.head(), 0);
+        assertEq(otc.near(offerId[1]), 0);
+        assertEq(otc.near(offerId[2]), 0);
+        assertEq(otc.near(offerId[3]), 0);
     }
     function testFailInsertOfferThatIsAlreadyInTheSortedList() public {
         mkr.approve(otc, 30);
