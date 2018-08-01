@@ -13,18 +13,16 @@ contract MarketTester {
     function doApprove(address spender, uint value, ERC20 token) public {
         token.approve(spender, value);
     }
-    function doOffer(uint pay_amt, ERC20 pay_gem,
-                    uint buy_amt,  ERC20 buy_gem)
+    function doOffer(uint sellAmt, ERC20 sellGem, uint buyAmt,  ERC20 buyGem)
         public
         returns (uint)
     {
-        return market.offer(pay_amt, pay_gem,
-                  buy_amt, buy_gem);
+        return market.offer(sellAmt, sellGem, buyAmt, buyGem);
     }
-    function doBuy(uint id, uint buy_how_much) public returns (bool _success) {
-        return market.buy(id, buy_how_much);
+    function doBuy(uint id, uint buyHowMuch) public returns (bool success) {
+        return market.buy(id, buyHowMuch);
     }
-    function doCancel(uint id) public returns (bool _success) {
+    function doCancel(uint id) public returns (bool success) {
         return market.cancel(id);
     }
 }
@@ -34,10 +32,10 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
     ERC20 dai;
     ERC20 mkr;
     SimpleMarket otc;
-    uint sell_val;
-    uint buy_val;
-    ERC20 sell_token;
-    ERC20 buy_token;
+    uint sellAmt;
+    uint buyAmt;
+    ERC20 sellGem;
+    ERC20 buyGem;
 
     function setUp() public {
         otc = new SimpleMarket();
@@ -47,26 +45,26 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         mkr = new DSTokenBase(10 ** 6);
     }
     function testOriginalPayAndBuySet() public {
-        uint o_pay_amt;
-        uint o_buy_amt;
+        uint oSellAmt;
+        uint oBuyAmt;
         dai.transfer(user1, 100);
         user1.doApprove(otc, 100, dai);
         uint id0 = user1.doOffer(100, dai, 100, mkr);
-        (o_pay_amt, o_buy_amt, , , , , , ) = otc.offers(id0);
-        assert( o_pay_amt == 100 );
-        assert( o_buy_amt == 100 );
+        (oSellAmt, oBuyAmt,,,,,,) = otc.offers(id0);
+        assert(oSellAmt == 100);
+        assert(oBuyAmt == 100);
     }
     function testOriginalPayAndBuyUnchanged() public {
-        uint o_pay_amt;
-        uint o_buy_amt;
+        uint oSellAmt;
+        uint oBuyAmt;
         dai.transfer(user1, 100);
         user1.doApprove(otc, 100, dai);
         mkr.approve(otc, 10);
         uint id0 = user1.doOffer(100, dai, 100, mkr);
         otc.offer(10, mkr, 10, dai);
-        (o_pay_amt, o_buy_amt, , , , , , ) = otc.offers(id0);
-        assert( o_pay_amt == 100 );
-        assert( o_buy_amt == 100 );
+        (oSellAmt, oBuyAmt,,,,,,) = otc.offers(id0);
+        assert(oSellAmt == 100);
+        assert(oBuyAmt == 100);
     }
 
     function testBasicTrade() public {
@@ -74,21 +72,21 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         user1.doApprove(otc, 100, dai);
         mkr.approve(otc, 30);
 
-        uint my_mkr_balance_before = mkr.balanceOf(this);
-        uint my_dai_balance_before = dai.balanceOf(this);
-        uint user1_mkr_balance_before = mkr.balanceOf(user1);
-        uint user1_dai_balance_before = dai.balanceOf(user1);
+        uint myMKRBalanceBefore = mkr.balanceOf(this);
+        uint myDAIBalanceBefore = dai.balanceOf(this);
+        uint user1MKRBalanceBefore = mkr.balanceOf(user1);
+        uint user1DAIBalanceBefore = dai.balanceOf(user1);
 
         uint id = otc.offer(30, mkr, 100, dai);
         assert(user1.doBuy(id, 30));
-        uint my_mkr_balance_after = mkr.balanceOf(this);
-        uint my_dai_balance_after = dai.balanceOf(this);
-        uint user1_mkr_balance_after = mkr.balanceOf(user1);
-        uint user1_dai_balance_after = dai.balanceOf(user1);
-        assertEq(30, my_mkr_balance_before - my_mkr_balance_after);
-        assertEq(100, my_dai_balance_after - my_dai_balance_before);
-        assertEq(30, user1_mkr_balance_after - user1_mkr_balance_before);
-        assertEq(100, user1_dai_balance_before - user1_dai_balance_after);
+        uint myMKRBalanceAfter = mkr.balanceOf(this);
+        uint myDAIBalanceAfter = dai.balanceOf(this);
+        uint user1MKRbalanceAfter = mkr.balanceOf(user1);
+        uint user1DAIbalanceAfter = dai.balanceOf(user1);
+        assertEq(30, myMKRBalanceBefore - myMKRBalanceAfter);
+        assertEq(100, myDAIBalanceAfter - myDAIBalanceBefore);
+        assertEq(30, user1MKRbalanceAfter - user1MKRBalanceBefore);
+        assertEq(100, user1DAIBalanceBefore - user1DAIbalanceAfter);
 
         expectEventsExact(otc);
         emit LogItemUpdate(id);
@@ -100,27 +98,27 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         user1.doApprove(otc, 30, dai);
         mkr.approve(otc, 200);
 
-        uint my_mkr_balance_before = mkr.balanceOf(this);
-        uint my_dai_balance_before = dai.balanceOf(this);
-        uint user1_mkr_balance_before = mkr.balanceOf(user1);
-        uint user1_dai_balance_before = dai.balanceOf(user1);
+        uint myMKRBalanceBefore = mkr.balanceOf(this);
+        uint myDAIBalanceBefore = dai.balanceOf(this);
+        uint user1MKRBalanceBefore = mkr.balanceOf(user1);
+        uint user1DAIBalanceBefore = dai.balanceOf(user1);
 
         uint id = otc.offer(200, mkr, 500, dai);
         assert(user1.doBuy(id, 10));
-        uint my_mkr_balance_after = mkr.balanceOf(this);
-        uint my_dai_balance_after = dai.balanceOf(this);
-        uint user1_mkr_balance_after = mkr.balanceOf(user1);
-        uint user1_dai_balance_after = dai.balanceOf(user1);
-        (, , sell_val, sell_token, buy_val, buy_token, , ) = otc.offers(id);
+        uint myMKRBalanceAfter = mkr.balanceOf(this);
+        uint myDAIBalanceAfter = dai.balanceOf(this);
+        uint user1MKRbalanceAfter = mkr.balanceOf(user1);
+        uint user1DAIbalanceAfter = dai.balanceOf(user1);
+        (,, sellAmt, sellGem, buyAmt, buyGem,,) = otc.offers(id);
 
-        assertEq(200, my_mkr_balance_before - my_mkr_balance_after);
-        assertEq(25, my_dai_balance_after - my_dai_balance_before);
-        assertEq(10, user1_mkr_balance_after - user1_mkr_balance_before);
-        assertEq(25, user1_dai_balance_before - user1_dai_balance_after);
-        assertEq(190, sell_val);
-        assertEq(475, buy_val);
-        assert(address(sell_token) > 0x0);
-        assert(address(buy_token) > 0x0);
+        assertEq(200, myMKRBalanceBefore - myMKRBalanceAfter);
+        assertEq(25, myDAIBalanceAfter - myDAIBalanceBefore);
+        assertEq(10, user1MKRbalanceAfter - user1MKRBalanceBefore);
+        assertEq(25, user1DAIBalanceBefore - user1DAIbalanceAfter);
+        assertEq(190, sellAmt);
+        assertEq(475, buyAmt);
+        assert(address(sellGem) > 0x0);
+        assert(address(buyGem) > 0x0);
 
         expectEventsExact(otc);
         emit LogItemUpdate(id);
@@ -132,27 +130,27 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         user1.doApprove(otc, 10, mkr);
         dai.approve(otc, 500);
 
-        uint my_mkr_balance_before = mkr.balanceOf(this);
-        uint my_dai_balance_before = dai.balanceOf(this);
-        uint user1_mkr_balance_before = mkr.balanceOf(user1);
-        uint user1_dai_balance_before = dai.balanceOf(user1);
+        uint myMKRBalanceBefore = mkr.balanceOf(this);
+        uint myDAIBalanceBefore = dai.balanceOf(this);
+        uint user1MKRBalanceBefore = mkr.balanceOf(user1);
+        uint user1DAIBalanceBefore = dai.balanceOf(user1);
 
         uint id = otc.offer(500, dai, 200, mkr);
         assert(user1.doBuy(id, 10));
-        uint my_mkr_balance_after = mkr.balanceOf(this);
-        uint my_dai_balance_after = dai.balanceOf(this);
-        uint user1_mkr_balance_after = mkr.balanceOf(user1);
-        uint user1_dai_balance_after = dai.balanceOf(user1);
-        (, , sell_val, sell_token, buy_val, buy_token, , ) = otc.offers(id);
+        uint myMKRBalanceAfter = mkr.balanceOf(this);
+        uint myDAIBalanceAfter = dai.balanceOf(this);
+        uint user1MKRbalanceAfter = mkr.balanceOf(user1);
+        uint user1DAIbalanceAfter = dai.balanceOf(user1);
+        (,, sellAmt, sellGem, buyAmt, buyGem,,) = otc.offers(id);
 
-        assertEq(500, my_dai_balance_before - my_dai_balance_after);
-        assertEq(4, my_mkr_balance_after - my_mkr_balance_before);
-        assertEq(10, user1_dai_balance_after - user1_dai_balance_before);
-        assertEq(4, user1_mkr_balance_before - user1_mkr_balance_after);
-        assertEq(490, sell_val);
-        assertEq(196, buy_val);
-        assert(address(sell_token) > 0x0);
-        assert(address(buy_token) > 0x0);
+        assertEq(500, myDAIBalanceBefore - myDAIBalanceAfter);
+        assertEq(4, myMKRBalanceAfter - myMKRBalanceBefore);
+        assertEq(10, user1DAIbalanceAfter - user1DAIBalanceBefore);
+        assertEq(4, user1MKRBalanceBefore - user1MKRbalanceAfter);
+        assertEq(490, sellAmt);
+        assertEq(196, buyAmt);
+        assert(address(sellGem) > 0x0);
+        assert(address(buyGem) > 0x0);
 
         expectEventsExact(otc);
         emit LogItemUpdate(id);
@@ -164,28 +162,28 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         user1.doApprove(otc, 30, dai);
         mkr.approve(otc, 200);
 
-        uint my_mkr_balance_before = mkr.balanceOf(this);
-        uint my_dai_balance_before = dai.balanceOf(this);
-        uint user1_mkr_balance_before = mkr.balanceOf(user1);
-        uint user1_dai_balance_before = dai.balanceOf(user1);
+        uint myMKRBalanceBefore = mkr.balanceOf(this);
+        uint myDAIBalanceBefore = dai.balanceOf(this);
+        uint user1MKRBalanceBefore = mkr.balanceOf(user1);
+        uint user1DAIBalanceBefore = dai.balanceOf(user1);
 
         uint id = otc.offer(200, mkr, 500, dai);
         assert(!user1.doBuy(id, 201));
 
-        uint my_mkr_balance_after = mkr.balanceOf(this);
-        uint my_dai_balance_after = dai.balanceOf(this);
-        uint user1_mkr_balance_after = mkr.balanceOf(user1);
-        uint user1_dai_balance_after = dai.balanceOf(user1);
-        (, , sell_val, sell_token, buy_val, buy_token, , ) = otc.offers(id);
+        uint myMKRBalanceAfter = mkr.balanceOf(this);
+        uint myDAIBalanceAfter = dai.balanceOf(this);
+        uint user1MKRbalanceAfter = mkr.balanceOf(user1);
+        uint user1DAIbalanceAfter = dai.balanceOf(user1);
+        (,, sellAmt, sellGem, buyAmt, buyGem,,) = otc.offers(id);
 
-        assertEq(0, my_dai_balance_before - my_dai_balance_after);
-        assertEq(200, my_mkr_balance_before - my_mkr_balance_after);
-        assertEq(0, user1_dai_balance_before - user1_dai_balance_after);
-        assertEq(0, user1_mkr_balance_before - user1_mkr_balance_after);
-        assertEq(200, sell_val);
-        assertEq(500, buy_val);
-        assert(address(sell_token) > 0x0);
-        assert(address(buy_token) > 0x0);
+        assertEq(0, myDAIBalanceBefore - myDAIBalanceAfter);
+        assertEq(200, myMKRBalanceBefore - myMKRBalanceAfter);
+        assertEq(0, user1DAIBalanceBefore - user1DAIbalanceAfter);
+        assertEq(0, user1MKRBalanceBefore - user1MKRbalanceAfter);
+        assertEq(200, sellAmt);
+        assertEq(500, buyAmt);
+        assert(address(sellGem) > 0x0);
+        assert(address(buyGem) > 0x0);
 
         expectEventsExact(otc);
         emit LogItemUpdate(id);
@@ -287,19 +285,19 @@ contract TransferTest is DSTest {
 
 contract OfferTransferTest is TransferTest {
     function testOfferTransfersFromSeller() public {
-        uint balance_before = mkr.balanceOf(this);
+        uint balanceBefore = mkr.balanceOf(this);
         uint id = otc.offer(30, mkr, 100, dai);
-        uint balance_after = mkr.balanceOf(this);
+        uint balanceAfter = mkr.balanceOf(this);
 
-        assertEq(balance_before - balance_after, 30);
+        assertEq(balanceBefore - balanceAfter, 30);
         assert(id > 0);
     }
     function testOfferTransfersToMarket() public {
-        uint balance_before = mkr.balanceOf(otc);
+        uint balanceBefore = mkr.balanceOf(otc);
         uint id = otc.offer(30, mkr, 100, dai);
-        uint balance_after = mkr.balanceOf(otc);
+        uint balanceAfter = mkr.balanceOf(otc);
 
-        assertEq(balance_after - balance_before, 30);
+        assertEq(balanceAfter - balanceBefore, 30);
         assert(id > 0);
     }
 }
@@ -308,38 +306,38 @@ contract BuyTransferTest is TransferTest {
     function testBuyTransfersFromBuyer() public {
         uint id = otc.offer(30, mkr, 100, dai);
 
-        uint balance_before = dai.balanceOf(user1);
+        uint balanceBefore = dai.balanceOf(user1);
         user1.doBuy(id, 30);
-        uint balance_after = dai.balanceOf(user1);
+        uint balanceAfter = dai.balanceOf(user1);
 
-        assertEq(balance_before - balance_after, 100);
+        assertEq(balanceBefore - balanceAfter, 100);
     }
     function testBuyTransfersToSeller() public {
         uint id = otc.offer(30, mkr, 100, dai);
 
-        uint balance_before = dai.balanceOf(this);
+        uint balanceBefore = dai.balanceOf(this);
         user1.doBuy(id, 30);
-        uint balance_after = dai.balanceOf(this);
+        uint balanceAfter = dai.balanceOf(this);
 
-        assertEq(balance_after - balance_before, 100);
+        assertEq(balanceAfter - balanceBefore, 100);
     }
     function testBuyTransfersFromMarket() public {
         uint id = otc.offer(30, mkr, 100, dai);
 
-        uint balance_before = mkr.balanceOf(otc);
+        uint balanceBefore = mkr.balanceOf(otc);
         user1.doBuy(id, 30);
-        uint balance_after = mkr.balanceOf(otc);
+        uint balanceAfter = mkr.balanceOf(otc);
 
-        assertEq(balance_before - balance_after, 30);
+        assertEq(balanceBefore - balanceAfter, 30);
     }
     function testBuyTransfersToBuyer() public {
         uint id = otc.offer(30, mkr, 100, dai);
 
-        uint balance_before = mkr.balanceOf(user1);
+        uint balanceBefore = mkr.balanceOf(user1);
         user1.doBuy(id, 30);
-        uint balance_after = mkr.balanceOf(user1);
+        uint balanceAfter = mkr.balanceOf(user1);
 
-        assertEq(balance_after - balance_before, 30);
+        assertEq(balanceAfter - balanceBefore, 30);
     }
 }
 
@@ -347,47 +345,47 @@ contract PartialBuyTransferTest is TransferTest {
     function testBuyTransfersFromBuyer() public {
         uint id = otc.offer(30, mkr, 100, dai);
 
-        uint balance_before = dai.balanceOf(user1);
+        uint balanceBefore = dai.balanceOf(user1);
         user1.doBuy(id, 15);
-        uint balance_after = dai.balanceOf(user1);
+        uint balanceAfter = dai.balanceOf(user1);
 
-        assertEq(balance_before - balance_after, 50);
+        assertEq(balanceBefore - balanceAfter, 50);
     }
     function testBuyTransfersToSeller() public {
         uint id = otc.offer(30, mkr, 100, dai);
 
-        uint balance_before = dai.balanceOf(this);
+        uint balanceBefore = dai.balanceOf(this);
         user1.doBuy(id, 15);
-        uint balance_after = dai.balanceOf(this);
+        uint balanceAfter = dai.balanceOf(this);
 
-        assertEq(balance_after - balance_before, 50);
+        assertEq(balanceAfter - balanceBefore, 50);
     }
     function testBuyTransfersFromMarket() public {
         uint id = otc.offer(30, mkr, 100, dai);
 
-        uint balance_before = mkr.balanceOf(otc);
+        uint balanceBefore = mkr.balanceOf(otc);
         user1.doBuy(id, 15);
-        uint balance_after = mkr.balanceOf(otc);
+        uint balanceAfter = mkr.balanceOf(otc);
 
-        assertEq(balance_before - balance_after, 15);
+        assertEq(balanceBefore - balanceAfter, 15);
     }
     function testBuyTransfersToBuyer() public {
         uint id = otc.offer(30, mkr, 100, dai);
 
-        uint balance_before = mkr.balanceOf(user1);
+        uint balanceBefore = mkr.balanceOf(user1);
         user1.doBuy(id, 15);
-        uint balance_after = mkr.balanceOf(user1);
+        uint balanceAfter = mkr.balanceOf(user1);
 
-        assertEq(balance_after - balance_before, 15);
+        assertEq(balanceAfter - balanceBefore, 15);
     }
     function testBuyOddTransfersFromBuyer() public {
         uint id = otc.offer(30, mkr, 100, dai);
 
-        uint balance_before = dai.balanceOf(user1);
+        uint balanceBefore = dai.balanceOf(user1);
         user1.doBuy(id, 17);
-        uint balance_after = dai.balanceOf(user1);
+        uint balanceAfter = dai.balanceOf(user1);
 
-        assertEq(balance_before - balance_after, 56);
+        assertEq(balanceBefore - balanceAfter, 56);
     }
 }
 
@@ -395,40 +393,40 @@ contract CancelTransferTest is TransferTest {
     function testCancelTransfersFromMarket() public {
         uint id = otc.offer(30, mkr, 100, dai);
 
-        uint balance_before = mkr.balanceOf(otc);
+        uint balanceBefore = mkr.balanceOf(otc);
         otc.cancel(id);
-        uint balance_after = mkr.balanceOf(otc);
+        uint balanceAfter = mkr.balanceOf(otc);
 
-        assertEq(balance_before - balance_after, 30);
+        assertEq(balanceBefore - balanceAfter, 30);
     }
     function testCancelTransfersToSeller() public {
         uint id = otc.offer(30, mkr, 100, dai);
 
-        uint balance_before = mkr.balanceOf(this);
+        uint balanceBefore = mkr.balanceOf(this);
         otc.cancel(id);
-        uint balance_after = mkr.balanceOf(this);
+        uint balanceAfter = mkr.balanceOf(this);
 
-        assertEq(balance_after - balance_before, 30);
+        assertEq(balanceAfter - balanceBefore, 30);
     }
     function testCancelPartialTransfersFromMarket() public {
         uint id = otc.offer(30, mkr, 100, dai);
         user1.doBuy(id, 15);
 
-        uint balance_before = mkr.balanceOf(otc);
+        uint balanceBefore = mkr.balanceOf(otc);
         otc.cancel(id);
-        uint balance_after = mkr.balanceOf(otc);
+        uint balanceAfter = mkr.balanceOf(otc);
 
-        assertEq(balance_before - balance_after, 15);
+        assertEq(balanceBefore - balanceAfter, 15);
     }
     function testCancelPartialTransfersToSeller() public {
         uint id = otc.offer(30, mkr, 100, dai);
         user1.doBuy(id, 15);
 
-        uint balance_before = mkr.balanceOf(this);
+        uint balanceBefore = mkr.balanceOf(this);
         otc.cancel(id);
-        uint balance_after = mkr.balanceOf(this);
+        uint balanceAfter = mkr.balanceOf(this);
 
-        assertEq(balance_after - balance_before, 15);
+        assertEq(balanceAfter - balanceBefore, 15);
     }
 }
 

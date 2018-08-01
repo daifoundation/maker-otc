@@ -5,56 +5,52 @@ import "erc20/erc20.sol";
 
 contract EventfulMarket {
     event LogItemUpdate(uint id);
-    event LogTrade(uint pay_amt, address indexed pay_gem,
-                   uint buy_amt, address indexed buy_gem);
-
+    event LogTrade(uint sellAmt, address indexed sellGem, uint buyAmt, address indexed buyGem);
     event LogMake(
         bytes32  indexed  id,
         bytes32  indexed  pair,
         address  indexed  maker,
-        ERC20             pay_gem,
-        ERC20             buy_gem,
-        uint128           pay_amt,
-        uint128           buy_amt,
+        ERC20             sellGem,
+        ERC20             buyGem,
+        uint128           sellAmt,
+        uint128           buyAmt,
         uint64            timestamp
     );
-
     event LogTake(
         bytes32           id,
         bytes32  indexed  pair,
         address  indexed  maker,
-        ERC20             pay_gem,
-        ERC20             buy_gem,
+        ERC20             sellGem,
+        ERC20             buyGem,
         address  indexed  taker,
-        uint128           take_amt,
-        uint128           give_amt,
+        uint128           takeAmt,
+        uint128           giveAmt,
         uint64            timestamp
     );
-
     event LogKill(
         bytes32  indexed  id,
         bytes32  indexed  pair,
         address  indexed  maker,
-        ERC20             pay_gem,
-        ERC20             buy_gem,
-        uint128           pay_amt,
-        uint128           buy_amt,
+        ERC20             sellGem,
+        ERC20             buyGem,
+        uint128           sellAmt,
+        uint128           buyAmt,
         uint64            timestamp
     );
 }
 
 contract SimpleMarket is EventfulMarket, DSMath {
-    uint public last_offer_id;
+    uint public lastOfferId;
     mapping (uint => OfferInfo) public offers;
     bool locked;
 
     struct OfferInfo {
-        uint     o_pay_amt; //original pay_amt, always calculate price with this
-        uint     o_buy_amt; //original buy_amt, always calculate price with this
-        uint     pay_amt;
-        ERC20    pay_gem;
-        uint     buy_amt;
-        ERC20    buy_gem;
+        uint     oSellAmt;  // Original sellAmt, always calculate price with this
+        uint     oBuyAmt;   // Original buyAmt, always calculate price with this
+        uint     sellAmt;
+        ERC20    sellGem;
+        uint     buyAmt;
+        ERC20    buyGem;
         address  owner;
         uint64   timestamp;
     }
@@ -98,39 +94,38 @@ contract SimpleMarket is EventfulMarket, DSMath {
         returns (bool)
     {
         OfferInfo memory offer = offers[id];
-        uint spend = mul(quantity, offer.o_buy_amt) / offer.o_pay_amt;
+        uint spend = mul(quantity, offer.oBuyAmt) / offer.oSellAmt;
 
         require(uint128(spend) == spend);
         require(uint128(quantity) == quantity);
 
         // For backwards semantic compatibility.
-        if (quantity == 0 || spend == 0 ||
-            quantity > offer.pay_amt || spend > offer.buy_amt)
+        if (quantity == 0 || spend == 0 || quantity > offer.sellAmt || spend > offer.buyAmt)
         {
             return false;
         }
 
-        offers[id].pay_amt = sub(offer.pay_amt, quantity);
-        offers[id].buy_amt = sub(offer.buy_amt, spend);
-        require(offer.buy_gem.transferFrom(msg.sender, offer.owner, spend));
-        require(offer.pay_gem.transfer(msg.sender, quantity));
+        offers[id].sellAmt = sub(offer.sellAmt, quantity);
+        offers[id].buyAmt = sub(offer.buyAmt, spend);
+        require(offer.buyGem.transferFrom(msg.sender, offer.owner, spend));
+        require(offer.sellGem.transfer(msg.sender, quantity));
 
         emit LogItemUpdate(id);
         emit LogTake(
             bytes32(id),
-            keccak256(abi.encodePacked(offer.pay_gem, offer.buy_gem)),
+            keccak256(abi.encodePacked(offer.sellGem, offer.buyGem)),
             offer.owner,
-            offer.pay_gem,
-            offer.buy_gem,
+            offer.sellGem,
+            offer.buyGem,
             msg.sender,
             uint128(quantity),
             uint128(spend),
             uint64(now)
         );
-        emit LogTrade(quantity, offer.pay_gem, spend, offer.buy_gem);
+        emit LogTrade(quantity, offer.sellGem, spend, offer.buyGem);
 
-        if (offers[id].pay_amt == 0) {
-          delete offers[id];
+        if (offers[id].sellAmt == 0) {
+            delete offers[id];
         }
 
         return true;
@@ -143,21 +138,21 @@ contract SimpleMarket is EventfulMarket, DSMath {
         synchronized
         returns (bool success)
     {
-        // read-only offer. Modify an offer by directly accessing offers[id]
+        // Read-only offer. Modify an offer by directly accessing offers[id]
         OfferInfo memory offer = offers[id];
         delete offers[id];
 
-        require(offer.pay_gem.transfer(offer.owner, offer.pay_amt));
+        require(offer.sellGem.transfer(offer.owner, offer.sellAmt));
 
         emit LogItemUpdate(id);
         emit LogKill(
             bytes32(id),
-            keccak256(abi.encodePacked(offer.pay_gem, offer.buy_gem)),
+            keccak256(abi.encodePacked(offer.sellGem, offer.buyGem)),
             offer.owner,
-            offer.pay_gem,
-            offer.buy_gem,
-            uint128(offer.pay_amt),
-            uint128(offer.buy_amt),
+            offer.sellGem,
+            offer.buyGem,
+            uint128(offer.sellAmt),
+            uint128(offer.buyAmt),
             uint64(now)
         );
 
@@ -165,43 +160,43 @@ contract SimpleMarket is EventfulMarket, DSMath {
     }
 
     // Make a new offer. Takes funds from the caller into market escrow.
-    function offer(uint pay_amt, ERC20 pay_gem, uint buy_amt, ERC20 buy_gem)
+    function offer(uint sellAmt, ERC20 sellGem, uint buyAmt, ERC20 buyGem)
         public
         canOffer
         synchronized
         returns (uint id)
     {
-        require(uint128(pay_amt) == pay_amt);
-        require(uint128(buy_amt) == buy_amt);
-        require(pay_amt > 0);
-        require(pay_gem != ERC20(0x0));
-        require(buy_amt > 0);
-        require(buy_gem != ERC20(0x0));
-        require(pay_gem != buy_gem);
+        require(uint128(sellAmt) == sellAmt);
+        require(uint128(buyAmt) == buyAmt);
+        require(sellAmt > 0);
+        require(sellGem != ERC20(0x0));
+        require(buyAmt > 0);
+        require(buyGem != ERC20(0x0));
+        require(sellGem != buyGem);
 
         OfferInfo memory info;
-        info.o_pay_amt = pay_amt;
-        info.o_buy_amt = buy_amt;
-        info.pay_amt = pay_amt;
-        info.pay_gem = pay_gem;
-        info.buy_amt = buy_amt;
-        info.buy_gem = buy_gem;
+        info.oSellAmt = sellAmt;
+        info.oBuyAmt = buyAmt;
+        info.sellAmt = sellAmt;
+        info.sellGem = sellGem;
+        info.buyAmt = buyAmt;
+        info.buyGem = buyGem;
         info.owner = msg.sender;
         info.timestamp = uint64(now);
-        id = ++last_offer_id;
+        id = ++lastOfferId;
         offers[id] = info;
 
-        require(pay_gem.transferFrom(msg.sender, this, pay_amt));
+        require(sellGem.transferFrom(msg.sender, this, sellAmt));
 
         emit LogItemUpdate(id);
         emit LogMake(
             bytes32(id),
-            keccak256(abi.encodePacked(pay_gem, buy_gem)),
+            keccak256(abi.encodePacked(sellGem, buyGem)),
             msg.sender,
-            pay_gem,
-            buy_gem,
-            uint128(pay_amt),
-            uint128(buy_amt),
+            sellGem,
+            buyGem,
+            uint128(sellAmt),
+            uint128(buyAmt),
             uint64(now)
         );
     }

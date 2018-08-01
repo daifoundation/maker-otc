@@ -9,7 +9,7 @@ import "./simple_market.t.sol";
 contract WarpingExpiringMarket is ExpiringMarket {
     uint64 _now;
 
-    constructor(uint64 close_time) ExpiringMarket(close_time) public {
+    constructor(uint64 closeTime) ExpiringMarket(closeTime) public {
         _now = uint64(now);
     }
 
@@ -115,8 +115,7 @@ contract ExpiringOfferTransferTest is OfferTransferTest, ExpiringTransferTest {}
 contract ExpiringBuyTransferTest is BuyTransferTest, ExpiringTransferTest {}
 contract ExpiringPartialBuyTransferTest is PartialBuyTransferTest, ExpiringTransferTest {}
 
-contract ExpiringCancelTransferTest is CancelTransferTest
-                                     , ExpiringTransferTest
+contract ExpiringCancelTransferTest is CancelTransferTest, ExpiringTransferTest
 {
     uint64 constant LIFETIME = 1 weeks;
 
@@ -124,20 +123,20 @@ contract ExpiringCancelTransferTest is CancelTransferTest
         uint id = otc.offer(30, mkr, 100, dai);
         WarpingExpiringMarket(otc).warp(LIFETIME + 1 seconds);
 
-        uint balance_before = mkr.balanceOf(otc);
+        uint balanceBefore = mkr.balanceOf(otc);
         otc.cancel(id);
-        uint balance_after = mkr.balanceOf(otc);
+        uint balanceAfter = mkr.balanceOf(otc);
 
-        assertEq(balance_before - balance_after, 30);
+        assertEq(balanceBefore - balanceAfter, 30);
     }
     function testCancelAfterExpiryTransfersToSeller() public {
         uint id = otc.offer(30, mkr, 100, dai);
         WarpingExpiringMarket(otc).warp(LIFETIME + 1 seconds);
 
-        uint balance_before = mkr.balanceOf(this);
+        uint balanceBefore = mkr.balanceOf(this);
         user1.doCancel(id);
-        uint balance_after = mkr.balanceOf(this);
+        uint balanceAfter = mkr.balanceOf(this);
 
-        assertEq(balance_after - balance_before, 30);
+        assertEq(balanceAfter - balanceBefore, 30);
     }
 }
