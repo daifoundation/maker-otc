@@ -24,51 +24,51 @@ contract MarketTester {
     {
         return market.getNextUnsortedOffer(mid);
     }
-    function doSetMinSellAmount(ERC20 pay_gem, uint min_amount)
+    function doSetMinSellAmount(ERC20 sellGem, uint minAmt)
         public
         returns (bool)
     {
-        return market.setMinSell(pay_gem, min_amount);
+        return market.setMinSell(sellGem, minAmt);
     }
-    function doGetMinSellAmount(ERC20 pay_gem)
+    function doGetMinSellAmount(ERC20 sellGem)
         public
         view
         returns (uint)
     {
-        return market.getMinSell(pay_gem);
+        return market.getMinSell(sellGem);
     }
     function doApprove(address spender, uint value, ERC20 token) public {
         token.approve(spender, value);
     }
-    function doBuy(uint id, uint buy_amt) public returns (bool _success) {
-        return market.buy(id, buy_amt);
+    function doBuy(uint id, uint buyAmt) public returns (bool success) {
+        return market.buy(id, buyAmt);
     }
-    function doUnsortedOffer(uint pay_amt, ERC20 pay_gem,
-                    uint buy_amt,  ERC20 buy_gem)
+    function doUnsortedOffer(uint sellAmt, ERC20 sellGem,
+                    uint buyAmt,  ERC20 buyGem)
         public
         returns (uint)
     {
-        return market.offer(pay_amt, pay_gem,
-                    buy_amt, buy_gem);
+        return market.offer(sellAmt, sellGem,
+                    buyAmt, buyGem);
     }
-    function doOffer(uint pay_amt, ERC20 pay_gem,
-                    uint buy_amt,  ERC20 buy_gem)
+    function doOffer(uint sellAmt, ERC20 sellGem,
+                    uint buyAmt,  ERC20 buyGem)
         public
         returns (uint)
     {
-        return market.offer(pay_amt, pay_gem,
-                  buy_amt, buy_gem, 0);
+        return market.offer(sellAmt, sellGem,
+                  buyAmt, buyGem, 0);
     }
-    function doOffer(uint pay_amt, ERC20 pay_gem,
-                    uint buy_amt,  ERC20 buy_gem,
+    function doOffer(uint sellAmt, ERC20 sellGem,
+                    uint buyAmt,  ERC20 buyGem,
                     uint pos)
         public
         returns (uint)
     {
-        return market.offer(pay_amt, pay_gem,
-                  buy_amt, buy_gem, pos);
+        return market.offer(sellAmt, sellGem,
+                  buyAmt, buyGem, pos);
     }
-    function doCancel(uint id) public returns (bool _success) {
+    function doCancel(uint id) public returns (bool success) {
         return market.cancel(id);
     }
     function getMarket()
@@ -85,11 +85,9 @@ contract OrderMatchingGasTest is DSTest {
     ERC20 mkr;
     ERC20 dgd;
     MatchingMarket otc;
-    uint offer_count = 200;
-    mapping( uint => uint ) offer;
-    mapping( uint => uint ) dai_to_buy;
-    mapping( uint => uint ) mkr_to_sell;
-    uint [] match_count = [1,5,10,15,20,25,30,50,100];
+    uint offerCount = 200;
+    mapping(uint => uint) offer;
+    uint [] matchCount = [1,5,10,15,20,25,30,50,100];
 
     uint constant DAI_SUPPLY = (10 ** 9) * (10 ** 18);
     uint constant DGD_SUPPLY = (10 ** 9) * (10 ** 18);
@@ -102,263 +100,263 @@ contract OrderMatchingGasTest is DSTest {
         dgd = new DSTokenBase(DGD_SUPPLY);
         user1 = new MarketTester(otc);
         dai.transfer(user1, (DAI_SUPPLY / 3) * 2);
-        user1.doApprove(otc, DAI_SUPPLY / 3, dai );
+        user1.doApprove(otc, DAI_SUPPLY / 3, dai);
         mkr.approve(otc, MKR_SUPPLY);
         dai.approve(otc, DAI_SUPPLY);
         //setup offers that will be matched later
         //determine how much dai, mkr must be bought and sold
-        //to match a certain number(match_count) of offers
+        //to match a certain number(matchCount) of offers
     }
     // non overflowing multiplication
     function safeMul(uint a, uint b) internal pure returns (uint c) {
         c = a * b;
         assert(a == 0 || c / a == b);
     }
-    function insertOffer(uint pay_amt, ERC20 pay_gem,
-                         uint buy_amt, ERC20 buy_gem)
+    function insertOffer(uint sellAmt, ERC20 sellGem,
+                         uint buyAmt, ERC20 buyGem)
         public
         logs_gas
     {
-        otc.offer(pay_amt, pay_gem,
-                  buy_amt, buy_gem, 0);
+        otc.offer(sellAmt, sellGem,
+                  buyAmt, buyGem, 0);
     }
     //insert single offer
-    function insertOffer(uint pay_amt, ERC20 pay_gem,
-                         uint buy_amt, ERC20 buy_gem,
+    function insertOffer(uint sellAmt, ERC20 sellGem,
+                         uint buyAmt, ERC20 buyGem,
                          uint pos)
         public
         logs_gas
     {
-        otc.offer(pay_amt, pay_gem,
-                  buy_amt, buy_gem, pos);
+        otc.offer(sellAmt, sellGem,
+                  buyAmt, buyGem, pos);
     }
-    //creates offer_count number of offers of increasing price
-    function createOffers(uint offer_count_) public {
-        for(uint offer_index = 0; offer_index < offer_count_; offer_index++) {
-            offer[offer_index] = user1.doOffer(offer_index+1, dai, 1, mkr);
+    //creates offerCount number of offers of increasing price
+    function createOffers(uint offerCount_) public {
+        for(uint offerIndex = 0; offerIndex < offerCount_; offerIndex++) {
+            offer[offerIndex] = user1.doOffer(offerIndex+1, dai, 1, mkr);
         }
     }
-    // Creates test to match match_order_count number of orders
-    function execOrderMatchingGasTest(uint match_order_count) public {
-        uint mkr_sell;
-        uint dai_buy;
-        offer_count = match_order_count + 1;
+    // Creates test to match matchOrderCount number of orders
+    function execOrderMatchingGasTest(uint matchOrderCount) public {
+        uint mkrSell;
+        uint daiBuy;
+        offerCount = matchOrderCount + 1;
 
-        createOffers(offer_count);
-        dai_buy =  safeMul(offer_count, offer_count + 1) / 2;
-        mkr_sell = dai_buy;
+        createOffers(offerCount);
+        daiBuy =  safeMul(offerCount, offerCount + 1) / 2;
+        mkrSell = daiBuy;
 
-        insertOffer(mkr_sell, mkr, dai_buy, dai);
+        insertOffer(mkrSell, mkr, daiBuy, dai);
         assertEq(otc.getOfferCount(dai,mkr), 0);
     }
     /*Test the gas usage of inserting one offer.
-    Creates offer_index amount of offers of decreasing price then it
+    Creates offerIndex amount of offers of decreasing price then it
     logs the gas usage of inserting one additional offer. This
     function is useful to test the cost of sorting in order to do
     offer matching.*/
-    function execOrderInsertGasTest(uint offer_index, uint kind) public {
-        createOffers(offer_index + 1);
+    function execOrderInsertGasTest(uint offerIndex, uint kind) public {
+        createOffers(offerIndex + 1);
         if (kind == 0) {                  // no frontend aid
             insertOffer(1, dai, 1, mkr);
-            assertEq(otc.getOfferCount(dai,mkr), offer_index + 2);
+            assertEq(otc.getOfferCount(dai,mkr), offerIndex + 2);
         } else if (kind == 1){            // with frontend aid
             insertOffer(1, dai, 1, mkr, 1);
-            assertEq(otc.getOfferCount(dai,mkr), offer_index + 2);
+            assertEq(otc.getOfferCount(dai,mkr), offerIndex + 2);
         } else if (kind == 2){            // with frontend aid outdated pos new offer is better 
             user1.doCancel(2);
             insertOffer(2, dai, 1, mkr, 2);
-            assertEq(otc.getOfferCount(dai,mkr), offer_index + 1);
+            assertEq(otc.getOfferCount(dai,mkr), offerIndex + 1);
         } else if (kind == 3){            // with frontend aid outdated pos new offer is worse
             user1.doCancel(3);
             insertOffer(2, dai, 1, mkr, 2);
-            assertEq(otc.getOfferCount(dai,mkr), offer_index + 1);
+            assertEq(otc.getOfferCount(dai,mkr), offerIndex + 1);
         }    
     }
     function testGasMatchOneOrder() public {
-        uint match_order_count = match_count[0]; // 1
-        execOrderMatchingGasTest(match_order_count);
-// uncomment following line to run this test!
-//        assert(false);
+        uint matchOrderCount = matchCount[0]; // 1
+        execOrderMatchingGasTest(matchOrderCount);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMatchFiveOrders() public {
-        uint match_order_count = match_count[1]; // 5
-        execOrderMatchingGasTest(match_order_count);
-// uncomment following line to run this test!
-//        assert(false);
+        uint matchOrderCount = matchCount[1]; // 5
+        execOrderMatchingGasTest(matchOrderCount);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMatchTenOrders() public {
-        uint match_order_count = match_count[2]; // 10
-        execOrderMatchingGasTest(match_order_count);
-// uncomment following line to run this test!
-//        assert(false);
+        uint matchOrderCount = matchCount[2]; // 10
+        execOrderMatchingGasTest(matchOrderCount);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMatchFifteenOrders() public {
-        uint match_order_count = match_count[3]; // 15
-        execOrderMatchingGasTest(match_order_count);
-// uncomment following line to run this test!
-//        assert(false);
+        uint matchOrderCount = matchCount[3]; // 15
+        execOrderMatchingGasTest(matchOrderCount);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMatchTwentyOrders() public {
-        uint match_order_count = match_count[4]; // 20
-        execOrderMatchingGasTest(match_order_count);
-// uncomment following line to run this test!
-//        assert(false);
+        uint matchOrderCount = matchCount[4]; // 20
+        execOrderMatchingGasTest(matchOrderCount);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMatchTwentyfiveOrders() public {
-        uint match_order_count = match_count[5]; // 25
-        execOrderMatchingGasTest(match_order_count);
-// uncomment following line to run this test!
-//        assert(false);
+        uint matchOrderCount = matchCount[5]; // 25
+        execOrderMatchingGasTest(matchOrderCount);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMatchThirtyOrders() public {
-        uint match_order_count = match_count[6]; // 30
-        execOrderMatchingGasTest(match_order_count);
-// uncomment following line to run this test!
-//        assert(false);
+        uint matchOrderCount = matchCount[6]; // 30
+        execOrderMatchingGasTest(matchOrderCount);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMatchFiftyOrders() public {
-        uint match_order_count = match_count[7]; // 50
-        execOrderMatchingGasTest(match_order_count);
-// uncomment following line to run this test!
-//        assert(false);
+        uint matchOrderCount = matchCount[7]; // 50
+        execOrderMatchingGasTest(matchOrderCount);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMatchHundredOrders() public {
-        uint match_order_count = match_count[8]; // 100
-        execOrderMatchingGasTest(match_order_count);
-// uncomment following line to run this test!
-//        assert(false);
+        uint matchOrderCount = matchCount[8]; // 100
+        execOrderMatchingGasTest(matchOrderCount);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMakeOfferInsertAsFirstNoFrontendAid() public {
-        uint offer_index = 1 - 1;
-        execOrderInsertGasTest(offer_index, 0);
-// uncomment following line to run this test!
-//        assert(false);
+        uint offerIndex = 1 - 1;
+        execOrderInsertGasTest(offerIndex, 0);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMakeOfferInsertAsFirstWithFrontendAid() public {
-        uint offer_index = 1 - 1;
-        execOrderInsertGasTest(offer_index, 1);
-// uncomment following line to run this test!
-//        assert(false);
+        uint offerIndex = 1 - 1;
+        execOrderInsertGasTest(offerIndex, 1);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMakeOfferInsertAsTenthNoFrontendAid() public {
-        uint offer_index = 10 - 1;
-        execOrderInsertGasTest(offer_index, 0);
-// uncomment following line to run this test!
-//        assert(false);
+        uint offerIndex = 10 - 1;
+        execOrderInsertGasTest(offerIndex, 0);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMakeOfferInsertAsTenthWithFrontendAid() public {
-        uint offer_index = 10 - 1;
-        execOrderInsertGasTest(offer_index, 1);
-// uncomment following line to run this test!
-//        assert(false);
+        uint offerIndex = 10 - 1;
+        execOrderInsertGasTest(offerIndex, 1);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMakeOfferInsertAsTenthWithFrontendAidOldPos() public {
-        uint offer_index = 10 - 1;
-        execOrderInsertGasTest(offer_index, 2);
-// uncomment following line to run this test!
-//        assert(false);
+        uint offerIndex = 10 - 1;
+        execOrderInsertGasTest(offerIndex, 2);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMakeOfferInsertAsTenthWithFrontendAidOldPosWorse() public {
-        uint offer_index = 10 - 1;
-        execOrderInsertGasTest(offer_index, 3);
-// uncomment following line to run this test!
-//        assert(false);
+        uint offerIndex = 10 - 1;
+        execOrderInsertGasTest(offerIndex, 3);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMakeOfferInsertAsTwentiethNoFrontendAid() public {
-        uint offer_index = 20 - 1;
-        execOrderInsertGasTest(offer_index, 0);
-// uncomment following line to run this test!
-//        assert(false);
+        uint offerIndex = 20 - 1;
+        execOrderInsertGasTest(offerIndex, 0);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMakeOfferInsertAsTwentiethWithFrontendAid() public {
-        uint offer_index = 20 - 1;
-        execOrderInsertGasTest(offer_index, 1);
-// uncomment following line to run this test!
-//        assert(false);
+        uint offerIndex = 20 - 1;
+        execOrderInsertGasTest(offerIndex, 1);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMakeOfferInsertAsTwentiethWithFrontendAidOldPos() public {
-        uint offer_index = 20 - 1;
-        execOrderInsertGasTest(offer_index, 2);
-// uncomment following line to run this test!
-//        assert(false);
+        uint offerIndex = 20 - 1;
+        execOrderInsertGasTest(offerIndex, 2);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMakeOfferInsertAsTwentiethWithFrontendAidOldPosWorse() public {
-        uint offer_index = 20 - 1;
-        execOrderInsertGasTest(offer_index, 3);
-// uncomment following line to run this test!
-//        assert(false);
+        uint offerIndex = 20 - 1;
+        execOrderInsertGasTest(offerIndex, 3);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMakeOfferInsertAsFiftiethNoFrontendAid() public {
-        uint offer_index = 50 - 1;
-        execOrderInsertGasTest(offer_index, 0);
-// uncomment following line to run this test!
-//        assert(false);
+        uint offerIndex = 50 - 1;
+        execOrderInsertGasTest(offerIndex, 0);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMakeOfferInsertAsFiftiethWithFrontendAid() public {
-        uint offer_index = 50 - 1;
-        execOrderInsertGasTest(offer_index, 1);
-// uncomment following line to run this test!
-//        assert(false);
+        uint offerIndex = 50 - 1;
+        execOrderInsertGasTest(offerIndex, 1);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMakeOfferInsertAsFiftiethWithFrontendAidOldPos() public {
-        uint offer_index = 50 - 1;
-        execOrderInsertGasTest(offer_index, 2);
-// uncomment following line to run this test!
-//        assert(false);
+        uint offerIndex = 50 - 1;
+        execOrderInsertGasTest(offerIndex, 2);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMakeOfferInsertAsFiftiethWithFrontendAidOldPosWorse() public {
-        uint offer_index = 50 - 1;
-        execOrderInsertGasTest(offer_index, 3);
-// uncomment following line to run this test!
-//        assert(false);
+        uint offerIndex = 50 - 1;
+        execOrderInsertGasTest(offerIndex, 3);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMakeOfferInsertAsHundredthNoFrontendAid() public {
-        uint offer_index = 100 - 1;
-        execOrderInsertGasTest(offer_index, 0);
-// uncomment following line to run this test!
-//        assert(false);
+        uint offerIndex = 100 - 1;
+        execOrderInsertGasTest(offerIndex, 0);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMakeOfferInsertAsHundredthWithFrontendAid() public {
-        uint offer_index = 100 - 1;
-        execOrderInsertGasTest(offer_index, 1);
-// uncomment following line to run this test!
-//        assert(false);
+        uint offerIndex = 100 - 1;
+        execOrderInsertGasTest(offerIndex, 1);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMakeOfferInsertAsHundredthWithFrontendAidOldPos() public {
-        uint offer_index = 100 - 1;
-        execOrderInsertGasTest(offer_index, 2);
-// uncomment following line to run this test!
-//        assert(false);
+        uint offerIndex = 100 - 1;
+        execOrderInsertGasTest(offerIndex, 2);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMakeOfferInsertAsHundredthWithFrontendAidOldPoWorses() public {
-        uint offer_index = 100 - 1;
-        execOrderInsertGasTest(offer_index, 3);
-// uncomment following line to run this test!
-//        assert(false);
+        uint offerIndex = 100 - 1;
+        execOrderInsertGasTest(offerIndex, 3);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMakeOfferInsertAsTwohundredthNoFrontendAid() public {
-        uint offer_index = 200 -1;
-        execOrderInsertGasTest(offer_index, 0);
-// uncomment following line to run this test!
-//        assert(false);
+        uint offerIndex = 200 -1;
+        execOrderInsertGasTest(offerIndex, 0);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMakeOfferInsertAsTwohundredthWithFrontendAid() public {
-        uint offer_index = 200 -1;
-        execOrderInsertGasTest(offer_index, 1);
-// uncomment following line to run this test!
-//        assert(false);
+        uint offerIndex = 200 -1;
+        execOrderInsertGasTest(offerIndex, 1);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMakeOfferInsertAsTwohundredthWithFrontendAidOldPos() public {
-        uint offer_index = 200 -1;
-        execOrderInsertGasTest(offer_index, 2);
-// uncomment following line to run this test!
-//        assert(false);
+        uint offerIndex = 200 -1;
+        execOrderInsertGasTest(offerIndex, 2);
+        // uncomment following line to run this test!
+        // assert(false);
     }
     function testGasMakeOfferInsertAsTwohundredthWithFrontendAidOldPosWorse() public {
-        uint offer_index = 200 -1;
-        execOrderInsertGasTest(offer_index, 3);
-// uncomment following line to run this test!
-//        assert(false);
+        uint offerIndex = 200 -1;
+        execOrderInsertGasTest(offerIndex, 3);
+        // uncomment following line to run this test!
+        // assert(false);
     }
 }
 contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
@@ -367,15 +365,15 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     ERC20 mkr;
     ERC20 dgd;
     MatchingMarket otc;
-    mapping(uint => uint) offer_id;
-    uint buy_val;
-    uint sell_val;
-    uint buy_val1;
-    uint sell_val1;
-    ERC20 sell_token;
-    ERC20 buy_token;
-    ERC20 sell_token1;
-    ERC20 buy_token1;
+    mapping(uint => uint) offerId;
+    uint buyAmt;
+    uint sellAmt;
+    uint buyAmt1;
+    uint sellAmt1;
+    ERC20 sellGem;
+    ERC20 buyGem;
+    ERC20 sellGem1;
+    ERC20 buyGem1;
 
     uint constant DAI_SUPPLY = (10 ** 9) * (10 ** 18);
     uint constant DGD_SUPPLY = (10 ** 9) * (10 ** 18);
@@ -395,8 +393,8 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         otc.setMinSell(dai, 10);
         uint id0 = user1.doOffer(30, dai, 30, mkr, 0);
         uint id1 = otc.offer(25, mkr, 25, dai, 0);
-        assert( !otc.isActive(id0));
-        assert( !otc.isActive(id1));
+        assert(!otc.isActive(id0));
+        assert(!otc.isActive(id1));
     }
     function testBuyDustOfferCanceled() public {
         dai.transfer(user1, 30);
@@ -405,7 +403,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         otc.setMinSell(dai, 10);
         uint id0 = user1.doOffer(30, dai, 30, mkr, 0);
         otc.buy(id0, 25);
-        assert( !otc.isActive(id0));
+        assert(!otc.isActive(id0));
     }
     function testDustTakerOfferNotCreated() public {
         dai.transfer(user1, 25);
@@ -414,85 +412,85 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         otc.setMinSell(mkr, 10);
         uint id0 = user1.doOffer(25, dai, 25, mkr, 0);
         uint id1 = otc.offer(30, mkr, 30, dai, 0);
-        assert( !otc.isActive(id0));
-        assert( id1 == 0);
+        assert(!otc.isActive(id0));
+        assert(id1 == 0);
     }
     function testFailTooBigOffersToMatch() public {
-        uint maker_pay=uint128(-1);
-        uint maker_buy=uint64(-1);
-        uint taker_pay=uint128(-1);
-        uint taker_buy=uint64(-1);
-        dai.transfer(user1, maker_pay);
-        user1.doApprove(otc, maker_pay, dai);
-        mkr.approve(otc, taker_pay);
-        otc.setMinSell(mkr, taker_pay);
-        user1.doOffer(maker_pay, dai, maker_buy, mkr);
+        uint makerSell=uint128(-1);
+        uint makerBuy=uint64(-1);
+        uint takerSell=uint128(-1);
+        uint takerBuy=uint64(-1);
+        dai.transfer(user1, makerSell);
+        user1.doApprove(otc, makerSell, dai);
+        mkr.approve(otc, takerSell);
+        otc.setMinSell(mkr, takerSell);
+        user1.doOffer(makerSell, dai, makerBuy, mkr);
         //the below should fail at matching because of overflow
-        otc.offer(taker_pay, mkr, taker_buy, dai);
+        otc.offer(takerSell, mkr, takerBuy, dai);
     }
     function testGetFirstNextUnsortedOfferOneOffer() public {
         mkr.approve(otc, 30);
-        offer_id[1] = otc.offer(30, mkr, 100, dai);
-        assertEq(otc.getFirstUnsortedOffer(), offer_id[1]);
-        assertEq(otc.getNextUnsortedOffer(offer_id[1]), 0);
+        offerId[1] = otc.offer(30, mkr, 100, dai);
+        assertEq(otc.getFirstUnsortedOffer(), offerId[1]);
+        assertEq(otc.getNextUnsortedOffer(offerId[1]), 0);
     }
     function testGetFirstNextUnsortedOfferThreeOffers() public {
         mkr.approve(otc, 90);
-        offer_id[1] = otc.offer(30, mkr, 100, dai);
-        offer_id[2] = otc.offer(30, mkr, 100, dai);
-        offer_id[3] = otc.offer(30, mkr, 100, dai);
-        assertEq(otc.getFirstUnsortedOffer(), offer_id[3]);
-        assertEq(otc.getNextUnsortedOffer(offer_id[1]), 0);
-        assertEq(otc.getNextUnsortedOffer(offer_id[2]), offer_id[1]);
-        assertEq(otc.getNextUnsortedOffer(offer_id[3]), offer_id[2]);
+        offerId[1] = otc.offer(30, mkr, 100, dai);
+        offerId[2] = otc.offer(30, mkr, 100, dai);
+        offerId[3] = otc.offer(30, mkr, 100, dai);
+        assertEq(otc.getFirstUnsortedOffer(), offerId[3]);
+        assertEq(otc.getNextUnsortedOffer(offerId[1]), 0);
+        assertEq(otc.getNextUnsortedOffer(offerId[2]), offerId[1]);
+        assertEq(otc.getNextUnsortedOffer(offerId[3]), offerId[2]);
     }
     function testGetFirstNextUnsortedOfferAfterInsertOne() public {
         mkr.approve(otc, 90);
-        offer_id[1] = otc.offer(30, mkr, 100, dai);
-        offer_id[2] = otc.offer(30, mkr, 100, dai);
-        offer_id[3] = otc.offer(30, mkr, 100, dai);
-        otc.insert(offer_id[3], 0);
-        assertEq(otc.getBestOffer( mkr, dai ), offer_id[3]);
-        assertEq(otc.getFirstUnsortedOffer(), offer_id[2]);
-        assertEq(otc.getNextUnsortedOffer(offer_id[1]), 0);
-        assertEq(otc.getNextUnsortedOffer(offer_id[2]), offer_id[1]);
-        assertEq(otc.getNextUnsortedOffer(offer_id[3]), 0);
+        offerId[1] = otc.offer(30, mkr, 100, dai);
+        offerId[2] = otc.offer(30, mkr, 100, dai);
+        offerId[3] = otc.offer(30, mkr, 100, dai);
+        otc.insert(offerId[3], 0);
+        assertEq(otc.getBestOffer(mkr, dai), offerId[3]);
+        assertEq(otc.getFirstUnsortedOffer(), offerId[2]);
+        assertEq(otc.getNextUnsortedOffer(offerId[1]), 0);
+        assertEq(otc.getNextUnsortedOffer(offerId[2]), offerId[1]);
+        assertEq(otc.getNextUnsortedOffer(offerId[3]), 0);
     }
     function testGetFirstNextUnsortedOfferAfterInsertTwo() public {
         mkr.approve(otc, 90);
-        offer_id[1] = otc.offer(30, mkr, 100, dai);
-        offer_id[2] = otc.offer(30, mkr, 100, dai);
-        offer_id[3] = otc.offer(30, mkr, 100, dai);
-        otc.insert(offer_id[3],0);
-        otc.insert(offer_id[2],0);
-        assertEq( otc.getFirstUnsortedOffer(), offer_id[1]);
-        assertEq( otc.getNextUnsortedOffer(offer_id[1]), 0);
-        assertEq( otc.getNextUnsortedOffer(offer_id[2]), 0);
-        assertEq( otc.getNextUnsortedOffer(offer_id[3]), 0);
+        offerId[1] = otc.offer(30, mkr, 100, dai);
+        offerId[2] = otc.offer(30, mkr, 100, dai);
+        offerId[3] = otc.offer(30, mkr, 100, dai);
+        otc.insert(offerId[3],0);
+        otc.insert(offerId[2],0);
+        assertEq(otc.getFirstUnsortedOffer(), offerId[1]);
+        assertEq(otc.getNextUnsortedOffer(offerId[1]), 0);
+        assertEq(otc.getNextUnsortedOffer(offerId[2]), 0);
+        assertEq(otc.getNextUnsortedOffer(offerId[3]), 0);
     }
     function testGetFirstNextUnsortedOfferAfterInsertTheree() public {
         mkr.approve(otc, 90);
-        offer_id[1] = otc.offer(30, mkr, 100, dai);
-        offer_id[2] = otc.offer(30, mkr, 100, dai);
-        offer_id[3] = otc.offer(30, mkr, 100, dai);
-        otc.insert(offer_id[3],0);
-        otc.insert(offer_id[2],0);
-        otc.insert(offer_id[1],0);
+        offerId[1] = otc.offer(30, mkr, 100, dai);
+        offerId[2] = otc.offer(30, mkr, 100, dai);
+        offerId[3] = otc.offer(30, mkr, 100, dai);
+        otc.insert(offerId[3],0);
+        otc.insert(offerId[2],0);
+        otc.insert(offerId[1],0);
         assertEq(otc.getFirstUnsortedOffer(), 0);
-        assertEq(otc.getNextUnsortedOffer(offer_id[1]), 0);
-        assertEq(otc.getNextUnsortedOffer(offer_id[2]), 0);
-        assertEq(otc.getNextUnsortedOffer(offer_id[3]), 0);
+        assertEq(otc.getNextUnsortedOffer(offerId[1]), 0);
+        assertEq(otc.getNextUnsortedOffer(offerId[2]), 0);
+        assertEq(otc.getNextUnsortedOffer(offerId[3]), 0);
     }
     function testFailInsertOfferThatIsAlreadyInTheSortedList() public {
         mkr.approve(otc, 30);
-        offer_id[1] = otc.offer(30, mkr, 100, dai, 0);
-        otc.insert(offer_id[1],0);
-        otc.insert(offer_id[1],0);
+        offerId[1] = otc.offer(30, mkr, 100, dai, 0);
+        otc.insert(offerId[1],0);
+        otc.insert(offerId[1],0);
     }
     function testFailInsertOfferThatHasWrongInserPosition() public {
         mkr.approve(otc, 30);
-        offer_id[1] = otc.offer(30, mkr, 100, dai, 0);
-        otc.insert(offer_id[1],7);  //there is no active offer at pos 7
+        offerId[1] = otc.offer(30, mkr, 100, dai, 0);
+        otc.insert(offerId[1],7);  //there is no active offer at pos 7
     }
     function testSetGetMinSellAmout() public {
         otc.setMinSell(dai, 100);
@@ -502,7 +500,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         mkr.approve(otc, 30);
         otc.setMinSell(mkr, 31);
         assertEq(otc.getMinSell(mkr), 31);
-        offer_id[1] = otc.offer(30, mkr, 100, dai, 0);
+        offerId[1] = otc.offer(30, mkr, 100, dai, 0);
     }
     function testFailNonOwnerCanNotSetSellAmount() public {
         user1.doSetMinSellAmount(dai,100);
@@ -511,35 +509,35 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         mkr.approve(otc, 30);
         otc.setMinSell(mkr,30);
         assertEq(otc.getMinSell(mkr), 30);
-        offer_id[1] = otc.offer(30, mkr, 90, dai, 0);
+        offerId[1] = otc.offer(30, mkr, 90, dai, 0);
     }
 
     function testErroneousUserHigherIdStillWorks() public {
         dai.transfer(user1, 10);
         user1.doApprove(otc, 10, dai);
-        offer_id[1] =  user1.doOffer(1, dai, 1,    mkr);
-        offer_id[2] =  user1.doOffer(2, dai, 1,    mkr);
-        offer_id[3] =  user1.doOffer(4, dai, 1,    mkr);
-        offer_id[4] =  user1.doOffer(3, dai, 1,    mkr, offer_id[2]);
+        offerId[1] =  user1.doOffer(1, dai, 1,    mkr);
+        offerId[2] =  user1.doOffer(2, dai, 1,    mkr);
+        offerId[3] =  user1.doOffer(4, dai, 1,    mkr);
+        offerId[4] =  user1.doOffer(3, dai, 1,    mkr, offerId[2]);
     }
 
     function testErroneousUserHigherIdStillWorksOther() public {
         dai.transfer(user1, 11);
         user1.doApprove(otc, 11, dai);
-        offer_id[1] =  user1.doOffer(2, dai, 1,    mkr);
-        offer_id[2] =  user1.doOffer(3, dai, 1,    mkr);
-        offer_id[3] =  user1.doOffer(5, dai, 1,    mkr);
-        offer_id[4] =  user1.doOffer(1,    dai, 1,    mkr, offer_id[3]);
+        offerId[1] =  user1.doOffer(2, dai, 1,    mkr);
+        offerId[2] =  user1.doOffer(3, dai, 1,    mkr);
+        offerId[3] =  user1.doOffer(5, dai, 1,    mkr);
+        offerId[4] =  user1.doOffer(1,    dai, 1,    mkr, offerId[3]);
     }
     
     function testNonExistentOffersPosStillWorks() public {
         dai.transfer(user1, 10);
         user1.doApprove(otc, 10, dai);
-        uint non_existent_offer_id = 4;
-        offer_id[1] =  user1.doOffer(1, dai, 1, mkr);
-        offer_id[2] =  user1.doOffer(2, dai, 1, mkr);
-        offer_id[3] =  user1.doOffer(4, dai, 1, mkr);
-        offer_id[4] =  user1.doOffer(3, dai, 1, mkr, non_existent_offer_id);
+        uint nonExistentOfferId = 4;
+        offerId[1] =  user1.doOffer(1, dai, 1, mkr);
+        offerId[2] =  user1.doOffer(2, dai, 1, mkr);
+        offerId[3] =  user1.doOffer(4, dai, 1, mkr);
+        offerId[4] =  user1.doOffer(3, dai, 1, mkr, nonExistentOfferId);
     }
 
     // Derived from error on Kovan, transaction ID:
@@ -559,19 +557,19 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         // Does not divide cleanly.
         otc.offer(1504155374, dgd, 18501111110000000000, dai, 0);
 
-        uint old_dai_bal = dai.balanceOf(user1);
-        uint old_dgd_bal = dgd.balanceOf(user1);
-        uint dai_pay = 1230000000000000000;
-        uint dgd_buy = 100000000;
+        uint oldDAIBal = dai.balanceOf(user1);
+        uint oldDGDBal = dgd.balanceOf(user1);
+        uint DAISell = 1230000000000000000;
+        uint DGDBuy = 100000000;
 
         // `false` and `true` both allow rounding to a slightly higher price
         // in order to find a match.
-        user1.doOffer(dai_pay, dai, dgd_buy, dgd, 0);
+        user1.doOffer(DAISell, dai, DGDBuy, dgd, 0);
 
         // We should have paid a bit more than we offered to pay.
-        uint expected_overpay = 651528437;
-        assertEq(dgd.balanceOf(user1) - old_dgd_bal, dgd_buy);
-        assertEq(old_dai_bal - dai.balanceOf(user1), dai_pay + expected_overpay);
+        uint expectedOverpay = 651528437;
+        assertEq(dgd.balanceOf(user1) - oldDGDBal, DGDBuy);
+        assertEq(oldDAIBal - dai.balanceOf(user1), DAISell + expectedOverpay);
     }
 
     function testOrderMatchNoRounding() public {
@@ -589,714 +587,714 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         // Does not divide cleanly.
         otc.offer(1504155374, dgd, 18501111110000000000, dai, 0);
 
-        uint old_dai_bal = dai.balanceOf(user1);
-        uint old_dgd_bal = dgd.balanceOf(user1);
-        uint dai_pay = 1230000000000000000;
-        uint dgd_buy = 100000000;
+        uint oldDAIBal = dai.balanceOf(user1);
+        uint oldDGDBal = dgd.balanceOf(user1);
+        uint DAISell = 1230000000000000000;
+        uint DGDBuy = 100000000;
 
         // `false` and `true` both allow rounding to a slightly higher price
         // in order to find a match.
-        user1.doOffer(dai_pay, dai, dgd_buy, dgd, 0);
+        user1.doOffer(DAISell, dai, DGDBuy, dgd, 0);
 
         // We should have paid a bit more than we offered to pay.
-        uint expected_overpay = 651528437;
-        assertEq(dgd.balanceOf(user1) - old_dgd_bal, dgd_buy);
-        assertEq(old_dai_bal - dai.balanceOf(user1), dai_pay + expected_overpay);
+        uint expectedOverpay = 651528437;
+        assertEq(dgd.balanceOf(user1) - oldDGDBal, DGDBuy);
+        assertEq(oldDAIBal - dai.balanceOf(user1), DAISell + expectedOverpay);
     }
 
     function testBestOfferWithOneOffer() public {
         dai.transfer(user1, 1);
         user1.doApprove(otc, 1, dai);
-        offer_id[1] = user1.doOffer(1, dai, 1, mkr);
+        offerId[1] = user1.doOffer(1, dai, 1, mkr);
 
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[1]);
-        assertEq(otc.getBetterOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
+        assertEq(otc.getBestOffer(dai, mkr), offerId[1]);
+        assertEq(otc.getBetterOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
         assertEq(otc.getOfferCount(dai, mkr), 1);
     }
     function testBestOfferWithOneOfferWithUserprovidedId() public {
         dai.transfer(user1, 1);
         user1.doApprove(otc, 1, dai);
-        offer_id[1] = user1.doOffer(1, dai, 1, mkr , 0);
+        offerId[1] = user1.doOffer(1, dai, 1, mkr, 0);
 
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[1]);
-        assertEq(otc.getBetterOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
+        assertEq(otc.getBestOffer(dai, mkr), offerId[1]);
+        assertEq(otc.getBetterOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
         assertEq(otc.getOfferCount(dai, mkr), 1);
     }
     function testBestOfferWithTwoOffers() public {
         dai.transfer(user1, 25);
         user1.doApprove(otc, 25, dai);
-        offer_id[1] = user1.doOffer(10, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(15, dai, 1, mkr);
+        offerId[1] = user1.doOffer(10, dai, 1, mkr);
+        offerId[2] = user1.doOffer(15, dai, 1, mkr);
 
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[2]);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
-        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
-        assertEq(otc.getBetterOffer(offer_id[2]), 0);
+        assertEq(otc.getBestOffer(dai, mkr), offerId[2]);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[2]), offerId[1]);
+        assertEq(otc.getBetterOffer(offerId[1]), offerId[2]);
+        assertEq(otc.getBetterOffer(offerId[2]), 0);
         assertEq(otc.getOfferCount(dai, mkr), 2);
     }
     function testBestOfferWithTwoOffersWithUserprovidedId() public {
         dai.transfer(user1, 25);
         user1.doApprove(otc, 25, dai);
-        offer_id[2] = user1.doOffer(15, dai, 1, mkr);
-        offer_id[1] = user1.doOffer(10, dai, 1, mkr, offer_id[2]);
+        offerId[2] = user1.doOffer(15, dai, 1, mkr);
+        offerId[1] = user1.doOffer(10, dai, 1, mkr, offerId[2]);
 
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[2]);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
-        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
-        assertEq(otc.getBetterOffer(offer_id[2]), 0);
+        assertEq(otc.getBestOffer(dai, mkr), offerId[2]);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[2]), offerId[1]);
+        assertEq(otc.getBetterOffer(offerId[1]), offerId[2]);
+        assertEq(otc.getBetterOffer(offerId[2]), 0);
         assertEq(otc.getOfferCount(dai, mkr), 2);
     }
     function testBestOfferWithThreeOffers() public {
         dai.transfer(user1, 37);
         user1.doApprove(otc, 37, dai);
-        offer_id[1] = user1.doOffer(10, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(12, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(15, dai, 1, mkr);
+        offerId[1] = user1.doOffer(10, dai, 1, mkr);
+        offerId[2] = user1.doOffer(12, dai, 1, mkr);
+        offerId[3] = user1.doOffer(15, dai, 1, mkr);
 
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[3]);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
-        assertEq(otc.getWorseOffer(offer_id[3]), offer_id[2]);
-        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
-        assertEq(otc.getBetterOffer(offer_id[2]), offer_id[3]);
-        assertEq(otc.getBetterOffer(offer_id[3]), 0);
+        assertEq(otc.getBestOffer(dai, mkr), offerId[3]);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[2]), offerId[1]);
+        assertEq(otc.getWorseOffer(offerId[3]), offerId[2]);
+        assertEq(otc.getBetterOffer(offerId[1]), offerId[2]);
+        assertEq(otc.getBetterOffer(offerId[2]), offerId[3]);
+        assertEq(otc.getBetterOffer(offerId[3]), 0);
         assertEq(otc.getOfferCount(dai, mkr), 3);
     }
     function testBestOfferWithThreeOffersMixed() public {
         dai.transfer(user1, 37);
         user1.doApprove(otc, 37, dai);
-        offer_id[1] = user1.doOffer(10, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(15, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(12, dai, 1, mkr);
+        offerId[1] = user1.doOffer(10, dai, 1, mkr);
+        offerId[2] = user1.doOffer(15, dai, 1, mkr);
+        offerId[3] = user1.doOffer(12, dai, 1, mkr);
 
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[2]);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[3]);
-        assertEq(otc.getWorseOffer(offer_id[3]), offer_id[1]);
-        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[3]);
-        assertEq(otc.getBetterOffer(offer_id[2]), 0);
-        assertEq(otc.getBetterOffer(offer_id[3]), offer_id[2]);
+        assertEq(otc.getBestOffer(dai, mkr), offerId[2]);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[2]), offerId[3]);
+        assertEq(otc.getWorseOffer(offerId[3]), offerId[1]);
+        assertEq(otc.getBetterOffer(offerId[1]), offerId[3]);
+        assertEq(otc.getBetterOffer(offerId[2]), 0);
+        assertEq(otc.getBetterOffer(offerId[3]), offerId[2]);
         assertEq(otc.getOfferCount(dai, mkr), 3);
     }
     function testBestOfferWithThreeOffersMixedWithUserProvidedId() public {
         dai.transfer(user1, 37);
         user1.doApprove(otc, 37, dai);
-        offer_id[1] = user1.doOffer(10, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(15, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(12, dai, 1, mkr, offer_id[2]);
+        offerId[1] = user1.doOffer(10, dai, 1, mkr);
+        offerId[2] = user1.doOffer(15, dai, 1, mkr);
+        offerId[3] = user1.doOffer(12, dai, 1, mkr, offerId[2]);
 
-        assertEq(otc.getBestOffer( dai, mkr ), offer_id[2]);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[3]);
-        assertEq(otc.getWorseOffer(offer_id[3]), offer_id[1]);
-        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[3]);
-        assertEq(otc.getBetterOffer(offer_id[2]), 0);
-        assertEq(otc.getBetterOffer(offer_id[3]), offer_id[2]);
+        assertEq(otc.getBestOffer(dai, mkr), offerId[2]);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[2]), offerId[3]);
+        assertEq(otc.getWorseOffer(offerId[3]), offerId[1]);
+        assertEq(otc.getBetterOffer(offerId[1]), offerId[3]);
+        assertEq(otc.getBetterOffer(offerId[2]), 0);
+        assertEq(otc.getBetterOffer(offerId[3]), offerId[2]);
         assertEq(otc.getOfferCount(dai, mkr), 3);
     }
     function testBestOfferWithFourOffersDeleteBetween() public {
         dai.transfer(user1, 53);
         user1.doApprove(otc, 53, dai);
-        offer_id[1] = user1.doOffer(10, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(12, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(15, dai, 1, mkr);
-        offer_id[4] = user1.doOffer(16, dai, 1, mkr);
+        offerId[1] = user1.doOffer(10, dai, 1, mkr);
+        offerId[2] = user1.doOffer(12, dai, 1, mkr);
+        offerId[3] = user1.doOffer(15, dai, 1, mkr);
+        offerId[4] = user1.doOffer(16, dai, 1, mkr);
 
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[4]);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
-        assertEq(otc.getWorseOffer(offer_id[3]), offer_id[2]);
-        assertEq(otc.getWorseOffer(offer_id[4]), offer_id[3]);
-        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
-        assertEq(otc.getBetterOffer(offer_id[2]), offer_id[3]);
-        assertEq(otc.getBetterOffer(offer_id[3]), offer_id[4]);
-        assertEq(otc.getBetterOffer(offer_id[4]), 0);
+        assertEq(otc.getBestOffer(dai, mkr), offerId[4]);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[2]), offerId[1]);
+        assertEq(otc.getWorseOffer(offerId[3]), offerId[2]);
+        assertEq(otc.getWorseOffer(offerId[4]), offerId[3]);
+        assertEq(otc.getBetterOffer(offerId[1]), offerId[2]);
+        assertEq(otc.getBetterOffer(offerId[2]), offerId[3]);
+        assertEq(otc.getBetterOffer(offerId[3]), offerId[4]);
+        assertEq(otc.getBetterOffer(offerId[4]), 0);
         assertEq(otc.getOfferCount(dai, mkr), 4);
 
-        user1.doCancel(offer_id[3]);
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[4]);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
-        assertEq(otc.getWorseOffer(offer_id[3]), offer_id[2]);
-        assertEq(otc.getWorseOffer(offer_id[4]), offer_id[2]);
-        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
-        assertEq(otc.getBetterOffer(offer_id[2]), offer_id[4]);
-        assertEq(otc.getBetterOffer(offer_id[3]), offer_id[4]);
-        assertEq(otc.getBetterOffer(offer_id[4]), 0);
+        user1.doCancel(offerId[3]);
+        assertEq(otc.getBestOffer(dai, mkr), offerId[4]);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[2]), offerId[1]);
+        assertEq(otc.getWorseOffer(offerId[3]), offerId[2]);
+        assertEq(otc.getWorseOffer(offerId[4]), offerId[2]);
+        assertEq(otc.getBetterOffer(offerId[1]), offerId[2]);
+        assertEq(otc.getBetterOffer(offerId[2]), offerId[4]);
+        assertEq(otc.getBetterOffer(offerId[3]), offerId[4]);
+        assertEq(otc.getBetterOffer(offerId[4]), 0);
         assertEq(otc.getOfferCount(dai, mkr), 3);
     }
     function testBestOfferWithFourOffersWithUserprovidedId() public {
         dai.transfer(user1, 53);
         user1.doApprove(otc, 53, dai);
-        offer_id[4] = user1.doOffer(16, dai, 1, mkr, 0);
-        offer_id[3] = user1.doOffer(15, dai, 1, mkr, offer_id[4]);
-        offer_id[2] = user1.doOffer(12, dai, 1, mkr, offer_id[3]);
-        offer_id[1] = user1.doOffer(10, dai, 1, mkr, offer_id[2]);
+        offerId[4] = user1.doOffer(16, dai, 1, mkr, 0);
+        offerId[3] = user1.doOffer(15, dai, 1, mkr, offerId[4]);
+        offerId[2] = user1.doOffer(12, dai, 1, mkr, offerId[3]);
+        offerId[1] = user1.doOffer(10, dai, 1, mkr, offerId[2]);
 
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[4]);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
-        assertEq(otc.getWorseOffer(offer_id[3]), offer_id[2]);
-        assertEq(otc.getWorseOffer(offer_id[4]), offer_id[3]);
-        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
-        assertEq(otc.getBetterOffer(offer_id[2]), offer_id[3]);
-        assertEq(otc.getBetterOffer(offer_id[3]), offer_id[4]);
-        assertEq(otc.getBetterOffer(offer_id[4]), 0);
+        assertEq(otc.getBestOffer(dai, mkr), offerId[4]);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[2]), offerId[1]);
+        assertEq(otc.getWorseOffer(offerId[3]), offerId[2]);
+        assertEq(otc.getWorseOffer(offerId[4]), offerId[3]);
+        assertEq(otc.getBetterOffer(offerId[1]), offerId[2]);
+        assertEq(otc.getBetterOffer(offerId[2]), offerId[3]);
+        assertEq(otc.getBetterOffer(offerId[3]), offerId[4]);
+        assertEq(otc.getBetterOffer(offerId[4]), 0);
         assertEq(otc.getOfferCount(dai, mkr), 4);
     }
     function testBestOfferWithFourOffersTwoSamePriceUserProvidedId() public {
         dai.transfer(user1, 50);
         user1.doApprove(otc, 50, dai);
-        offer_id[1] = user1.doOffer(10, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(12, dai, 1, mkr);
-        offer_id[4] = user1.doOffer(16, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(12, dai, 1, mkr , offer_id[2]);
+        offerId[1] = user1.doOffer(10, dai, 1, mkr);
+        offerId[2] = user1.doOffer(12, dai, 1, mkr);
+        offerId[4] = user1.doOffer(16, dai, 1, mkr);
+        offerId[3] = user1.doOffer(12, dai, 1, mkr, offerId[2]);
 
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[4]);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[3]);
-        assertEq(otc.getWorseOffer(offer_id[3]), offer_id[1]);
-        assertEq(otc.getWorseOffer(offer_id[4]), offer_id[2]);
-        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[3]);
-        assertEq(otc.getBetterOffer(offer_id[2]), offer_id[4]);
-        assertEq(otc.getBetterOffer(offer_id[3]), offer_id[2]);
-        assertEq(otc.getBetterOffer(offer_id[4]), 0);
+        assertEq(otc.getBestOffer(dai, mkr), offerId[4]);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[2]), offerId[3]);
+        assertEq(otc.getWorseOffer(offerId[3]), offerId[1]);
+        assertEq(otc.getWorseOffer(offerId[4]), offerId[2]);
+        assertEq(otc.getBetterOffer(offerId[1]), offerId[3]);
+        assertEq(otc.getBetterOffer(offerId[2]), offerId[4]);
+        assertEq(otc.getBetterOffer(offerId[3]), offerId[2]);
+        assertEq(otc.getBetterOffer(offerId[4]), 0);
         assertEq(otc.getOfferCount(dai, mkr), 4);
     }
     function testBestOfferWithTwoOffersDeletedLowest() public {
         dai.transfer(user1, 22);
         user1.doApprove(otc, 22, dai);
-        offer_id[1] = user1.doOffer(10, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(12, dai, 1, mkr);
-        user1.doCancel(offer_id[1]);
+        offerId[1] = user1.doOffer(10, dai, 1, mkr);
+        offerId[2] = user1.doOffer(12, dai, 1, mkr);
+        user1.doCancel(offerId[1]);
 
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[2]);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), 0);
-        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
-        assertEq(otc.getBetterOffer(offer_id[2]), 0);
+        assertEq(otc.getBestOffer(dai, mkr), offerId[2]);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[2]), 0);
+        assertEq(otc.getBetterOffer(offerId[1]), offerId[2]);
+        assertEq(otc.getBetterOffer(offerId[2]), 0);
         assertEq(otc.getOfferCount(dai,mkr), 1);
-        assert(!otc.isActive( offer_id[1]));
+        assert(!otc.isActive(offerId[1]));
     }
     function testBestOfferWithTwoOffersDeletedHighest() public {
         dai.transfer(user1, 22);
         user1.doApprove(otc, 22, dai);
-        offer_id[1] = user1.doOffer(10, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(12, dai, 1, mkr);
-        user1.doCancel(offer_id[2]);
+        offerId[1] = user1.doOffer(10, dai, 1, mkr);
+        offerId[2] = user1.doOffer(12, dai, 1, mkr);
+        user1.doCancel(offerId[2]);
 
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[1]);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
-        assertEq(otc.getBetterOffer(offer_id[1]), 0);
-        assertEq(otc.getBetterOffer(offer_id[2]), 0);
+        assertEq(otc.getBestOffer(dai, mkr), offerId[1]);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[2]), offerId[1]);
+        assertEq(otc.getBetterOffer(offerId[1]), 0);
+        assertEq(otc.getBetterOffer(offerId[2]), 0);
         assertEq(otc.getOfferCount(dai, mkr), 1);
-        assert(!otc.isActive(offer_id[2]));
+        assert(!otc.isActive(offerId[2]));
     }
     function testBestOfferWithThreeOffersDeletedLowest() public {
         dai.transfer(user1, 36);
         user1.doApprove(otc, 36, dai);
-        offer_id[1] = user1.doOffer(10, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(12, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(14, dai, 1, mkr);
-        user1.doCancel(offer_id[1]);
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[3]);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), 0);
-        assertEq(otc.getWorseOffer(offer_id[3]), offer_id[2]);
+        offerId[1] = user1.doOffer(10, dai, 1, mkr);
+        offerId[2] = user1.doOffer(12, dai, 1, mkr);
+        offerId[3] = user1.doOffer(14, dai, 1, mkr);
+        user1.doCancel(offerId[1]);
+        assertEq(otc.getBestOffer(dai, mkr), offerId[3]);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[2]), 0);
+        assertEq(otc.getWorseOffer(offerId[3]), offerId[2]);
 
         // make sure we retained our offer information.
-        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
-        assertEq(otc.getBetterOffer(offer_id[2]), offer_id[3]);
-        assertEq(otc.getBetterOffer(offer_id[3]), 0);
+        assertEq(otc.getBetterOffer(offerId[1]), offerId[2]);
+        assertEq(otc.getBetterOffer(offerId[2]), offerId[3]);
+        assertEq(otc.getBetterOffer(offerId[3]), 0);
         assertEq(otc.getOfferCount(dai, mkr), 2);
-        assert(!otc.isActive(offer_id[1]));
+        assert(!otc.isActive(offerId[1]));
     }
     function testBestOfferWithThreeOffersDeletedHighest() public {
         dai.transfer(user1, 36);
         user1.doApprove(otc, 36, dai);
-        offer_id[1] = user1.doOffer(10, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(12, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(14, dai, 1, mkr);
-        user1.doCancel(offer_id[3]);
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[2]);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
-        assertEq(otc.getWorseOffer(offer_id[3]), offer_id[2]);
-        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
-        assertEq(otc.getBetterOffer(offer_id[2]), 0);
-        assertEq(otc.getBetterOffer(offer_id[3]), 0);
+        offerId[1] = user1.doOffer(10, dai, 1, mkr);
+        offerId[2] = user1.doOffer(12, dai, 1, mkr);
+        offerId[3] = user1.doOffer(14, dai, 1, mkr);
+        user1.doCancel(offerId[3]);
+        assertEq(otc.getBestOffer(dai, mkr), offerId[2]);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[2]), offerId[1]);
+        assertEq(otc.getWorseOffer(offerId[3]), offerId[2]);
+        assertEq(otc.getBetterOffer(offerId[1]), offerId[2]);
+        assertEq(otc.getBetterOffer(offerId[2]), 0);
+        assertEq(otc.getBetterOffer(offerId[3]), 0);
         assertEq(otc.getOfferCount(dai, mkr), 2);
-        assert(!otc.isActive( offer_id[3]));
+        assert(!otc.isActive(offerId[3]));
 
         expectEventsExact(otc);
-        emit LogItemUpdate(offer_id[1]);
-        emit LogItemUpdate(offer_id[2]);
-        emit LogItemUpdate(offer_id[3]);
-        emit LogItemUpdate(offer_id[3]);
+        emit LogItemUpdate(offerId[1]);
+        emit LogItemUpdate(offerId[2]);
+        emit LogItemUpdate(offerId[3]);
+        emit LogItemUpdate(offerId[3]);
     }
     function testBestOfferWithTwoOffersWithDifferentTokens() public {
         dai.transfer(user1, 2);
         user1.doApprove(otc, 2, dai);
-        offer_id[1] = user1.doOffer(1, dai, 1, dgd);
-        offer_id[2] = user1.doOffer(1, dai, 1, mkr);
-        assertEq(otc.getBestOffer(dai, dgd), offer_id[1]);
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[2]);
-        assertEq(otc.getBetterOffer(offer_id[1]), 0);
-        assertEq(otc.getBetterOffer(offer_id[2]), 0);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), 0);
+        offerId[1] = user1.doOffer(1, dai, 1, dgd);
+        offerId[2] = user1.doOffer(1, dai, 1, mkr);
+        assertEq(otc.getBestOffer(dai, dgd), offerId[1]);
+        assertEq(otc.getBestOffer(dai, mkr), offerId[2]);
+        assertEq(otc.getBetterOffer(offerId[1]), 0);
+        assertEq(otc.getBetterOffer(offerId[2]), 0);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[2]), 0);
         assertEq(otc.getOfferCount(dai, dgd), 1);
         assertEq(otc.getOfferCount(dai, mkr), 1);
     }
     function testBestOfferWithFourOffersWithDifferentTokens() public {
         dai.transfer(user1, 55);
         user1.doApprove(otc, 55, dai);
-        offer_id[1] = user1.doOffer(10, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(12, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(16, dai, 1, dgd);
-        offer_id[4] = user1.doOffer(17, dai, 1, dgd);
+        offerId[1] = user1.doOffer(10, dai, 1, mkr);
+        offerId[2] = user1.doOffer(12, dai, 1, mkr);
+        offerId[3] = user1.doOffer(16, dai, 1, dgd);
+        offerId[4] = user1.doOffer(17, dai, 1, dgd);
 
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[2]);
-        assertEq(otc.getBestOffer(dai, dgd), offer_id[4]);
-        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
-        assertEq(otc.getBetterOffer(offer_id[2]), 0);
-        assertEq(otc.getBetterOffer(offer_id[3]), offer_id[4]);
-        assertEq(otc.getBetterOffer(offer_id[4]), 0);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
-        assertEq(otc.getWorseOffer(offer_id[3]), 0);
-        assertEq(otc.getWorseOffer(offer_id[4]), offer_id[3]);
+        assertEq(otc.getBestOffer(dai, mkr), offerId[2]);
+        assertEq(otc.getBestOffer(dai, dgd), offerId[4]);
+        assertEq(otc.getBetterOffer(offerId[1]), offerId[2]);
+        assertEq(otc.getBetterOffer(offerId[2]), 0);
+        assertEq(otc.getBetterOffer(offerId[3]), offerId[4]);
+        assertEq(otc.getBetterOffer(offerId[4]), 0);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[2]), offerId[1]);
+        assertEq(otc.getWorseOffer(offerId[3]), 0);
+        assertEq(otc.getWorseOffer(offerId[4]), offerId[3]);
         assertEq(otc.getOfferCount(dai, mkr), 2);
         assertEq(otc.getOfferCount(dai, dgd), 2);
     }
     function testBestOfferWithSixOffersWithDifferentTokens() public {
         dai.transfer(user1, 88);
         user1.doApprove(otc, 88, dai);
-        offer_id[1] = user1.doOffer(10, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(12, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(15, dai, 1, mkr);
-        offer_id[4] = user1.doOffer(16, dai, 1, dgd);
-        offer_id[5] = user1.doOffer(17, dai, 1, dgd);
-        offer_id[6] = user1.doOffer(18, dai, 1, dgd);
+        offerId[1] = user1.doOffer(10, dai, 1, mkr);
+        offerId[2] = user1.doOffer(12, dai, 1, mkr);
+        offerId[3] = user1.doOffer(15, dai, 1, mkr);
+        offerId[4] = user1.doOffer(16, dai, 1, dgd);
+        offerId[5] = user1.doOffer(17, dai, 1, dgd);
+        offerId[6] = user1.doOffer(18, dai, 1, dgd);
 
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[3]);
-        assertEq(otc.getBestOffer(dai, dgd), offer_id[6]);
-        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
-        assertEq(otc.getBetterOffer(offer_id[2]), offer_id[3]);
-        assertEq(otc.getBetterOffer(offer_id[3]), 0);
-        assertEq(otc.getBetterOffer(offer_id[4]), offer_id[5]);
-        assertEq(otc.getBetterOffer(offer_id[5]), offer_id[6]);
-        assertEq(otc.getBetterOffer(offer_id[6]), 0);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
-        assertEq(otc.getWorseOffer(offer_id[3]), offer_id[2]);
-        assertEq(otc.getWorseOffer(offer_id[4]), 0);
-        assertEq(otc.getWorseOffer(offer_id[5]), offer_id[4]);
-        assertEq(otc.getWorseOffer(offer_id[6]), offer_id[5]);
+        assertEq(otc.getBestOffer(dai, mkr), offerId[3]);
+        assertEq(otc.getBestOffer(dai, dgd), offerId[6]);
+        assertEq(otc.getBetterOffer(offerId[1]), offerId[2]);
+        assertEq(otc.getBetterOffer(offerId[2]), offerId[3]);
+        assertEq(otc.getBetterOffer(offerId[3]), 0);
+        assertEq(otc.getBetterOffer(offerId[4]), offerId[5]);
+        assertEq(otc.getBetterOffer(offerId[5]), offerId[6]);
+        assertEq(otc.getBetterOffer(offerId[6]), 0);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[2]), offerId[1]);
+        assertEq(otc.getWorseOffer(offerId[3]), offerId[2]);
+        assertEq(otc.getWorseOffer(offerId[4]), 0);
+        assertEq(otc.getWorseOffer(offerId[5]), offerId[4]);
+        assertEq(otc.getWorseOffer(offerId[6]), offerId[5]);
         assertEq(otc.getOfferCount(dai, mkr), 3);
         assertEq(otc.getOfferCount(dai, dgd), 3);
     }
     function testBestOfferWithEightOffersWithDifferentTokens() public {
         dai.transfer(user1, 106);
         user1.doApprove(otc, 106, dai);
-        offer_id[1] = user1.doOffer(10, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(12, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(15, dai, 1, mkr);
-        offer_id[4] = user1.doOffer(16, dai, 1, mkr);
-        offer_id[5] = user1.doOffer(10, dai, 1, dgd);
-        offer_id[6] = user1.doOffer(12, dai, 1, dgd);
-        offer_id[7] = user1.doOffer(15, dai, 1, dgd);
-        offer_id[8] = user1.doOffer(16, dai, 1, dgd);
+        offerId[1] = user1.doOffer(10, dai, 1, mkr);
+        offerId[2] = user1.doOffer(12, dai, 1, mkr);
+        offerId[3] = user1.doOffer(15, dai, 1, mkr);
+        offerId[4] = user1.doOffer(16, dai, 1, mkr);
+        offerId[5] = user1.doOffer(10, dai, 1, dgd);
+        offerId[6] = user1.doOffer(12, dai, 1, dgd);
+        offerId[7] = user1.doOffer(15, dai, 1, dgd);
+        offerId[8] = user1.doOffer(16, dai, 1, dgd);
 
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[4]);
-        assertEq(otc.getBestOffer(dai, dgd), offer_id[8]);
-        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
-        assertEq(otc.getBetterOffer(offer_id[2]), offer_id[3]);
-        assertEq(otc.getBetterOffer(offer_id[3]), offer_id[4]);
-        assertEq(otc.getBetterOffer(offer_id[4]), 0);
-        assertEq(otc.getBetterOffer(offer_id[5]), offer_id[6]);
-        assertEq(otc.getBetterOffer(offer_id[6]), offer_id[7]);
-        assertEq(otc.getBetterOffer(offer_id[7]), offer_id[8]);
-        assertEq(otc.getBetterOffer(offer_id[8]), 0);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
-        assertEq(otc.getWorseOffer(offer_id[3]), offer_id[2]);
-        assertEq(otc.getWorseOffer(offer_id[4]), offer_id[3]);
-        assertEq(otc.getWorseOffer(offer_id[5]), 0);
-        assertEq(otc.getWorseOffer(offer_id[6]), offer_id[5]);
-        assertEq(otc.getWorseOffer(offer_id[7]), offer_id[6]);
-        assertEq(otc.getWorseOffer(offer_id[8]), offer_id[7]);
+        assertEq(otc.getBestOffer(dai, mkr), offerId[4]);
+        assertEq(otc.getBestOffer(dai, dgd), offerId[8]);
+        assertEq(otc.getBetterOffer(offerId[1]), offerId[2]);
+        assertEq(otc.getBetterOffer(offerId[2]), offerId[3]);
+        assertEq(otc.getBetterOffer(offerId[3]), offerId[4]);
+        assertEq(otc.getBetterOffer(offerId[4]), 0);
+        assertEq(otc.getBetterOffer(offerId[5]), offerId[6]);
+        assertEq(otc.getBetterOffer(offerId[6]), offerId[7]);
+        assertEq(otc.getBetterOffer(offerId[7]), offerId[8]);
+        assertEq(otc.getBetterOffer(offerId[8]), 0);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[2]), offerId[1]);
+        assertEq(otc.getWorseOffer(offerId[3]), offerId[2]);
+        assertEq(otc.getWorseOffer(offerId[4]), offerId[3]);
+        assertEq(otc.getWorseOffer(offerId[5]), 0);
+        assertEq(otc.getWorseOffer(offerId[6]), offerId[5]);
+        assertEq(otc.getWorseOffer(offerId[7]), offerId[6]);
+        assertEq(otc.getWorseOffer(offerId[8]), offerId[7]);
         assertEq(otc.getOfferCount(dai, mkr), 4);
         assertEq(otc.getOfferCount(dai, dgd), 4);
     }
     function testBestOfferWithFourOffersWithDifferentTokensLowHighDeleted() public {
         dai.transfer(user1, 29);
         user1.doApprove(otc, 39, dai);
-        offer_id[1] = user1.doOffer(10, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(12, dai, 1, mkr);
-        user1.doCancel(offer_id[1] );
-        offer_id[3] = user1.doOffer(8, dai, 1, dgd);
-        offer_id[4] = user1.doOffer(9, dai, 1, dgd);
-        user1.doCancel(offer_id[3]);
+        offerId[1] = user1.doOffer(10, dai, 1, mkr);
+        offerId[2] = user1.doOffer(12, dai, 1, mkr);
+        user1.doCancel(offerId[1]);
+        offerId[3] = user1.doOffer(8, dai, 1, dgd);
+        offerId[4] = user1.doOffer(9, dai, 1, dgd);
+        user1.doCancel(offerId[3]);
 
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[2]);
-        assertEq(otc.getBestOffer(dai, dgd), offer_id[4]);
-        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
-        assertEq(otc.getBetterOffer(offer_id[2]), 0);
-        assertEq(otc.getBetterOffer(offer_id[3]), offer_id[4]);
-        assertEq(otc.getBetterOffer(offer_id[4]), 0);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), 0);
-        assertEq(otc.getWorseOffer(offer_id[3]), 0);
-        assertEq(otc.getWorseOffer(offer_id[4]), 0);
+        assertEq(otc.getBestOffer(dai, mkr), offerId[2]);
+        assertEq(otc.getBestOffer(dai, dgd), offerId[4]);
+        assertEq(otc.getBetterOffer(offerId[1]), offerId[2]);
+        assertEq(otc.getBetterOffer(offerId[2]), 0);
+        assertEq(otc.getBetterOffer(offerId[3]), offerId[4]);
+        assertEq(otc.getBetterOffer(offerId[4]), 0);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[2]), 0);
+        assertEq(otc.getWorseOffer(offerId[3]), 0);
+        assertEq(otc.getWorseOffer(offerId[4]), 0);
         assertEq(otc.getOfferCount(dai,mkr), 1);
         assertEq(otc.getOfferCount(dai,dgd), 1);
-        assert(!otc.isActive(offer_id[1]));
-        assert(!otc.isActive(offer_id[3]));
+        assert(!otc.isActive(offerId[1]));
+        assert(!otc.isActive(offerId[3]));
     }
     function testBestOfferWithFourOffersWithDifferentTokensHighLowDeleted() public {
         dai.transfer(user1, 27);
         user1.doApprove(otc, 39, dai);
-        offer_id[1] = user1.doOffer(10, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(12, dai, 1, mkr);
-        user1.doCancel(offer_id[2]);
-        offer_id[3] = user1.doOffer(8, dai, 1, dgd);
-        offer_id[4] = user1.doOffer(9, dai, 1, dgd);
-        user1.doCancel(offer_id[4]);
-        assertEq(otc.getBestOffer( dai, mkr ), offer_id[1]);
-        assertEq(otc.getBestOffer( dai, dgd ), offer_id[3]);
-        assertEq(otc.getBetterOffer(offer_id[1]), 0);
-        assertEq(otc.getBetterOffer(offer_id[2]), 0);
-        assertEq(otc.getBetterOffer(offer_id[3]), 0);
-        assertEq(otc.getBetterOffer(offer_id[4]), 0);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
-        assertEq(otc.getWorseOffer(offer_id[3]), 0);
-        assertEq(otc.getWorseOffer(offer_id[4]), offer_id[3]);
+        offerId[1] = user1.doOffer(10, dai, 1, mkr);
+        offerId[2] = user1.doOffer(12, dai, 1, mkr);
+        user1.doCancel(offerId[2]);
+        offerId[3] = user1.doOffer(8, dai, 1, dgd);
+        offerId[4] = user1.doOffer(9, dai, 1, dgd);
+        user1.doCancel(offerId[4]);
+        assertEq(otc.getBestOffer(dai, mkr), offerId[1]);
+        assertEq(otc.getBestOffer(dai, dgd), offerId[3]);
+        assertEq(otc.getBetterOffer(offerId[1]), 0);
+        assertEq(otc.getBetterOffer(offerId[2]), 0);
+        assertEq(otc.getBetterOffer(offerId[3]), 0);
+        assertEq(otc.getBetterOffer(offerId[4]), 0);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[2]), offerId[1]);
+        assertEq(otc.getWorseOffer(offerId[3]), 0);
+        assertEq(otc.getWorseOffer(offerId[4]), offerId[3]);
         assertEq(otc.getOfferCount(dai,mkr), 1);
         assertEq(otc.getOfferCount(dai,dgd), 1);
-        assert(!otc.isActive(offer_id[2]));
-        assert(!otc.isActive(offer_id[4]));
+        assert(!otc.isActive(offerId[2]));
+        assert(!otc.isActive(offerId[4]));
     }
     function testBestOfferWithSixOffersWithDifferentTokensLowHighDeleted() public {
         dai.transfer(user1, 78);
         user1.doApprove(otc, 88, dai);
-        offer_id[1] = user1.doOffer(10, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(12, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(15, dai, 1, mkr);
-        user1.doCancel(offer_id[1]);
-        offer_id[4] = user1.doOffer(16, dai, 1, dgd);
-        offer_id[5] = user1.doOffer(17, dai, 1, dgd);
-        offer_id[6] = user1.doOffer(18, dai, 1, dgd);
-        user1.doCancel(offer_id[6]);
+        offerId[1] = user1.doOffer(10, dai, 1, mkr);
+        offerId[2] = user1.doOffer(12, dai, 1, mkr);
+        offerId[3] = user1.doOffer(15, dai, 1, mkr);
+        user1.doCancel(offerId[1]);
+        offerId[4] = user1.doOffer(16, dai, 1, dgd);
+        offerId[5] = user1.doOffer(17, dai, 1, dgd);
+        offerId[6] = user1.doOffer(18, dai, 1, dgd);
+        user1.doCancel(offerId[6]);
 
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[3]);
-        assertEq(otc.getBestOffer(dai, dgd), offer_id[5]);
-        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
-        assertEq(otc.getBetterOffer(offer_id[2]), offer_id[3]);
-        assertEq(otc.getBetterOffer(offer_id[3]), 0);
-        assertEq(otc.getBetterOffer(offer_id[4]), offer_id[5]);
-        assertEq(otc.getBetterOffer(offer_id[5]), 0);
-        assertEq(otc.getBetterOffer(offer_id[6]), 0);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), 0);
-        assertEq(otc.getWorseOffer(offer_id[3]), offer_id[2]);
-        assertEq(otc.getWorseOffer(offer_id[4]), 0);
-        assertEq(otc.getWorseOffer(offer_id[5]), offer_id[4]);
-        assertEq(otc.getWorseOffer(offer_id[6]), offer_id[5]);
+        assertEq(otc.getBestOffer(dai, mkr), offerId[3]);
+        assertEq(otc.getBestOffer(dai, dgd), offerId[5]);
+        assertEq(otc.getBetterOffer(offerId[1]), offerId[2]);
+        assertEq(otc.getBetterOffer(offerId[2]), offerId[3]);
+        assertEq(otc.getBetterOffer(offerId[3]), 0);
+        assertEq(otc.getBetterOffer(offerId[4]), offerId[5]);
+        assertEq(otc.getBetterOffer(offerId[5]), 0);
+        assertEq(otc.getBetterOffer(offerId[6]), 0);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[2]), 0);
+        assertEq(otc.getWorseOffer(offerId[3]), offerId[2]);
+        assertEq(otc.getWorseOffer(offerId[4]), 0);
+        assertEq(otc.getWorseOffer(offerId[5]), offerId[4]);
+        assertEq(otc.getWorseOffer(offerId[6]), offerId[5]);
         assertEq(otc.getOfferCount(dai,mkr), 2);
         assertEq(otc.getOfferCount(dai,dgd), 2);
-        assert(!otc.isActive( offer_id[1]));
-        assert(!otc.isActive( offer_id[6]));
+        assert(!otc.isActive(offerId[1]));
+        assert(!otc.isActive(offerId[6]));
     }
     function testBestOfferWithSixOffersWithDifferentTokensHighLowDeleted() public {
         dai.transfer(user1, 73);
         user1.doApprove(otc, 88, dai);
-        offer_id[1] = user1.doOffer(10, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(12, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(15, dai, 1, mkr);
-        user1.doCancel(offer_id[3]);
-        offer_id[4] = user1.doOffer(16, dai, 1, dgd);
-        offer_id[5] = user1.doOffer(17, dai, 1, dgd);
-        offer_id[6] = user1.doOffer(18, dai, 1, dgd);
-        user1.doCancel(offer_id[4]);
+        offerId[1] = user1.doOffer(10, dai, 1, mkr);
+        offerId[2] = user1.doOffer(12, dai, 1, mkr);
+        offerId[3] = user1.doOffer(15, dai, 1, mkr);
+        user1.doCancel(offerId[3]);
+        offerId[4] = user1.doOffer(16, dai, 1, dgd);
+        offerId[5] = user1.doOffer(17, dai, 1, dgd);
+        offerId[6] = user1.doOffer(18, dai, 1, dgd);
+        user1.doCancel(offerId[4]);
 
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[2]);
-        assertEq(otc.getBestOffer(dai, dgd), offer_id[6]);
-        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
-        assertEq(otc.getBetterOffer(offer_id[2]), 0);
-        assertEq(otc.getBetterOffer(offer_id[3]), 0); // was best when cancelled
-        assertEq(otc.getBetterOffer(offer_id[4]), offer_id[5]);
-        assertEq(otc.getBetterOffer(offer_id[5]), offer_id[6]);
-        assertEq(otc.getBetterOffer(offer_id[6]), 0);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
-        assertEq(otc.getWorseOffer(offer_id[3]), offer_id[2]);
-        assertEq(otc.getWorseOffer(offer_id[4]), 0);
-        assertEq(otc.getWorseOffer(offer_id[5]), 0);
-        assertEq(otc.getWorseOffer(offer_id[6]), offer_id[5]);
+        assertEq(otc.getBestOffer(dai, mkr), offerId[2]);
+        assertEq(otc.getBestOffer(dai, dgd), offerId[6]);
+        assertEq(otc.getBetterOffer(offerId[1]), offerId[2]);
+        assertEq(otc.getBetterOffer(offerId[2]), 0);
+        assertEq(otc.getBetterOffer(offerId[3]), 0); // was best when cancelled
+        assertEq(otc.getBetterOffer(offerId[4]), offerId[5]);
+        assertEq(otc.getBetterOffer(offerId[5]), offerId[6]);
+        assertEq(otc.getBetterOffer(offerId[6]), 0);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[2]), offerId[1]);
+        assertEq(otc.getWorseOffer(offerId[3]), offerId[2]);
+        assertEq(otc.getWorseOffer(offerId[4]), 0);
+        assertEq(otc.getWorseOffer(offerId[5]), 0);
+        assertEq(otc.getWorseOffer(offerId[6]), offerId[5]);
         assertEq(otc.getOfferCount(dai, mkr), 2);
         assertEq(otc.getOfferCount(dai, dgd), 2);
-        assert(!otc.isActive(offer_id[3]));
-        assert(!otc.isActive(offer_id[4]));
+        assert(!otc.isActive(offerId[3]));
+        assert(!otc.isActive(offerId[4]));
     }
 
     function testInsertOfferWithUserProvidedIdOfADifferentTokenLower() public {
         dai.transfer(user1, 13);
         user1.doApprove(otc, 13, dai);
         dai.approve(otc, 11);
-        offer_id[1] = user1.doOffer(13, dai, 1, mkr);
-        offer_id[2] = otc.offer(11, dai, 1, dgd, offer_id[1]);
-	assert(otc.getBetterOffer(offer_id[2]) == 0);
-	assert(otc.getWorseOffer(offer_id[2]) == 0);
+        offerId[1] = user1.doOffer(13, dai, 1, mkr);
+        offerId[2] = otc.offer(11, dai, 1, dgd, offerId[1]);
+	assert(otc.getBetterOffer(offerId[2]) == 0);
+	assert(otc.getWorseOffer(offerId[2]) == 0);
     }
     
     function testInsertOfferWithUserProvidedIdOfADifferentTokenHigher() public {
         dai.transfer(user1, 13);
         user1.doApprove(otc, 13, dai);
         dai.approve(otc, 14);
-        offer_id[1] = user1.doOffer(13, dai, 1, mkr);
-        offer_id[2] = otc.offer(14, dai, 1, dgd, offer_id[1]);
-	assert(otc.getBetterOffer(offer_id[2]) == 0);
-	assert(otc.getWorseOffer(offer_id[2]) == 0);
+        offerId[1] = user1.doOffer(13, dai, 1, mkr);
+        offerId[2] = otc.offer(14, dai, 1, dgd, offerId[1]);
+	assert(otc.getBetterOffer(offerId[2]) == 0);
+	assert(otc.getWorseOffer(offerId[2]) == 0);
     }
     
     function testInsertOfferWithUserProvidedIdOfADifferentTokenHigherToHighest() public {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 12);
-        offer_id[1] = user1.doOffer(13, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(11, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(9, dai, 1, mkr);
-	user1.doCancel(offer_id[1]);
-        offer_id[4] = otc.offer(12, dai, 1, dgd, offer_id[1]);
-	assert(otc.getBetterOffer(offer_id[4]) == 0);
-	assert(otc.getWorseOffer(offer_id[4]) == 0);
+        offerId[1] = user1.doOffer(13, dai, 1, mkr);
+        offerId[2] = user1.doOffer(11, dai, 1, mkr);
+        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+	user1.doCancel(offerId[1]);
+        offerId[4] = otc.offer(12, dai, 1, dgd, offerId[1]);
+	assert(otc.getBetterOffer(offerId[4]) == 0);
+	assert(otc.getWorseOffer(offerId[4]) == 0);
     }
 
     function testInsertOfferWithUserProvidedIdOfADifferentTokenHigherToBetween() public {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 10);
-        offer_id[1] = user1.doOffer(13, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(11, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(9, dai, 1, mkr);
-	user1.doCancel(offer_id[2]);
-        offer_id[4] = otc.offer(10, dai, 1, dgd , offer_id[2]);
-	assert(otc.getBetterOffer(offer_id[4]) == 0);
-	assert(otc.getWorseOffer(offer_id[4]) == 0);
+        offerId[1] = user1.doOffer(13, dai, 1, mkr);
+        offerId[2] = user1.doOffer(11, dai, 1, mkr);
+        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+	user1.doCancel(offerId[2]);
+        offerId[4] = otc.offer(10, dai, 1, dgd, offerId[2]);
+	assert(otc.getBetterOffer(offerId[4]) == 0);
+	assert(otc.getWorseOffer(offerId[4]) == 0);
     }
 
     function testInsertOfferWithUserProvidedIdOfADifferentTokenHigherToLowest() public {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 8);
-        offer_id[1] = user1.doOffer(13, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(11, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(9, dai, 1, mkr);
-	user1.doCancel(offer_id[3]);
-        offer_id[4] = otc.offer(8, dai, 1, dgd, offer_id[3]);
-	assert(otc.getBetterOffer(offer_id[4]) == 0);
-	assert(otc.getWorseOffer(offer_id[4]) == 0);
+        offerId[1] = user1.doOffer(13, dai, 1, mkr);
+        offerId[2] = user1.doOffer(11, dai, 1, mkr);
+        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+	user1.doCancel(offerId[3]);
+        offerId[4] = otc.offer(8, dai, 1, dgd, offerId[3]);
+	assert(otc.getBetterOffer(offerId[4]) == 0);
+	assert(otc.getWorseOffer(offerId[4]) == 0);
     }
 
     function testInsertOfferWithUserProvidedIdOfASameTokenHigherToHighestWrongPos() public {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 14);
-        offer_id[1] = user1.doOffer(13, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(11, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(9, dai, 1, mkr);
-	user1.doCancel(offer_id[1]);
-        offer_id[4] = otc.offer(14, dai, 1, mkr, offer_id[1]);
-	assert(otc.getBetterOffer(offer_id[4]) == 0);
-	assert(otc.getWorseOffer(offer_id[4]) == offer_id[2]);
+        offerId[1] = user1.doOffer(13, dai, 1, mkr);
+        offerId[2] = user1.doOffer(11, dai, 1, mkr);
+        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+	user1.doCancel(offerId[1]);
+        offerId[4] = otc.offer(14, dai, 1, mkr, offerId[1]);
+	assert(otc.getBetterOffer(offerId[4]) == 0);
+	assert(otc.getWorseOffer(offerId[4]) == offerId[2]);
     }
 
     function testInsertOfferWithUserProvidedIdOfASameTokenHigherToBetweenWrongPos() public {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 14);
-        offer_id[1] = user1.doOffer(13, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(11, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(9, dai, 1, mkr);
-	user1.doCancel(offer_id[2]);
-        offer_id[4] = otc.offer(14, dai, 1, mkr, offer_id[2]);
-	assert(otc.getBetterOffer(offer_id[4]) == 0);
-	assert(otc.getWorseOffer(offer_id[4]) == offer_id[1]);
+        offerId[1] = user1.doOffer(13, dai, 1, mkr);
+        offerId[2] = user1.doOffer(11, dai, 1, mkr);
+        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+	user1.doCancel(offerId[2]);
+        offerId[4] = otc.offer(14, dai, 1, mkr, offerId[2]);
+	assert(otc.getBetterOffer(offerId[4]) == 0);
+	assert(otc.getWorseOffer(offerId[4]) == offerId[1]);
     }
 
     function testInsertOfferWithUserProvidedIdOfASameTokenHigherToLowestWrongPos() public {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 14);
-        offer_id[1] = user1.doOffer(13, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(11, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(9, dai, 1, mkr);
-	user1.doCancel(offer_id[3]);
-        offer_id[4] = otc.offer(14, dai, 1, mkr, offer_id[3]);
-	assert(otc.getBetterOffer(offer_id[4]) == 0);
-	assert(otc.getWorseOffer(offer_id[4]) == offer_id[1]);
+        offerId[1] = user1.doOffer(13, dai, 1, mkr);
+        offerId[2] = user1.doOffer(11, dai, 1, mkr);
+        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+	user1.doCancel(offerId[3]);
+        offerId[4] = otc.offer(14, dai, 1, mkr, offerId[3]);
+	assert(otc.getBetterOffer(offerId[4]) == 0);
+	assert(otc.getWorseOffer(offerId[4]) == offerId[1]);
     }
 
     function testInsertOfferWithUserProvidedIdOfASameTokenHigherToHighestWrongPosLowest() public {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 7);
-        offer_id[1] = user1.doOffer(13, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(11, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(9, dai, 1, mkr);
-	user1.doCancel(offer_id[1]);
-        offer_id[4] = otc.offer(7, dai, 1, mkr, offer_id[1]);
-	assert(otc.getBetterOffer(offer_id[4]) == offer_id[3]);
-	assert(otc.getWorseOffer(offer_id[4]) == 0);
+        offerId[1] = user1.doOffer(13, dai, 1, mkr);
+        offerId[2] = user1.doOffer(11, dai, 1, mkr);
+        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+	user1.doCancel(offerId[1]);
+        offerId[4] = otc.offer(7, dai, 1, mkr, offerId[1]);
+	assert(otc.getBetterOffer(offerId[4]) == offerId[3]);
+	assert(otc.getWorseOffer(offerId[4]) == 0);
     }
 
     function testInsertOfferWithUserProvidedIdOfASameTokenHigherToBetweenWrongPosLowest() public {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 7);
-        offer_id[1] = user1.doOffer(13, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(11, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(9, dai, 1, mkr);
-	user1.doCancel(offer_id[2]);
-        offer_id[4] = otc.offer(7, dai, 1, mkr, offer_id[2]);
-	assert(otc.getBetterOffer(offer_id[4]) == offer_id[3]);
-	assert(otc.getWorseOffer(offer_id[4]) == 0);
+        offerId[1] = user1.doOffer(13, dai, 1, mkr);
+        offerId[2] = user1.doOffer(11, dai, 1, mkr);
+        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+	user1.doCancel(offerId[2]);
+        offerId[4] = otc.offer(7, dai, 1, mkr, offerId[2]);
+	assert(otc.getBetterOffer(offerId[4]) == offerId[3]);
+	assert(otc.getWorseOffer(offerId[4]) == 0);
     }
 
     function testInsertOfferWithUserProvidedIdOfASameTokenHigherToLowestWrongPosLowest() public {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 7);
-        offer_id[1] = user1.doOffer(13, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(11, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(9, dai, 1, mkr);
-	user1.doCancel(offer_id[3]);
-        offer_id[4] = otc.offer(7, dai, 1, mkr, offer_id[3]);
-	assert(otc.getBetterOffer(offer_id[4]) == offer_id[2]);
-	assert(otc.getWorseOffer(offer_id[4]) == 0);
+        offerId[1] = user1.doOffer(13, dai, 1, mkr);
+        offerId[2] = user1.doOffer(11, dai, 1, mkr);
+        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+	user1.doCancel(offerId[3]);
+        offerId[4] = otc.offer(7, dai, 1, mkr, offerId[3]);
+	assert(otc.getBetterOffer(offerId[4]) == offerId[2]);
+	assert(otc.getWorseOffer(offerId[4]) == 0);
     }
     function testInsertOfferWithUserProvidedIdOfASameTokenHigherToHighest() public {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 12);
-        offer_id[1] = user1.doOffer(13, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(11, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(9, dai, 1, mkr);
-	user1.doCancel(offer_id[1]);
-        offer_id[4] = otc.offer(12, dai, 1, mkr, offer_id[1]);
-	assert(otc.getBetterOffer(offer_id[4]) == 0);
-	assert(otc.getWorseOffer(offer_id[4]) == offer_id[2]);
+        offerId[1] = user1.doOffer(13, dai, 1, mkr);
+        offerId[2] = user1.doOffer(11, dai, 1, mkr);
+        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+	user1.doCancel(offerId[1]);
+        offerId[4] = otc.offer(12, dai, 1, mkr, offerId[1]);
+	assert(otc.getBetterOffer(offerId[4]) == 0);
+	assert(otc.getWorseOffer(offerId[4]) == offerId[2]);
     }
 
     function testInsertOfferWithUserProvidedIdOfASameTokenHigherToBetween() public {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 10);
-        offer_id[1] = user1.doOffer(13, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(11, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(9, dai, 1, mkr);
-	user1.doCancel(offer_id[2]);
-        offer_id[4] = otc.offer(10, dai, 1, mkr, offer_id[2]);
-	assert(otc.getBetterOffer(offer_id[4]) == offer_id[1]);
-	assert(otc.getWorseOffer(offer_id[4]) == offer_id[3]);
+        offerId[1] = user1.doOffer(13, dai, 1, mkr);
+        offerId[2] = user1.doOffer(11, dai, 1, mkr);
+        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+	user1.doCancel(offerId[2]);
+        offerId[4] = otc.offer(10, dai, 1, mkr, offerId[2]);
+	assert(otc.getBetterOffer(offerId[4]) == offerId[1]);
+	assert(otc.getWorseOffer(offerId[4]) == offerId[3]);
     }
 
     function testInsertOfferWithUserProvidedIdOfASameTokenHigherToLowest() public {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 8);
-        offer_id[1] = user1.doOffer(13, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(11, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(9, dai, 1, mkr);
-	user1.doCancel(offer_id[3]);
-        offer_id[4] = otc.offer(8, dai, 1, mkr, offer_id[3]);
-	assert(otc.getBetterOffer(offer_id[4]) == offer_id[2]);
-	assert(otc.getWorseOffer(offer_id[4]) == 0);
+        offerId[1] = user1.doOffer(13, dai, 1, mkr);
+        offerId[2] = user1.doOffer(11, dai, 1, mkr);
+        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+	user1.doCancel(offerId[3]);
+        offerId[4] = otc.offer(8, dai, 1, mkr, offerId[3]);
+	assert(otc.getBetterOffer(offerId[4]) == offerId[2]);
+	assert(otc.getWorseOffer(offerId[4]) == 0);
     }
 
     function testInsertOfferWithUserProvidedIdOfASameTokenHigherToHighestWrongPosHighest() public {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 14);
-        offer_id[1] = user1.doOffer(13, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(11, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(9, dai, 1, mkr);
-	user1.doCancel(offer_id[1]);
-        offer_id[4] = otc.offer(14, dai, 1, mkr, offer_id[1]);
-	assert(otc.getBetterOffer(offer_id[4]) == 0);
-	assert(otc.getWorseOffer(offer_id[4]) == offer_id[2]);
+        offerId[1] = user1.doOffer(13, dai, 1, mkr);
+        offerId[2] = user1.doOffer(11, dai, 1, mkr);
+        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+	user1.doCancel(offerId[1]);
+        offerId[4] = otc.offer(14, dai, 1, mkr, offerId[1]);
+	assert(otc.getBetterOffer(offerId[4]) == 0);
+	assert(otc.getWorseOffer(offerId[4]) == offerId[2]);
     }
 
     function testInsertOfferWithUserProvidedIdOfASameTokenHigherToBetweenWrongPosHighest() public {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 14);
-        offer_id[1] = user1.doOffer(13, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(11, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(9, dai, 1, mkr);
-	user1.doCancel(offer_id[2]);
-        offer_id[4] = otc.offer(14, dai, 1, mkr, offer_id[2]);
-	assert(otc.getBetterOffer(offer_id[4]) == 0);
-	assert(otc.getWorseOffer(offer_id[4]) == offer_id[1]);
+        offerId[1] = user1.doOffer(13, dai, 1, mkr);
+        offerId[2] = user1.doOffer(11, dai, 1, mkr);
+        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+	user1.doCancel(offerId[2]);
+        offerId[4] = otc.offer(14, dai, 1, mkr, offerId[2]);
+	assert(otc.getBetterOffer(offerId[4]) == 0);
+	assert(otc.getWorseOffer(offerId[4]) == offerId[1]);
     }
 
     function testInsertOfferWithUserProvidedIdOfASameTokenHigherToLowestWrongPosHighest() public {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 14);
-        offer_id[1] = user1.doOffer(13, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(11, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(9, dai, 1, mkr);
-	user1.doCancel(offer_id[3]);
-        offer_id[4] = otc.offer(14, dai, 1, mkr, offer_id[3]);
-	assert(otc.getBetterOffer(offer_id[4]) == 0);
-	assert(otc.getWorseOffer(offer_id[4]) == offer_id[1]);
+        offerId[1] = user1.doOffer(13, dai, 1, mkr);
+        offerId[2] = user1.doOffer(11, dai, 1, mkr);
+        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+	user1.doCancel(offerId[3]);
+        offerId[4] = otc.offer(14, dai, 1, mkr, offerId[3]);
+	assert(otc.getBetterOffer(offerId[4]) == 0);
+	assert(otc.getWorseOffer(offerId[4]) == offerId[1]);
     }
 
     function testInsertOfferWithUserProvidedIdOfASameTokenHigherToHighestWrongPosBetween() public {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 10);
-        offer_id[1] = user1.doOffer(13, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(11, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(9, dai, 1, mkr);
-	user1.doCancel(offer_id[1]);
-        offer_id[4] = otc.offer(10, dai, 1, mkr, offer_id[1]);
-	assert(otc.getBetterOffer(offer_id[4]) == offer_id[2]);
-	assert(otc.getWorseOffer(offer_id[4]) == offer_id[3]);
+        offerId[1] = user1.doOffer(13, dai, 1, mkr);
+        offerId[2] = user1.doOffer(11, dai, 1, mkr);
+        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+	user1.doCancel(offerId[1]);
+        offerId[4] = otc.offer(10, dai, 1, mkr, offerId[1]);
+	assert(otc.getBetterOffer(offerId[4]) == offerId[2]);
+	assert(otc.getWorseOffer(offerId[4]) == offerId[3]);
     }
 
     function testInsertOfferWithUserProvidedIdOfASameTokenHigherToBetweenWrongPosBetween() public {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 10);
-        offer_id[1] = user1.doOffer(13, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(11, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(9, dai, 1, mkr);
-	user1.doCancel(offer_id[2]);
-        offer_id[4] = otc.offer(10, dai, 1, mkr, offer_id[2]);
-	assert(otc.getBetterOffer(offer_id[4]) == offer_id[1]);
-	assert(otc.getWorseOffer(offer_id[4]) == offer_id[3]);
+        offerId[1] = user1.doOffer(13, dai, 1, mkr);
+        offerId[2] = user1.doOffer(11, dai, 1, mkr);
+        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+	user1.doCancel(offerId[2]);
+        offerId[4] = otc.offer(10, dai, 1, mkr, offerId[2]);
+	assert(otc.getBetterOffer(offerId[4]) == offerId[1]);
+	assert(otc.getWorseOffer(offerId[4]) == offerId[3]);
     }
 
     function testInsertOfferWithUserProvidedIdOfASameTokenHigherToLowestWrongPosBetween() public {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 10);
-        offer_id[1] = user1.doOffer(13, dai, 1, mkr);
-        offer_id[2] = user1.doOffer(11, dai, 1, mkr);
-        offer_id[3] = user1.doOffer(9, dai, 1, mkr);
-	user1.doCancel(offer_id[3]);
-        offer_id[4] = otc.offer(10, dai, 1, mkr, offer_id[3]);
-	assert(otc.getBetterOffer(offer_id[4]) == offer_id[2]);
-	assert(otc.getWorseOffer(offer_id[4]) == 0);
+        offerId[1] = user1.doOffer(13, dai, 1, mkr);
+        offerId[2] = user1.doOffer(11, dai, 1, mkr);
+        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+	user1.doCancel(offerId[3]);
+        offerId[4] = otc.offer(10, dai, 1, mkr, offerId[3]);
+	assert(otc.getBetterOffer(offerId[4]) == offerId[2]);
+	assert(otc.getWorseOffer(offerId[4]) == 0);
     }
 
     function testOfferMatchOneOnOneSendAmounts() public {
@@ -1304,283 +1302,283 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         user1.doApprove(otc, 100, dai);
         mkr.approve(otc, 30);
 
-        uint my_mkr_balance_before = mkr.balanceOf(this);
-        uint my_dai_balance_before = dai.balanceOf(this);
-        uint user1_mkr_balance_before = mkr.balanceOf(user1);
-        uint user1_dai_balance_before = dai.balanceOf(user1);
+        uint myMKRBalanceBefore = mkr.balanceOf(this);
+        uint myDAIBalanceBefore = dai.balanceOf(this);
+        uint user1MKRBalanceBefore = mkr.balanceOf(user1);
+        uint user1DAIBalanceBefore = dai.balanceOf(user1);
 
-        offer_id[1] = otc.offer(30, mkr, 100, dai, 0);
-        offer_id[2] = user1.doOffer(100, dai, 30, mkr);
-        uint my_mkr_balance_after = mkr.balanceOf(this);
-        uint my_dai_balance_after = dai.balanceOf(this);
-        uint user1_mkr_balance_after = mkr.balanceOf(user1);
-        uint user1_dai_balance_after = dai.balanceOf(user1);
-        assertEq(my_mkr_balance_before - my_mkr_balance_after , 30);
-        assertEq(my_dai_balance_after - my_dai_balance_before , 100);
-        assertEq(user1_mkr_balance_after - user1_mkr_balance_before, 30);
-        assertEq(user1_dai_balance_before - user1_dai_balance_after, 100);
+        offerId[1] = otc.offer(30, mkr, 100, dai, 0);
+        offerId[2] = user1.doOffer(100, dai, 30, mkr);
+        uint myMKRBalanceAfter = mkr.balanceOf(this);
+        uint myDAIBalanceAfter = dai.balanceOf(this);
+        uint user1MKRBalanceAfter = mkr.balanceOf(user1);
+        uint user1DAIBalanceAfter = dai.balanceOf(user1);
+        assertEq(myMKRBalanceBefore - myMKRBalanceAfter, 30);
+        assertEq(myDAIBalanceAfter - myDAIBalanceBefore, 100);
+        assertEq(user1MKRBalanceAfter - user1MKRBalanceBefore, 30);
+        assertEq(user1DAIBalanceBefore - user1DAIBalanceAfter, 100);
 
         /* //REPORTS FALSE ERROR:
         expectEventsExact(otc);
-        emit LogItemUpdate(offer_id[1]);
-        emit LogItemUpdate(offer_id[1]);
-        emit LogItemUpdate(offer_id[2]);*/
+        emit LogItemUpdate(offerId[1]);
+        emit LogItemUpdate(offerId[1]);
+        emit LogItemUpdate(offerId[2]);*/
     }
     function testOfferMatchOneOnOnePartialSellSendAmounts() public {
         dai.transfer(user1, 50);
         user1.doApprove(otc, 50, dai);
         mkr.approve(otc, 200);
 
-        uint my_mkr_balance_before = mkr.balanceOf(this);
-        uint my_dai_balance_before = dai.balanceOf(this);
-        uint user1_mkr_balance_before = mkr.balanceOf(user1);
-        uint user1_dai_balance_before = dai.balanceOf(user1);
+        uint myMKRBalanceBefore = mkr.balanceOf(this);
+        uint myDAIBalanceBefore = dai.balanceOf(this);
+        uint user1MKRBalanceBefore = mkr.balanceOf(user1);
+        uint user1DAIBalanceBefore = dai.balanceOf(user1);
 
-        offer_id[1] = otc.offer(200, mkr, 500, dai, 0);
-        offer_id[2] = user1.doOffer(50, dai, 20, mkr);
-        uint my_mkr_balance_after = mkr.balanceOf(this);
-        uint my_dai_balance_after = dai.balanceOf(this);
-        uint user1_mkr_balance_after = mkr.balanceOf(user1);
-        uint user1_dai_balance_after = dai.balanceOf(user1);
-        (, , sell_val, sell_token, buy_val, buy_token, , ) = otc.offers(offer_id[1]);
+        offerId[1] = otc.offer(200, mkr, 500, dai, 0);
+        offerId[2] = user1.doOffer(50, dai, 20, mkr);
+        uint myMKRBalanceAfter = mkr.balanceOf(this);
+        uint myDAIBalanceAfter = dai.balanceOf(this);
+        uint user1MKRBalanceAfter = mkr.balanceOf(user1);
+        uint user1DAIBalanceAfter = dai.balanceOf(user1);
+        (,, sellAmt, sellGem, buyAmt, buyGem,,) = otc.offers(offerId[1]);
 
-        assertEq(my_mkr_balance_before - my_mkr_balance_after, 200);
-        assertEq(my_dai_balance_after - my_dai_balance_before, 50);
-        assertEq(user1_mkr_balance_after - user1_mkr_balance_before, 20);
-        assertEq(user1_dai_balance_before - user1_dai_balance_after, 50);
-        assertEq(sell_val, 180);
-        assertEq(buy_val, 450);
-        assert(!otc.isActive(offer_id[2]));
+        assertEq(myMKRBalanceBefore - myMKRBalanceAfter, 200);
+        assertEq(myDAIBalanceAfter - myDAIBalanceBefore, 50);
+        assertEq(user1MKRBalanceAfter - user1MKRBalanceBefore, 20);
+        assertEq(user1DAIBalanceBefore - user1DAIBalanceAfter, 50);
+        assertEq(sellAmt, 180);
+        assertEq(buyAmt, 450);
+        assert(!otc.isActive(offerId[2]));
 
         /* //REPORTS FALSE ERROR:
         expectEventsExact(otc);
-        emit LogItemUpdate(offer_id[1]);
-        emit LogItemUpdate(offer_id[1]);
-        emit LogItemUpdate(offer_id[2]);*/
+        emit LogItemUpdate(offerId[1]);
+        emit LogItemUpdate(offerId[1]);
+        emit LogItemUpdate(offerId[2]);*/
     }
     function testOfferMatchOneOnOnePartialBuySendAmounts() public {
         dai.transfer(user1, 2000);
         user1.doApprove(otc, 2000, dai);
         mkr.approve(otc, 200);
 
-        uint my_mkr_balance_before = mkr.balanceOf(this);
-        uint my_dai_balance_before = dai.balanceOf(this);
-        uint user1_mkr_balance_before = mkr.balanceOf(user1);
-        uint user1_dai_balance_before = dai.balanceOf(user1);
+        uint myMKRBalanceBefore = mkr.balanceOf(this);
+        uint myDAIBalanceBefore = dai.balanceOf(this);
+        uint user1MKRBalanceBefore = mkr.balanceOf(user1);
+        uint user1DAIBalanceBefore = dai.balanceOf(user1);
 
-        offer_id[1] = otc.offer(200, mkr, 500, dai, 0);
-        offer_id[2] = user1.doOffer(2000, dai, 800, mkr);
-        uint my_mkr_balance_after = mkr.balanceOf(this);
-        uint my_dai_balance_after = dai.balanceOf(this);
-        uint user1_mkr_balance_after = mkr.balanceOf(user1);
-        uint user1_dai_balance_after = dai.balanceOf(user1);
-        (, , sell_val, sell_token, buy_val, buy_token, , ) = otc.offers(offer_id[1]);
-        (, , sell_val1, sell_token1, buy_val1, buy_token1, , ) = otc.offers(offer_id[2]);
+        offerId[1] = otc.offer(200, mkr, 500, dai, 0);
+        offerId[2] = user1.doOffer(2000, dai, 800, mkr);
+        uint myMKRBalanceAfter = mkr.balanceOf(this);
+        uint myDAIBalanceAfter = dai.balanceOf(this);
+        uint user1MKRBalanceAfter = mkr.balanceOf(user1);
+        uint user1DAIBalanceAfter = dai.balanceOf(user1);
+        (,, sellAmt, sellGem, buyAmt, buyGem,,) = otc.offers(offerId[1]);
+        (,, sellAmt1, sellGem1, buyAmt1, buyGem1,,) = otc.offers(offerId[2]);
 
-        assertEq(my_mkr_balance_before - my_mkr_balance_after, 200);
-        assertEq(my_dai_balance_after - my_dai_balance_before, 500 );
-        assertEq(user1_mkr_balance_after - user1_mkr_balance_before, 200);
-        assertEq(user1_dai_balance_before - user1_dai_balance_after, 2000);
-        assertEq(sell_val , 0);
-        assertEq(buy_val , 0);
-        assertEq(sell_val1 , 1500);
-        assertEq(buy_val1 , 600);
+        assertEq(myMKRBalanceBefore - myMKRBalanceAfter, 200);
+        assertEq(myDAIBalanceAfter - myDAIBalanceBefore, 500);
+        assertEq(user1MKRBalanceAfter - user1MKRBalanceBefore, 200);
+        assertEq(user1DAIBalanceBefore - user1DAIBalanceAfter, 2000);
+        assertEq(sellAmt, 0);
+        assertEq(buyAmt, 0);
+        assertEq(sellAmt1, 1500);
+        assertEq(buyAmt1, 600);
 
         expectEventsExact(otc);
-        emit LogItemUpdate(offer_id[1]);
-        emit LogItemUpdate(offer_id[1]);
-        emit LogItemUpdate(offer_id[2]);
+        emit LogItemUpdate(offerId[1]);
+        emit LogItemUpdate(offerId[1]);
+        emit LogItemUpdate(offerId[2]);
     }
     function testOfferMatchingOneOnOneMatch() public {
         dai.transfer(user1, 1);
         user1.doApprove(otc, 1, dai);
         mkr.approve(otc, 1);
-        offer_id[1] = user1.doOffer(1, dai, 1, mkr);
-        offer_id[2] = otc.offer(1, mkr, 1, dai, 0);
+        offerId[1] = user1.doOffer(1, dai, 1, mkr);
+        offerId[2] = otc.offer(1, mkr, 1, dai, 0);
 
         assertEq(otc.getBestOffer(dai, mkr), 0);
-        assertEq(otc.getBetterOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
+        assertEq(otc.getBetterOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
         assertEq(otc.getOfferCount(dai, mkr), 0);
-        assert(!otc.isActive(offer_id[1]));
-        assert(!otc.isActive(offer_id[2]));
+        assert(!otc.isActive(offerId[1]));
+        assert(!otc.isActive(offerId[2]));
     }
     function testOfferMatchingOneOnOneMatchCheckOfferPriceRemainsTheSame() public {
         dai.transfer(user1, 5);
         user1.doApprove(otc, 5, dai);
         mkr.approve(otc, 10);
-        offer_id[1] = user1.doOffer(5, dai, 1, mkr);
-        offer_id[2] = otc.offer(10, mkr, 10, dai, 0);
-        (, , sell_val, sell_token, buy_val, buy_token, , ) = otc.offers(offer_id[2]);
+        offerId[1] = user1.doOffer(5, dai, 1, mkr);
+        offerId[2] = otc.offer(10, mkr, 10, dai, 0);
+        (,, sellAmt, sellGem, buyAmt, buyGem,,) = otc.offers(offerId[2]);
 
         assertEq(otc.getBestOffer(dai, mkr), 0);
-        assertEq(otc.getBetterOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
+        assertEq(otc.getBetterOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
         assertEq(otc.getOfferCount(dai, mkr), 0);
         assertEq(otc.getOfferCount(mkr, dai), 1);
-        assert(!otc.isActive(offer_id[1]));
-        //assert price of offer_id[2] should be the same as before matching
-        assertEq(sell_val, 5);
-        assertEq(buy_val, 5);
-        assert(address(sell_token) > 0x0);
-        assert(address(buy_token) > 0x0);
+        assert(!otc.isActive(offerId[1]));
+        //assert price of offerId[2] should be the same as before matching
+        assertEq(sellAmt, 5);
+        assertEq(buyAmt, 5);
+        assert(address(sellGem) > 0x0);
+        assert(address(buyGem) > 0x0);
     }
     function testOfferMatchingPartialSellTwoOffers() public {
         mkr.transfer(user1, 10);
         user1.doApprove(otc, 10, mkr);
         dai.approve(otc, 5);
-        offer_id[1] = user1.doOffer( 10, mkr, 10, dai);
-        offer_id[2] = otc.offer(5, dai, 5, mkr, 0);
-        (, , sell_val, sell_token, buy_val, buy_token, , ) = otc.offers(offer_id[1]);
+        offerId[1] = user1.doOffer(10, mkr, 10, dai);
+        offerId[2] = otc.offer(5, dai, 5, mkr, 0);
+        (,, sellAmt, sellGem, buyAmt, buyGem,,) = otc.offers(offerId[1]);
 
         assertEq(otc.getBestOffer(dai, mkr), 0);
-        assertEq(otc.getBestOffer(mkr, dai), offer_id[1]);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), 0);
-        assertEq(otc.getBetterOffer(offer_id[1]), 0);
-        assertEq(otc.getBetterOffer(offer_id[2]), 0);
+        assertEq(otc.getBestOffer(mkr, dai), offerId[1]);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[2]), 0);
+        assertEq(otc.getBetterOffer(offerId[1]), 0);
+        assertEq(otc.getBetterOffer(offerId[2]), 0);
         assertEq(otc.getOfferCount(mkr, dai), 1);
         assertEq(otc.getOfferCount(dai, mkr), 0);
-        assert(!otc.isActive(offer_id[2]));
-        assertEq(sell_val, 5);
-        assertEq(buy_val, 5);
-        assert(address(sell_token) > 0x0);
-        assert(address(buy_token) > 0x0);
+        assert(!otc.isActive(offerId[2]));
+        assertEq(sellAmt, 5);
+        assertEq(buyAmt, 5);
+        assert(address(sellGem) > 0x0);
+        assert(address(buyGem) > 0x0);
     }
     function testOfferMatchingOneOnTwoMatchCheckOfferPriceRemainsTheSame() public {
         dai.transfer(user1, 9);
         user1.doApprove(otc, 9, dai);
         mkr.approve(otc, 10);
-        offer_id[1] = user1.doOffer(5, dai, 1, mkr);
-        offer_id[1] = user1.doOffer(4, dai, 1, mkr);
-        offer_id[2] = otc.offer(10, mkr, 10, dai, 0);
-        (, , sell_val, sell_token, buy_val, buy_token, , ) = otc.offers(offer_id[2]);
+        offerId[1] = user1.doOffer(5, dai, 1, mkr);
+        offerId[1] = user1.doOffer(4, dai, 1, mkr);
+        offerId[2] = otc.offer(10, mkr, 10, dai, 0);
+        (,, sellAmt, sellGem, buyAmt, buyGem,,) = otc.offers(offerId[2]);
 
         assertEq(otc.getBestOffer(dai, mkr), 0);
-        assertEq(otc.getBetterOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
+        assertEq(otc.getBetterOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
         assertEq(otc.getOfferCount(dai, mkr), 0);
         assertEq(otc.getOfferCount(mkr, dai), 1);
-        assert(!otc.isActive(offer_id[1]));
-        //assert érice of offer_id[2] should be the same as before matching
-        assertEq(sell_val, 1);
-        assertEq(buy_val, 1);
-        assert(address(sell_token) > 0x0);
-        assert(address(buy_token) > 0x0);
+        assert(!otc.isActive(offerId[1]));
+        //assert érice of offerId[2] should be the same as before matching
+        assertEq(sellAmt, 1);
+        assertEq(buyAmt, 1);
+        assert(address(sellGem) > 0x0);
+        assert(address(buyGem) > 0x0);
     }
     function testOfferMatchingPartialBuyTwoOffers() public {
         mkr.transfer(user1, 5);
         user1.doApprove(otc, 5, mkr);
         dai.approve(otc, 10);
-        offer_id[1] = user1.doOffer(5, mkr, 5, dai);
-        offer_id[2] = otc.offer(10, dai, 10, mkr, 0);
-        (, , sell_val, sell_token, buy_val, buy_token, , ) = otc.offers(offer_id[2]);
+        offerId[1] = user1.doOffer(5, mkr, 5, dai);
+        offerId[2] = otc.offer(10, dai, 10, mkr, 0);
+        (,, sellAmt, sellGem, buyAmt, buyGem,,) = otc.offers(offerId[2]);
 
-        assertEq( otc.getBestOffer(dai, mkr), offer_id[2]);
-        assertEq( otc.getBestOffer(mkr, dai), 0);
-        assertEq( otc.getWorseOffer(offer_id[1]), 0);
-        assertEq( otc.getWorseOffer(offer_id[2]), 0);
-        assertEq( otc.getBetterOffer(offer_id[1]), 0);
-        assertEq( otc.getBetterOffer(offer_id[2]), 0);
-        assertEq( otc.getOfferCount(mkr, dai), 0);
-        assertEq( otc.getOfferCount(dai, mkr), 1);
-        assert(!otc.isActive(offer_id[1]));
-        assertEq(sell_val, 5);
-        assertEq(buy_val, 5);
-        assert(address(sell_token) > 0x0);
-        assert(address(buy_token) > 0x0);
+        assertEq(otc.getBestOffer(dai, mkr), offerId[2]);
+        assertEq(otc.getBestOffer(mkr, dai), 0);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[2]), 0);
+        assertEq(otc.getBetterOffer(offerId[1]), 0);
+        assertEq(otc.getBetterOffer(offerId[2]), 0);
+        assertEq(otc.getOfferCount(mkr, dai), 0);
+        assertEq(otc.getOfferCount(dai, mkr), 1);
+        assert(!otc.isActive(offerId[1]));
+        assertEq(sellAmt, 5);
+        assertEq(buyAmt, 5);
+        assert(address(sellGem) > 0x0);
+        assert(address(buyGem) > 0x0);
     }
     function testOfferMatchingPartialBuyThreeOffers() public {
         mkr.transfer(user1, 15);
         user1.doApprove(otc, 15, mkr);
         dai.approve(otc, 1);
-        offer_id[1] = user1.doOffer(5, mkr, 10, dai);
-        offer_id[2] = user1.doOffer(10, mkr, 10, dai);
-        offer_id[3] = otc.offer(1, dai, 1, mkr, 0);
-        (, , sell_val, sell_token, buy_val, buy_token, , ) = otc.offers(offer_id[1]);
-        (, , sell_val1, sell_token1, buy_val1, buy_token1, , ) = otc.offers(offer_id[2]);
+        offerId[1] = user1.doOffer(5, mkr, 10, dai);
+        offerId[2] = user1.doOffer(10, mkr, 10, dai);
+        offerId[3] = otc.offer(1, dai, 1, mkr, 0);
+        (,, sellAmt, sellGem, buyAmt, buyGem,,) = otc.offers(offerId[1]);
+        (,, sellAmt1, sellGem1, buyAmt1, buyGem1,,) = otc.offers(offerId[2]);
 
-        assertEq(otc.getBestOffer(mkr, dai), offer_id[2]);
+        assertEq(otc.getBestOffer(mkr, dai), offerId[2]);
         assertEq(otc.getBestOffer(dai, mkr), 0);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
-        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[2]);
-        assertEq(otc.getBetterOffer(offer_id[2]), 0);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[2]), offerId[1]);
+        assertEq(otc.getBetterOffer(offerId[1]), offerId[2]);
+        assertEq(otc.getBetterOffer(offerId[2]), 0);
         assertEq(otc.getOfferCount(mkr, dai), 2);
         assertEq(otc.getOfferCount(dai, mkr), 0);
-        assert(!otc.isActive(offer_id[3]));
-        assertEq(sell_val, 5);
-        assertEq(buy_val, 10);
-        assertEq(sell_val1, 9);
-        assertEq(buy_val1, 9);
-        assert(address(sell_token) > 0x0);
-        assert(address(buy_token) > 0x0);
-        assert(address(sell_token1) > 0x0);
-        assert(address(buy_token1) > 0x0);
+        assert(!otc.isActive(offerId[3]));
+        assertEq(sellAmt, 5);
+        assertEq(buyAmt, 10);
+        assertEq(sellAmt1, 9);
+        assertEq(buyAmt1, 9);
+        assert(address(sellGem) > 0x0);
+        assert(address(buyGem) > 0x0);
+        assert(address(sellGem1) > 0x0);
+        assert(address(buyGem1) > 0x0);
     }
     function testOfferMatchingPartialSellThreeOffers() public {
         mkr.transfer(user1, 6);
         user1.doApprove(otc, 6, mkr);
         dai.approve(otc, 10);
-        offer_id[1] = user1.doOffer(5, mkr, 10, dai);
-        offer_id[2] = user1.doOffer(1, mkr, 1, dai);
-        offer_id[3] = otc.offer(10, dai, 10, mkr, 0);
-        (, , sell_val, sell_token, buy_val, buy_token, , ) = otc.offers(offer_id[1]);
-        (, , sell_val1, sell_token1, buy_val1, buy_token1, , ) = otc.offers(offer_id[3]);
+        offerId[1] = user1.doOffer(5, mkr, 10, dai);
+        offerId[2] = user1.doOffer(1, mkr, 1, dai);
+        offerId[3] = otc.offer(10, dai, 10, mkr, 0);
+        (,, sellAmt, sellGem, buyAmt, buyGem,,) = otc.offers(offerId[1]);
+        (,, sellAmt1, sellGem1, buyAmt1, buyGem1,,) = otc.offers(offerId[3]);
 
-        assertEq(otc.getBestOffer(mkr, dai), offer_id[1]);
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[3]);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[1]);
-        assertEq(otc.getWorseOffer(offer_id[3]), 0);
-        assertEq(otc.getBetterOffer(offer_id[1]), 0);
-        assertEq(otc.getBetterOffer(offer_id[2]), 0);
-        assertEq(otc.getBetterOffer(offer_id[3]), 0);
+        assertEq(otc.getBestOffer(mkr, dai), offerId[1]);
+        assertEq(otc.getBestOffer(dai, mkr), offerId[3]);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[2]), offerId[1]);
+        assertEq(otc.getWorseOffer(offerId[3]), 0);
+        assertEq(otc.getBetterOffer(offerId[1]), 0);
+        assertEq(otc.getBetterOffer(offerId[2]), 0);
+        assertEq(otc.getBetterOffer(offerId[3]), 0);
         assertEq(otc.getOfferCount(mkr, dai), 1);
         assertEq(otc.getOfferCount(dai, mkr), 1);
-        assert(!otc.isActive(offer_id[2]));
-        assertEq(sell_val, 5);
-        assertEq(buy_val, 10);
-        assertEq(sell_val1, 9);
-        assertEq(buy_val1, 9);
-        assert(address(sell_token) > 0x0);
-        assert(address(buy_token) > 0x0);
-        assert(address(sell_token1) > 0x0);
-        assert(address(buy_token1) > 0x0);
+        assert(!otc.isActive(offerId[2]));
+        assertEq(sellAmt, 5);
+        assertEq(buyAmt, 10);
+        assertEq(sellAmt1, 9);
+        assertEq(buyAmt1, 9);
+        assert(address(sellGem) > 0x0);
+        assert(address(buyGem) > 0x0);
+        assert(address(sellGem1) > 0x0);
+        assert(address(buyGem1) > 0x0);
     }
     function testOfferMatchingPartialSellThreeOffersTwoBuyThreeSell() public {
         dai.transfer(user1, 3);
         user1.doApprove(otc, 3, dai);
         mkr.approve(otc, 12);
-        offer_id[1] = otc.offer(1, mkr, 10, dai, 0);
-        offer_id[2] = otc.offer(1, mkr,  1, dai, 0);
-        offer_id[3] = otc.offer(10, mkr, 10, dai, 0);
-        offer_id[4] = user1.doOffer(3, dai, 3, mkr);
-        (, , sell_val, sell_token, buy_val, buy_token, , ) = otc.offers(offer_id[3]);
-        (, , sell_val1, sell_token1, buy_val1, buy_token1, , ) = otc.offers(offer_id[1]);
+        offerId[1] = otc.offer(1, mkr, 10, dai, 0);
+        offerId[2] = otc.offer(1, mkr,  1, dai, 0);
+        offerId[3] = otc.offer(10, mkr, 10, dai, 0);
+        offerId[4] = user1.doOffer(3, dai, 3, mkr);
+        (,, sellAmt, sellGem, buyAmt, buyGem,,) = otc.offers(offerId[3]);
+        (,, sellAmt1, sellGem1, buyAmt1, buyGem1,,) = otc.offers(offerId[1]);
 
-        assertEq(otc.getBestOffer(mkr, dai), offer_id[3]);
+        assertEq(otc.getBestOffer(mkr, dai), offerId[3]);
         assertEq(otc.getBestOffer(dai, mkr), 0);
-        assertEq(otc.getWorseOffer(offer_id[1]), 0);
-        assertEq(otc.getWorseOffer(offer_id[2]), offer_id[3]);
-        assertEq(otc.getWorseOffer(offer_id[3]), offer_id[1]);
-        assertEq(otc.getWorseOffer(offer_id[4]), 0);
-        assertEq(otc.getBetterOffer(offer_id[1]), offer_id[3]);
-        assertEq(otc.getBetterOffer(offer_id[2]), 0);
-        assertEq(otc.getBetterOffer(offer_id[3]), 0);
-        assertEq(otc.getBetterOffer(offer_id[4]), 0);
+        assertEq(otc.getWorseOffer(offerId[1]), 0);
+        assertEq(otc.getWorseOffer(offerId[2]), offerId[3]);
+        assertEq(otc.getWorseOffer(offerId[3]), offerId[1]);
+        assertEq(otc.getWorseOffer(offerId[4]), 0);
+        assertEq(otc.getBetterOffer(offerId[1]), offerId[3]);
+        assertEq(otc.getBetterOffer(offerId[2]), 0);
+        assertEq(otc.getBetterOffer(offerId[3]), 0);
+        assertEq(otc.getBetterOffer(offerId[4]), 0);
         assertEq(otc.getOfferCount(mkr, dai), 2);
         assertEq(otc.getOfferCount(dai, mkr), 0);
-        assert(!otc.isActive(offer_id[2]));
-        assert(!otc.isActive(offer_id[4]));
-        assertEq(sell_val, 8);
-        assertEq(buy_val, 8);
-        assertEq(sell_val1, 1);
-        assertEq(buy_val1, 10);
-        assert(address(sell_token) > 0x0);
-        assert(address(buy_token) > 0x0);
-        assert(address(sell_token1) > 0x0);
-        assert(address(buy_token1) > 0x0);
+        assert(!otc.isActive(offerId[2]));
+        assert(!otc.isActive(offerId[4]));
+        assertEq(sellAmt, 8);
+        assertEq(buyAmt, 8);
+        assertEq(sellAmt1, 1);
+        assertEq(buyAmt1, 10);
+        assert(address(sellGem) > 0x0);
+        assert(address(buyGem) > 0x0);
+        assert(address(sellGem1) > 0x0);
+        assert(address(buyGem1) > 0x0);
     }
 
     function testSellAllDai() public {

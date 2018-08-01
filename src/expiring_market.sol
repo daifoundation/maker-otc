@@ -1,43 +1,42 @@
 pragma solidity ^0.4.18;
 
 import "ds-auth/auth.sol";
-
 import "./simple_market.sol";
 
-// Simple Market with a market lifetime. When the close_time has been reached,
+// Simple Market with a market lifetime. When the closeTime has been reached,
 // offers can only be cancelled (offer and buy will throw).
 
 contract ExpiringMarket is DSAuth, SimpleMarket {
-    uint64 public close_time;
+    uint64 public closeTime;
 
-    // after close_time has been reached, no new offers are allowed
+    // After closeTime has been reached, no new offers are allowed
     modifier canOffer {
         require(!isClosed());
         _;
     }
 
-    // after close, no new buys are allowed
+    // After close, no new buys are allowed
     modifier canBuy(uint id) {
         require(isActive(id));
         require(!isClosed());
         _;
     }
 
-    // after close, anyone can cancel an offer
+    // After close, anyone can cancel an offer
     modifier canCancel(uint id) {
         require(isActive(id));
         require(isClosed() || (msg.sender == getOwner(id)));
         _;
     }
 
-    constructor(uint64 _close_time)
+    constructor(uint64 closeTime_)
         public
     {
-        close_time = _close_time;
+        closeTime = closeTime_;
     }
 
     function isClosed() public view returns (bool closed) {
-        return getTime() > close_time;
+        return getTime() > closeTime;
     }
 
     function getTime() public view returns (uint64) {
