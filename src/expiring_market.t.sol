@@ -56,28 +56,35 @@ contract ExpiringMarketTest is DSTest {
         user1.doApprove(otc, 100, dai);
         mkr.approve(otc, 30);
     }
+
     function testIsClosedBeforeExpiry() public view {
         assert(!otc.isClosed());
     }
+
     function testIsClosedAfterExpiry() public {
         otc.warp(LIFETIME + 1 seconds);
         assert(otc.isClosed());
     }
+
     function testOfferBeforeExpiry() public {
         otc.offer(30, mkr, 100, dai);
     }
+
     function testFailOfferAfterExpiry() public {
         otc.warp(LIFETIME + 1 seconds);
         otc.offer(30, mkr, 100, dai);
     }
+
     function testCancelBeforeExpiry() public {
         uint id = otc.offer(30, mkr, 100, dai);
         otc.cancel(id);
     }
+
     function testFailCancelNonOwnerBeforeExpiry() public {
         uint id = otc.offer(30, mkr, 100, dai);
         user1.doCancel(id);
     }
+
     function testCancelNonOwnerAfterExpiry() public {
         uint id = otc.offer(30, mkr, 100, dai);
         otc.warp(LIFETIME + 1 seconds);
@@ -86,10 +93,12 @@ contract ExpiringMarketTest is DSTest {
         assert(user1.doCancel(id));
         assert(!otc.isActive(id));
     }
+
     function testBuyBeforeExpiry() public {
         uint id = otc.offer(30, mkr, 100, dai);
         assert(user1.doBuy(id, 30));
     }
+
     function testFailBuyAfterExpiry() public {
         uint id = otc.offer(30, mkr, 100, dai);
         otc.warp(LIFETIME + 1 seconds);

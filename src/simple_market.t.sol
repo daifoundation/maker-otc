@@ -44,6 +44,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         dai = new DSTokenBase(10 ** 9);
         mkr = new DSTokenBase(10 ** 6);
     }
+
     function testOriginalPayAndBuySet() public {
         uint oSellAmt;
         uint oBuyAmt;
@@ -54,6 +55,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         assert(oSellAmt == 100);
         assert(oBuyAmt == 100);
     }
+
     function testOriginalPayAndBuyUnchanged() public {
         uint oSellAmt;
         uint oBuyAmt;
@@ -93,6 +95,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         emit LogTrade(30, mkr, 100, dai);
         emit LogItemUpdate(id);
     }
+
     function testPartiallyFilledOrderMkr() public {
         dai.transfer(user1, 30);
         user1.doApprove(otc, 30, dai);
@@ -125,6 +128,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         emit LogTrade(10, mkr, 25, dai);
         emit LogItemUpdate(id);
     }
+
     function testPartiallyFilledOrderDai() public {
         mkr.transfer(user1, 10);
         user1.doApprove(otc, 10, mkr);
@@ -157,6 +161,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         emit LogTrade(10, dai, 4, mkr);
         emit LogItemUpdate(id);
     }
+
     function testPartiallyFilledOrderMkrExcessQuantity() public {
         dai.transfer(user1, 30);
         user1.doApprove(otc, 30, dai);
@@ -188,6 +193,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         expectEventsExact(otc);
         emit LogItemUpdate(id);
     }
+
     function testInsufficientlyFilledOrder() public {
         mkr.approve(otc, 30);
         uint id = otc.offer(30, mkr, 10, dai);
@@ -197,6 +203,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         bool success = user1.doBuy(id, 1);
         assert(!success);
     }
+
     function testCancel() public {
         mkr.approve(otc, 30);
         uint id = otc.offer(30, mkr, 100, dai);
@@ -206,27 +213,32 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         emit LogItemUpdate(id);
         emit LogItemUpdate(id);
     }
+
     function testFailCancelNotOwner() public {
         mkr.approve(otc, 30);
         uint id = otc.offer(30, mkr, 100, dai);
         user1.doCancel(id);
     }
+
     function testFailCancelInactive() public {
         mkr.approve(otc, 30);
         uint id = otc.offer(30, mkr, 100, dai);
         assert(otc.cancel(id));
         otc.cancel(id);
     }
+
     function testFailBuyInactive() public {
         mkr.approve(otc, 30);
         uint id = otc.offer(30, mkr, 100, dai);
         assert(otc.cancel(id));
         otc.buy(id, 0);
     }
+
     function testFailOfferNotEnoughFunds() public {
         mkr.transfer(address(0x0), mkr.balanceOf(this) - 29);
         otc.offer(30, mkr, 100, dai);
     }
+
     function testFailBuyNotEnoughFunds() public {
         uint id = otc.offer(30, mkr, 101, dai);
         emit log_named_uint("user1 dai allowance", dai.allowance(user1, otc));
@@ -237,6 +249,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         emit log_named_uint("user1 dai allowance", dai.allowance(user1, otc));
         emit log_named_uint("user1 dai balance after", dai.balanceOf(user1));
     }
+
     function testFailBuyNotEnoughApproval() public {
         uint id = otc.offer(30, mkr, 100, dai);
         emit log_named_uint("user1 dai allowance", dai.allowance(user1, otc));
@@ -247,15 +260,18 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         emit log_named_uint("user1 dai allowance", dai.allowance(user1, otc));
         emit log_named_uint("user1 dai balance after", dai.balanceOf(user1));
     }
+
     function testFailOfferSameToken() public {
         dai.approve(otc, 200);
         otc.offer(100, dai, 100, dai);
     }
+
     function testBuyTooMuch() public {
         mkr.approve(otc, 30);
         uint id = otc.offer(30, mkr, 100, dai);
         assert(!otc.buy(id, 50));
     }
+
     function testFailOverflow() public {
         mkr.approve(otc, 30);
         uint id = otc.offer(30, mkr, 100, dai);
@@ -270,6 +286,7 @@ contract TransferTest is DSTest {
     ERC20 dai;
     ERC20 mkr;
     SimpleMarket otc;
+
     function setUp() public {
         otc = new SimpleMarket();
         user1 = new MarketTester(otc);
@@ -292,6 +309,7 @@ contract OfferTransferTest is TransferTest {
         assertEq(balanceBefore - balanceAfter, 30);
         assert(id > 0);
     }
+
     function testOfferTransfersToMarket() public {
         uint balanceBefore = mkr.balanceOf(otc);
         uint id = otc.offer(30, mkr, 100, dai);
@@ -312,6 +330,7 @@ contract BuyTransferTest is TransferTest {
 
         assertEq(balanceBefore - balanceAfter, 100);
     }
+
     function testBuyTransfersToSeller() public {
         uint id = otc.offer(30, mkr, 100, dai);
 
@@ -321,6 +340,7 @@ contract BuyTransferTest is TransferTest {
 
         assertEq(balanceAfter - balanceBefore, 100);
     }
+
     function testBuyTransfersFromMarket() public {
         uint id = otc.offer(30, mkr, 100, dai);
 
@@ -330,6 +350,7 @@ contract BuyTransferTest is TransferTest {
 
         assertEq(balanceBefore - balanceAfter, 30);
     }
+
     function testBuyTransfersToBuyer() public {
         uint id = otc.offer(30, mkr, 100, dai);
 
@@ -351,6 +372,7 @@ contract PartialBuyTransferTest is TransferTest {
 
         assertEq(balanceBefore - balanceAfter, 50);
     }
+
     function testBuyTransfersToSeller() public {
         uint id = otc.offer(30, mkr, 100, dai);
 
@@ -360,6 +382,7 @@ contract PartialBuyTransferTest is TransferTest {
 
         assertEq(balanceAfter - balanceBefore, 50);
     }
+
     function testBuyTransfersFromMarket() public {
         uint id = otc.offer(30, mkr, 100, dai);
 
@@ -369,6 +392,7 @@ contract PartialBuyTransferTest is TransferTest {
 
         assertEq(balanceBefore - balanceAfter, 15);
     }
+
     function testBuyTransfersToBuyer() public {
         uint id = otc.offer(30, mkr, 100, dai);
 
@@ -378,6 +402,7 @@ contract PartialBuyTransferTest is TransferTest {
 
         assertEq(balanceAfter - balanceBefore, 15);
     }
+
     function testBuyOddTransfersFromBuyer() public {
         uint id = otc.offer(30, mkr, 100, dai);
 
@@ -399,6 +424,7 @@ contract CancelTransferTest is TransferTest {
 
         assertEq(balanceBefore - balanceAfter, 30);
     }
+
     function testCancelTransfersToSeller() public {
         uint id = otc.offer(30, mkr, 100, dai);
 
@@ -408,6 +434,7 @@ contract CancelTransferTest is TransferTest {
 
         assertEq(balanceAfter - balanceBefore, 30);
     }
+
     function testCancelPartialTransfersFromMarket() public {
         uint id = otc.offer(30, mkr, 100, dai);
         user1.doBuy(id, 15);
@@ -418,6 +445,7 @@ contract CancelTransferTest is TransferTest {
 
         assertEq(balanceBefore - balanceAfter, 15);
     }
+
     function testCancelPartialTransfersToSeller() public {
         uint id = otc.offer(30, mkr, 100, dai);
         user1.doBuy(id, 15);
@@ -447,34 +475,24 @@ contract GasTest is DSTest {
 
         id = otc.offer(30, mkr, 100, dai);
     }
-    function testNewMarket()
-        public
-        logs_gas
-    {
+
+    function testNewMarket() public logs_gas {
         new SimpleMarket();
     }
-    function testNewOffer()
-        public
-        logs_gas
-    {
+
+    function testNewOffer() public logs_gas {
         otc.offer(30, mkr, 100, dai);
     }
-    function testBuy()
-        public
-        logs_gas
-    {
+
+    function testBuy() public logs_gas {
         otc.buy(id, 30);
     }
-    function testBuyPartial()
-        public
-        logs_gas
-    {
+
+    function testBuyPartial() public logs_gas {
         otc.buy(id, 15);
     }
-    function testCancel()
-        public
-        logs_gas
-    {
+
+    function testCancel() public logs_gas {
         otc.cancel(id);
     }
 }
