@@ -58,9 +58,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
     // Make a new offer. Takes funds from the caller into market escrow.
     function offer(
-        uint sellAmt_,                  // new offer sell amount
+        uint oSellAmt,                  // new offer sell amount
         ERC20 sellGem,                  // new offer sell token
-        uint buyAmt_,                   // new offer buy amount
+        uint oBuyAmt,                   // new offer buy amount
         ERC20 buyGem,                   // new offer buy token
         uint pos                        // position to insert offer, 0 should be used if unknown
     )
@@ -68,14 +68,52 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         canOffer
         returns (uint id)
     {
-        require(dust[sellGem] <= sellAmt_);
+        (uint sellAmt, uint buyAmt) = buyOffers(oSellAmt, sellGem, oBuyAmt, buyGem);
 
-        // Argument variables could be used directly as original values if compiler wouldn't return 'Stack too deep'
-        uint oSellAmt = sellAmt_;       // new offer sell amount (original value)
-        uint oBuyAmt = buyAmt_;         // new offer buy amount (original value)
+        // Create new taker offer if necessary
+        if (buyAmt > 0 && sellAmt > dust[sellGem]) {
+            // New offer should be created
+            id = super.offer(sellAmt, sellGem, buyAmt, buyGem);
+            offers[id].oSellAmt = oSellAmt;         // set original taker pay amount
+            offers[id].oBuyAmt = oBuyAmt;           // set original taker buy amount
+            // Insert offer into the sorted list
+            _sort(id, pos);
+        }
+    }
 
-        uint sellAmt = sellAmt_;        // new offer sell amount (countdown)
-        uint buyAmt = buyAmt_;          // new offer buy amount (countdown)
+    // Transfers funds from caller to offer maker, and from market to caller.
+    function buy(uint id, uint amount)
+        public
+        canBuy(id)
+        returns (bool)
+    {
+        if (amount == offers[id].sellAmt && isOfferSorted(id)) {
+            // offers[id] must be removed from sorted list because all of it is bought
+            _unsort(id);
+        }
+        require(super.buy(id, amount));
+
+        // If offer has become dust during buy, we cancel it
+        if (isActive(id) && offers[id].sellAmt < dust[offers[id].sellGem]) {
+            dustId = id;
+            cancel(id);
+        }
+        return true;
+    }
+
+    function buyOffers(
+        uint oSellAmt,                   // taker sell amount (original value)
+        ERC20 sellGem,                   // taker sell token
+        uint oBuyAmt,                    // taker buy amount (original value)
+        ERC20 buyGem                     // taker buy token
+    )
+        public
+        returns (uint sellAmt, uint buyAmt)
+    {
+        require(dust[sellGem] <= oSellAmt);
+
+        sellAmt = oSellAmt;             // taker sell amount (countdown)
+        buyAmt = oBuyAmt;               // taker buy amount (countdown)
 
         // Auxiliar variables for existing offers which are opposite to the one being created
         uint bestMatchingId;            // best matching id
@@ -125,36 +163,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             dustId = bestMatchingId;
             cancel(bestMatchingId);
         }
-
-        // Create new taker offer if necessary
-        if (buyAmt > 0 && sellAmt > dust[sellGem]) {
-            // New offer should be created
-            id = super.offer(sellAmt, sellGem, buyAmt, buyGem);
-            offers[id].oSellAmt = oSellAmt;         // set original taker pay amount
-            offers[id].oBuyAmt = oBuyAmt;           // set original taker buy amount
-            // Insert offer into the sorted list
-            _sort(id, pos);
-        }
-    }
-
-    // Transfers funds from caller to offer maker, and from market to caller.
-    function buy(uint id, uint amount)
-        public
-        canBuy(id)
-        returns (bool)
-    {
-        if (amount == offers[id].sellAmt && isOfferSorted(id)) {
-            // offers[id] must be removed from sorted list because all of it is bought
-            _unsort(id);
-        }
-        require(super.buy(id, amount));
-
-        // If offer has become dust during buy, we cancel it
-        if (isActive(id) && offers[id].sellAmt < dust[offers[id].sellGem]) {
-            dustId = id;
-            cancel(id);
-        }
-        return true;
     }
 
     // Cancel an offer. Refunds offer maker.
