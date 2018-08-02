@@ -47,7 +47,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         ERC20 buyGem                    // taker (ask) buy which token
     )
         public
-        /* NOT synchronized!!! */
         returns (uint id)
     {
         require(dust[sellGem] <= sellAmt);
@@ -59,65 +58,79 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
     // Make a new offer. Takes funds from the caller into market escrow.
     function offer(
-        uint sellAmt,                   // maker (ask) sell how much
-        ERC20 sellGem,                  // maker (ask) sell which token
-        uint buyAmt,                    // maker (ask) buy how much
-        ERC20 buyGem,                   // maker (ask) buy which token
+        uint sellAmt_,                  // new offer sell amount
+        ERC20 sellGem,                  // new offer sell token
+        uint buyAmt_,                   // new offer buy amount
+        ERC20 buyGem,                   // new offer buy token
         uint pos                        // position to insert offer, 0 should be used if unknown
     )
         public
         canOffer
         returns (uint id)
     {
-        require(dust[sellGem] <= sellAmt);
+        require(dust[sellGem] <= sellAmt_);
 
-        uint bestMakerId;               // highest maker id
-        uint takerOBuyAmt = buyAmt;     // taker original buy amount
-        uint takerOSellAmt = sellAmt;   // taker original pay amount
-        uint makerOBuyAmt;              // maker offer wants to buy this much token
-        uint makerOSellAmt;             // maker offer wants to sell this much token
-        uint makerSellAmt;              // maker offer wants to sell this much token
+        // Argument variables could be used directly as original values if compiler wouldn't return 'Stack too deep'
+        uint oSellAmt = sellAmt_;       // new offer sell amount (original value)
+        uint oBuyAmt = buyAmt_;         // new offer buy amount (original value)
+
+        uint sellAmt = sellAmt_;        // new offer sell amount (countdown)
+        uint buyAmt = buyAmt_;          // new offer buy amount (countdown)
+
+        // Auxiliar variables for existing offers which are opposite to the one being created
+        uint bestMatchingId;            // best matching id
+        uint matchingOSellAmt;          // sell amount (original value)
+        uint matchingOBuyAmt;           // buy amount (original value)
+        uint matchingSellAmt;           // sell amount (countdown)
 
         // There is at least one offer stored for token pair
-        while (best[buyGem][sellGem] > 0) {
-            bestMakerId = best[buyGem][sellGem];
-            makerOBuyAmt = offers[bestMakerId].oBuyAmt;
-            makerOSellAmt = offers[bestMakerId].oSellAmt;
-            makerSellAmt = offers[bestMakerId].sellAmt;
+        while ((bestMatchingId = best[buyGem][sellGem]) > 0) {
+            matchingOSellAmt = offers[bestMatchingId].oSellAmt;
+            matchingOBuyAmt = offers[bestMatchingId].oBuyAmt;
+            matchingSellAmt = offers[bestMatchingId].sellAmt;
 
             // Ugly hack to work around rounding errors. Based on the idea that
             // the furthest the amounts can stray from their "true" values is 1.
-            // Ergo the worst case has sellAmt and makerSellAmt at +1 away from
-            // their "correct" values and makerObuyAmt and buyAmt at -1.
+            // Ergo the worst case has sellAmt and matchingSellAmt at +1 away from
+            // their "correct" values and matchingObuyAmt and buyAmt at -1.
             // Since (c - 1) * (d - 1) > (a + 1) * (b + 1) is equivalent to
             // c * d > a * b + a + b + c + d, we write...
-            if (mul(makerOBuyAmt, takerOBuyAmt) > add(add(add(add(mul(takerOSellAmt, makerOSellAmt),
-                makerOBuyAmt), takerOBuyAmt), takerOSellAmt), makerOSellAmt))
+            if (mul(matchingOBuyAmt, oBuyAmt) >
+                add(
+                    add(
+                        add(
+                            add(mul(oSellAmt, matchingOSellAmt), matchingOBuyAmt),
+                            oBuyAmt
+                        ),
+                        oSellAmt
+                    ),
+                    matchingOSellAmt)
+                )
             {
                 break;
             }
 
-            buy(bestMakerId, min(makerSellAmt, buyAmt));
-            buyAmt = sub(buyAmt, min(makerSellAmt, buyAmt));
-            sellAmt = mul(buyAmt, takerOSellAmt) / takerOBuyAmt;
+            buy(bestMatchingId, min(matchingSellAmt, buyAmt));
+            buyAmt = sub(buyAmt, min(matchingSellAmt, buyAmt));
+            sellAmt = mul(buyAmt, oSellAmt) / oBuyAmt;
 
             if (sellAmt == 0 || buyAmt == 0) {
                 break;
             }
         }
 
-        // If maker offer has become dust during matching, we cancel it
-        if (isActive(bestMakerId) && offers[bestMakerId].sellAmt < dust[buyGem]) {
-            dustId = bestMakerId;
-            cancel(bestMakerId);
+        // If matching offer has become dust during matching, we cancel it
+        if (isActive(bestMatchingId) && offers[bestMatchingId].sellAmt < dust[buyGem]) {
+            dustId = bestMatchingId;
+            cancel(bestMatchingId);
         }
 
         // Create new taker offer if necessary
         if (buyAmt > 0 && sellAmt > dust[sellGem]) {
             // New offer should be created
             id = super.offer(sellAmt, sellGem, buyAmt, buyGem);
-            offers[id].oSellAmt = takerOSellAmt; //set original taker pay amount
-            offers[id].oBuyAmt = takerOBuyAmt; //set original taker buy amount
+            offers[id].oSellAmt = oSellAmt;         // set original taker pay amount
+            offers[id].oBuyAmt = oBuyAmt;           // set original taker buy amount
             // Insert offer into the sorted list
             _sort(id, pos);
         }
@@ -244,15 +257,16 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     }
 
     function isOfferSorted(uint id) public view returns(bool) {
-        return rank[id].next != 0
-               || rank[id].prev != 0
-               || best[offers[id].sellGem][offers[id].buyGem] == id;
+        return rank[id].next != 0 ||
+        rank[id].prev != 0 ||
+        best[offers[id].sellGem][offers[id].buyGem] == id;
     }
 
-    function sellAllAmount(ERC20 sellGem, uint sellAmt, ERC20 buyGem, uint minFillAmount)
+    function sellAllAmount(ERC20 sellGem, uint sellAmt_, ERC20 buyGem, uint minFillAmount)
         public
         returns (uint fillAmt)
     {
+        uint sellAmt = sellAmt_;
         uint offerId;
         while (sellAmt > 0) {                                               // while there is amount to sell
             offerId = getBestOffer(buyGem, sellGem);                        // Get the best offer for the token pair
@@ -262,7 +276,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             if (sellAmt * 1 ether < wdiv(offers[offerId].oBuyAmt, offers[offerId].oSellAmt)) {
                 break;                                                      // We consider that all amount is sold
             }
-            if (sellAmt >= offers[offerId].buyAmt) {                        // If amount to sell is higher or equal than current offer amount to buy
+            // If amount to sell is higher or equal than current offer amount to buy
+            if (sellAmt >= offers[offerId].buyAmt) {
                 fillAmt = add(fillAmt, offers[offerId].sellAmt);            // Add amount bought to acumulator
                 sellAmt = sub(sellAmt, offers[offerId].buyAmt);             // Decrease amount to sell
                 buy(offerId, uint128(offers[offerId].sellAmt));             // We take the whole offer
@@ -279,10 +294,11 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         require(fillAmt >= minFillAmount);
     }
 
-    function buyAllAmount(ERC20 buyGem, uint buyAmt, ERC20 sellGem, uint maxFillAmt)
+    function buyAllAmount(ERC20 buyGem, uint buyAmt_, ERC20 sellGem, uint maxFillAmt)
         public
         returns (uint fillAmt)
     {
+        uint buyAmt = buyAmt_;
         uint offerId;
         while (buyAmt > 0) {                                                // Meanwhile there is amount to buy
             offerId = getBestOffer(buyGem, sellGem);                        // Get the best offer for the token pair
@@ -292,7 +308,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             if (buyAmt * 1 ether < wdiv(offers[offerId].oSellAmt, offers[offerId].oBuyAmt)) {
                 break;                                                      // We consider that all amount is sold
             }
-            if (buyAmt >= offers[offerId].sellAmt) {                        // If amount to buy is higher or equal than current offer amount to sell
+            // If amount to buy is higher or equal than current offer amount to sell
+            if (buyAmt >= offers[offerId].sellAmt) {
                 fillAmt = add(fillAmt, offers[offerId].buyAmt);             // Add amount sold to acumulator
                 buyAmt = sub(buyAmt, offers[offerId].sellAmt);              // Decrease amount to buy
                 buy(offerId, uint128(offers[offerId].sellAmt));             // We take the whole offer
@@ -311,7 +328,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         require(fillAmt <= maxFillAmt);
     }
 
-    function getBuyAmount(ERC20 buyGem, ERC20 sellGem, uint sellAmt) public view returns (uint fillAmt) {
+    function getBuyAmount(ERC20 buyGem, ERC20 sellGem, uint sellAmt_) public view returns (uint fillAmt) {
+        uint sellAmt = sellAmt_;
         uint offerId = getBestOffer(buyGem, sellGem);                       // Get best offer for the token pair
         while (sellAmt > offers[offerId].buyAmt) {
             fillAmt = add(fillAmt, offers[offerId].sellAmt);                // Add amount to buy accumulator
@@ -330,7 +348,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         );                                                                  // Add proportional amount of last offer to buy accumulator
     }
 
-    function getPayAmount(ERC20 sellGem, ERC20 buyGem, uint buyAmt) public view returns (uint fillAmt) {
+    function getPayAmount(ERC20 sellGem, ERC20 buyGem, uint buyAmt_) public view returns (uint fillAmt) {
+        uint buyAmt = buyAmt_;
         uint offerId = getBestOffer(buyGem, sellGem);                       // Get best offer for the token pair
         while (buyAmt > offers[offerId].sellAmt) {
             fillAmt = add(fillAmt, offers[offerId].buyAmt);                 // Add amount to pay accumulator
@@ -370,9 +389,11 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     }
 
     // Find the id of the next higher offer after offers[id] (with initial pos to start)
-    function _findpos(uint id, uint pos) internal view returns (uint)
+    function _findpos(uint id, uint pos_) internal view returns (uint)
     {
         require(id > 0);
+
+        uint pos = pos_;
 
         // Look for an active order.
         while (pos != 0 && !isActive(pos)) {
@@ -382,7 +403,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         if (pos == 0) {
             // if we got to the end of list without a single active offer
             return _findpos(id);
-
         } else {
             // if we did find a nearby active offer
             // Walk the order book down from there...
@@ -396,7 +416,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
                     pos = rank[pos].prev;
                 }
                 return oldPos;
-
             // ...or walk it up.
             } else {
                 while (pos != 0 && !_isPricedLtOrEq(id, pos)) {
@@ -413,17 +432,18 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint high                                           // higher priced offer's id
     ) internal view returns (bool)
     {
-        return mul(offers[low].oBuyAmt, offers[high].oSellAmt)
-            >= mul(offers[high].oBuyAmt, offers[low].oSellAmt);
+        return mul(offers[low].oBuyAmt, offers[high].oSellAmt) >=
+        mul(offers[high].oBuyAmt, offers[low].oSellAmt);
     }
 
     // Put offer into the sorted list
     function _sort(
         uint id,                                            // maker (ask) id
-        uint pos                                            // position to insert into
+        uint pos_                                           // position to insert into (it's an offer Id)
     ) internal {
         require(isActive(id));
 
+        uint pos = pos_;
         address buyGem = address(offers[id].buyGem);
         address sellGem = address(offers[id].sellGem);
         uint prevId;                                        // maker (ask) id
@@ -439,7 +459,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
                       || offers[pos].buyGem != offers[id].buyGem))
             {
                 pos = 0;
-                pos=_findpos(id);
+                pos = _findpos(id);
             }
         }
 
@@ -457,7 +477,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             best[sellGem][buyGem] = id;
         }
 
-    if (prevId != 0) {                                      // if lower offer does exist
+        if (prevId != 0) {                                  // if lower offer does exist
             // Requirement below is satisfied by statements above
             // require(!_isPricedLtOrEq(id, prevId));
             rank[prevId].next = id;
