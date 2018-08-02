@@ -84,7 +84,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint matchingSellAmt;           // sell amount (countdown)
 
         // There is at least one offer stored for token pair
-        while ((bestMatchingId = best[buyGem][sellGem]) > 0) {
+        while (best[buyGem][sellGem] > 0) {
+            bestMatchingId = best[buyGem][sellGem];
             matchingOSellAmt = offers[bestMatchingId].oSellAmt;
             matchingOBuyAmt = offers[bestMatchingId].oBuyAmt;
             matchingSellAmt = offers[bestMatchingId].sellAmt;
