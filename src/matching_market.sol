@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.23;
 
 import "./expiring_market.sol";
 import "ds-note/note.sol";
@@ -451,15 +451,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             pos = _findpos(id);
         } else {
             pos = _findpos(id, pos);
-
-            // If user has entered a `pos` that belongs to another currency pair
-            // We start from scratch
-            if(pos != 0 && (offers[pos].sellGem != offers[id].sellGem
-                      || offers[pos].buyGem != offers[id].buyGem))
-            {
-                pos = 0;
-                pos = _findpos(id);
-            }
+            require(pos == 0 || (offers[pos].sellGem == offers[id].sellGem
+                && offers[pos].buyGem == offers[id].buyGem));
         }
 
         // Requirement below is satisfied by statements above

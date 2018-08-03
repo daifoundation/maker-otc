@@ -1075,14 +1075,12 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assert(!otc.isActive(offerId[4]));
     }
 
-    function testInsertOfferWithUserProvidedIdOfADifferentTokenLower() public {
+    function testFailInsertOfferWithUserProvidedIdOfADifferentTokenLower() public {
         dai.transfer(user1, 13);
         user1.doApprove(otc, 13, dai);
         dai.approve(otc, 11);
         offerId[1] = user1.doOffer(13, dai, 1, mkr);
         offerId[2] = otc.offer(11, dai, 1, dgd, offerId[1]);
-        assert(otc.getBetterOffer(offerId[2]) == 0);
-        assert(otc.getWorseOffer(offerId[2]) == 0);
     }
     
     function testInsertOfferWithUserProvidedIdOfADifferentTokenHigher() public {
