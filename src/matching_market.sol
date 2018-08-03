@@ -88,9 +88,13 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         canBuy(id)
         returns (bool)
     {
-        if (amount == offers[id].sellAmt && isOfferSorted(id)) {
-            // offers[id] must be removed from sorted list because all of it is bought
-            _unsort(id);
+        // If all the amount is bought, remove offer sorting data
+        if (amount == offers[id].sellAmt){
+            if (isOfferSorted(id)) {
+                require(_unsort(id));
+            } else {
+                require(_hide(id));
+            }
         }
         require(super.buy(id, amount));
 
