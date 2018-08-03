@@ -15,7 +15,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     struct sortInfo {
         uint next;                                              // points to id of next higher offer
         uint prev;                                              // points to id of previous lower offer
-        uint delb;                                              // the blocknumber where this entry was marked for delete
     }
     mapping(uint => sortInfo) public rank;                      // doubly linked lists of sorted offer ids
     mapping(address => mapping(address => uint)) public best;   // id of the highest offer for a token pair
@@ -68,7 +67,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         canOffer
         returns (uint id)
     {
-        (uint sellAmt, uint buyAmt) = buyOffers(oSellAmt, sellGem, oBuyAmt, buyGem);
+        uint sellAmt;
+        uint buyAmt;
+        (sellAmt, buyAmt) = buyOffers(oSellAmt, sellGem, oBuyAmt, buyGem);
 
         // Create new taker offer if necessary
         if (buyAmt > 0 && sellAmt > dust[sellGem]) {
@@ -194,16 +195,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         _hide(id);                      // remove offer from unsorted offers list
         _sort(id, pos);                 // put offer into the sorted offers list
         emit LogInsert(msg.sender, id);
-        return true;
-    }
-
-    // deletes rank [id]
-    // Function should be called by keepers.
-    function delRank(uint id) public returns (bool)
-    {
-        require(!isActive(id) && rank[id].delb != 0 && rank[id].delb < block.number - 10);
-        delete rank[id];
-        emit LogDelete(msg.sender, id);
         return true;
     }
 
@@ -404,11 +395,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
         uint pos = pos_;
 
-        // Look for an active order.
-        while (pos != 0 && !isActive(pos)) {
-            pos = rank[pos].prev;
-        }
-
         if (pos == 0) {
             // if we got to the end of list without a single active offer
             return _findpos(id);
@@ -508,7 +494,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         address sellGem = address(offers[id].sellGem);
         require(span[sellGem][buyGem] > 0);
 
-        require(rank[id].delb == 0 && isOfferSorted(id));   // assert id is in the sorted list
+        require(isActive(id) && isOfferSorted(id));           // assert id is in the sorted list
 
         if (id != best[sellGem][buyGem]) {                  // offers[id] is not the highest offer
             require(rank[rank[id].next].prev == id);
@@ -523,7 +509,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         }
 
         span[sellGem][buyGem]--;
-        rank[id].delb = block.number;                       // mark rank[id] for deletion
+        delete rank[id];
         return true;
     }
 
