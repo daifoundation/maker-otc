@@ -29,8 +29,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
     // After close, anyone can cancel an offer
     modifier canCancel(uint id) {
-        require(isActive(id));
-        require(isClosed() || msg.sender == getOwner(id) || id == dustId);
+        require(isActive(id), "Offer was deleted or taken, or never existed.");
+        require(isClosed() || msg.sender == getOwner(id) || id == dustId,
+            "Offer can not be cancelled because user is not owner, and market is open, and offer sells required amount of tokens.");
         _;
     }
     
@@ -48,7 +49,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         public
         returns (uint id)
     {
-        require(dust[sellGem] <= sellAmt);
+        require(dust[sellGem] <= sellAmt, "Offer intends to sell less than required.");
         id = super.offer(sellAmt, sellGem, buyAmt, buyGem);
         near[id] = head;
         head = id;
@@ -91,12 +92,12 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         // If all the amount is bought, remove offer sorting data
         if (amount == offers[id].sellAmt){
             if (isOfferSorted(id)) {
-                require(_unsort(id));
+                require(_unsort(id), "Offer could not be removed from sorted list.");
             } else {
-                require(_hide(id));
+                require(_hide(id), "Offer could not be removed from unsorted list.");
             }
         }
-        require(super.buy(id, amount));
+        require(super.buy(id, amount), "Too large, or too low buy quantity.");
 
         // If offer has become dust during buy, we cancel it
         if (isActive(id) && offers[id].sellAmt < dust[offers[id].sellGem]) {
@@ -115,7 +116,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         public
         returns (uint sellAmt, uint buyAmt)
     {
-        require(dust[sellGem] <= oSellAmt);
+        require(dust[sellGem] <= oSellAmt, "Offer sell quantity is less then required.");
 
         sellAmt = oSellAmt;             // taker sell amount (countdown)
         buyAmt = oBuyAmt;               // taker buy amount (countdown)
@@ -177,9 +178,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         returns (bool success)
     {
         if (isOfferSorted(id)) {
-            require(_unsort(id));
+            require(_unsort(id), "Offer could not be removed from sorted list.");
         } else {
-            require(_hide(id));
+            require(_hide(id), "Offer could not be removed from unsorted list.");
         }
         return super.cancel(id);        // delete the offer.
     }
@@ -193,8 +194,10 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         public
         returns (bool)
     {
-        require(!isOfferSorted(id));    // make sure offers[id] is not yet sorted
-        require(isActive(id));          // make sure offers[id] is active
+        require(!isOfferSorted(id),     // make sure offers[id] is not yet sorted
+            "Offer should not be sorted.");    
+        require(isActive(id),           // make sure offers[id] is active 
+            "Offer has been canceled, taken, or never existed.");          
 
         _hide(id);                      // remove offer from unsorted offers list
         _sort(id, pos);                 // put offer into the sorted offers list
@@ -274,7 +277,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint offerId;
         while (sellAmt > 0) {                                               // while there is amount to sell
             offerId = getBestOffer(buyGem, sellGem);                        // Get the best offer for the token pair
-            require(offerId != 0);                                          // Fails if there are not more offers
+            require(offerId != 0,                                           // Fails if there are not more offers  
+                "Not enough offers in market to sell tokens.");                    
 
             // There is a chance that sellAmt is smaller than 1 wei of the other token
             if (sellAmt * 1 ether < wdiv(offers[offerId].oBuyAmt, offers[offerId].oSellAmt)) {
@@ -295,7 +299,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
                 sellAmt = 0;                                                // All amount is sold
             }
         }
-        require(fillAmt >= minFillAmount);
+        require(fillAmt >= minFillAmount, "Not enough offers in market to sell tokens.");
     }
 
     function buyAllAmount(ERC20 buyGem, uint buyAmt_, ERC20 sellGem, uint maxFillAmt)
@@ -306,7 +310,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint offerId;
         while (buyAmt > 0) {                                                // Meanwhile there is amount to buy
             offerId = getBestOffer(buyGem, sellGem);                        // Get the best offer for the token pair
-            require(offerId != 0);
+            require(offerId != 0, "Not enough offers in market to buy tokens.");
 
             // There is a chance that buyAmt is smaller than 1 wei of the other token
             if (buyAmt * 1 ether < wdiv(offers[offerId].oSellAmt, offers[offerId].oBuyAmt)) {
@@ -329,7 +333,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
                 buyAmt = 0;                                                 // All amount is bought
             }
         }
-        require(fillAmt <= maxFillAmt);
+        require(fillAmt <= maxFillAmt, "Not enough offers in market to buy tokens.");
     }
 
     function getBuyAmount(ERC20 buyGem, ERC20 sellGem, uint sellAmt_) public view returns (uint fillAmt) {
@@ -340,7 +344,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             sellAmt = sub(sellAmt, offers[offerId].buyAmt);                 // Decrease amount to pay
             if (sellAmt > 0) {                                              // If we still need more offers
                 offerId = getWorseOffer(offerId);                           // We look for the next best offer
-                require(offerId != 0);                                      // Fails if there are not enough offers to complete
+                require(offerId != 0,                                       // Fails if there are not enough offers to complete 
+                    "Not enough offers in market to buy tokens.");                                      
             }
         }
         fillAmt = add(
@@ -360,7 +365,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             buyAmt = sub(buyAmt, offers[offerId].sellAmt);                  // Decrease amount to buy
             if (buyAmt > 0) {                                               // If we still need more offers
                 offerId = getWorseOffer(offerId);                           // We look for the next best offer
-                require(offerId != 0);                                      // Fails if there are not enough offers to complete
+                require(offerId != 0,                                      // Fails if there are not enough offers to complete 
+                     "Not enough offers in market to sell tokens.");                                      
             }
         }
         fillAmt = add(
@@ -377,7 +383,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     // Find the id of the next higher offer after offers[id]
     function _findpos(uint id) internal view returns (uint)
     {
-        require(id > 0);
+        require(id > 0, "Offer id can not be 0.");
 
         address buyGem = address(offers[id].buyGem);
         address sellGem = address(offers[id].sellGem);
@@ -395,7 +401,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     // Find the id of the next higher offer after offers[id] (with initial pos to start)
     function _findpos(uint id, uint pos_) internal view returns (uint)
     {
-        require(id > 0);
+        require(id > 0, "Offer id can not be 0.");
 
         uint pos = pos_;
 
@@ -440,7 +446,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint id,                                            // maker (ask) id
         uint pos_                                           // position to insert into (it's an offer Id)
     ) internal {
-        require(isActive(id));
+        require(isActive(id), "Offer was previously deleted or taken.");
 
         uint pos = pos_;
         address buyGem = address(offers[id].buyGem);
@@ -452,7 +458,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         } else {
             pos = _findpos(id, pos);
             require(pos == 0 || (offers[pos].sellGem == offers[id].sellGem
-                && offers[pos].buyGem == offers[id].buyGem));
+                && offers[pos].buyGem == offers[id].buyGem), 
+                "Tokenpair belonging to 'id' must be the same as the one belonging to 'pos'.");
         }
 
         // Requirement below is satisfied by statements above
@@ -489,19 +496,20 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     {
         address buyGem = address(offers[id].buyGem);
         address sellGem = address(offers[id].sellGem);
-        require(span[sellGem][buyGem] > 0);
+        assert(span[sellGem][buyGem] > 0);
 
-        require(isActive(id) && isOfferSorted(id));           // assert id is in the sorted list
+        require(isActive(id) && isOfferSorted(id),          // assert id is in the sorted list  
+            "Offer has been canceled, taken, or never existed, or not sorted.");           
 
         if (id != best[sellGem][buyGem]) {                  // offers[id] is not the highest offer
-            require(rank[rank[id].next].prev == id);
+            assert(rank[rank[id].next].prev == id);
             rank[rank[id].next].prev = rank[id].prev;
         } else {                                            // offers[id] is the highest offer
             best[sellGem][buyGem] = rank[id].prev;
         }
 
         if (rank[id].prev != 0) {                           // offers[id] is not the lowest offer
-            require(rank[rank[id].prev].next == id);
+            assert(rank[rank[id].prev].next == id);
             rank[rank[id].prev].next = rank[id].next;
         }
 
@@ -520,7 +528,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint uid = head;                                    // id of an offer in unsorted offers list
         uint pre = uid;                                     // id of previous offer in unsorted offers list
 
-        require(!isOfferSorted(id));                        // make sure offer id is not in sorted offers list
+        require(!isOfferSorted(id), "Offer is sorted.");    // make sure offer id is not in sorted offers list
 
         if (head == id) {                                   // check if offer is first offer in unsorted offers list
             head = near[id];                                // set head to new first unsorted offer

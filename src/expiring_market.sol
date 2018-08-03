@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.23;
 
 import "ds-auth/auth.sol";
 import "./simple_market.sol";
@@ -15,20 +15,20 @@ contract ExpiringMarket is DSAuth, SimpleMarket {
 
     // After closeTime has been reached, no new offers are allowed
     modifier canOffer {
-        require(!isClosed());
+        require(!isClosed(), "Market is closed, no new offers allowed.");
         _;
     }
 
     // After close, no new buys are allowed
     modifier canBuy(uint id) {
-        require(isActive(id));
-        require(!isClosed());
+        require(isActive(id), "Offer has been canceled, taken, or never existed, thus can not be bought.");
+        require(!isClosed(), "Market is closed, buy is not allowed.");
         _;
     }
 
     // After close, anyone can cancel an offer
     modifier canCancel(uint id) {
-        require(isActive(id));
+        require(isActive(id), "Offer has been canceled, taken, or never existed, thus can not be canceled.");
         require(isClosed() || (msg.sender == getOwner(id)));
         _;
     }

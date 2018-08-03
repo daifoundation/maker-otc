@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.23;
 
 import "ds-math/math.sol";
 import "erc20/erc20.sol";
@@ -61,13 +61,13 @@ contract SimpleMarket is EventfulMarket, DSMath {
     }
 
     modifier canBuy(uint id) {
-        require(isActive(id));
+        require(isActive(id), "Offer has been canceled, taken, or never existed, thus can not be bought.");
         _;
     }
 
     modifier canCancel(uint id) {
-        require(isActive(id));
-        require(getOwner(id) == msg.sender);
+        require(isActive(id), "Offer has been canceled, taken, or never existed, thus can not be canceled.");
+        require(getOwner(id) == msg.sender, "Only owner can cancel offer.");
         _;
     }
 
@@ -76,7 +76,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
     }
 
     modifier synchronized {
-        require(!locked);
+        require(!locked, "Reentrancy detected.");
         locked = true;
         _;
         locked = false;
@@ -97,13 +97,13 @@ contract SimpleMarket is EventfulMarket, DSMath {
         synchronized
         returns (uint id)
     {
-        require(uint128(sellAmt) == sellAmt);
-        require(uint128(buyAmt) == buyAmt);
-        require(sellAmt > 0);
-        require(sellGem != ERC20(0x0));
-        require(buyAmt > 0);
-        require(buyGem != ERC20(0x0));
-        require(sellGem != buyGem);
+        require(uint128(sellAmt) == sellAmt, "Sell amount should be less than 2^129-1.");
+        require(uint128(buyAmt) == buyAmt, "Buy amount should be less than 2^129-1.");
+        require(sellAmt > 0, "Sell amount can not be zero.");
+        require(sellGem != ERC20(0x0), "Sell token should not be a zero address.");
+        require(buyAmt > 0, "Buy amount should not be zero.");
+        require(buyGem != ERC20(0x0), "Buy token should not be a zero address.");
+        require(sellGem != buyGem, "You should not sell the same token that you buy.");
 
         OfferInfo memory offerInfo;
         offerInfo.oSellAmt = sellAmt;
@@ -153,8 +153,8 @@ contract SimpleMarket is EventfulMarket, DSMath {
 
         offers[id].sellAmt = sub(offerInfo.sellAmt, quantity);
         offers[id].buyAmt = sub(offerInfo.buyAmt, spend);
-        require(offerInfo.buyGem.transferFrom(msg.sender, offerInfo.owner, spend));
-        require(offerInfo.sellGem.transfer(msg.sender, quantity));
+        require(offerInfo.buyGem.transferFrom(msg.sender, offerInfo.owner, spend), "Buy token could not be transferred.");
+        require(offerInfo.sellGem.transfer(msg.sender, quantity), "Sell token could not be transferred.");
 
         emit LogItemUpdate(id);
         emit LogTake(
@@ -188,7 +188,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
         OfferInfo memory offerInfo = offers[id];
         delete offers[id];
 
-        require(offerInfo.sellGem.transfer(offerInfo.owner, offerInfo.sellAmt));
+        require(offerInfo.sellGem.transfer(offerInfo.owner, offerInfo.sellAmt), "Sell token could not be transferred.");
 
         emit LogItemUpdate(id);
         emit LogKill(
