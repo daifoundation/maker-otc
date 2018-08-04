@@ -1687,4 +1687,25 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         uint expectedResult = 10 ether * 3200 / 3200 + 10 ether * 1400 / 2800;
         assertEq(otc.buyAllAmount(dai, 4600 ether, mkr, expectedResult - 1), expectedResult);
     }
+
+    function testBuyOffers() public {
+        mkr.approve(otc, uint(-1));
+        user1.doApprove(otc, uint(-1), dai);
+        dai.transfer(user1, 6000 ether);
+        offerId[1] = user1.doOffer(3200 ether, dai, 10 ether, mkr, 0);
+        offerId[2] = user1.doOffer(2800 ether, dai, 10 ether, mkr, 0);
+
+        uint initialBalance = mkr.balanceOf(this);
+        otc.buyOffers(20 ether, mkr, 6000 ether, dai);
+        // Just bought one of the offers
+        assertEq(mkr.balanceOf(this), initialBalance - 10 ether);
+        // First offer (better price) was bought
+        (,, sellAmt,, buyAmt,,,) = otc.offers(offerId[1]);
+        assertEq(sellAmt, 0);
+        assertEq(buyAmt, 0);
+        // Second offer (worse price) was not bought
+        (,, sellAmt,, buyAmt,,,) = otc.offers(offerId[2]);
+        assertEq(sellAmt, 2800 ether);
+        assertEq(buyAmt, 10 ether);
+    }
 }
