@@ -1,4 +1,4 @@
-pragma solidity ^0.4.23;
+pragma solidity ^0.4.24;
 
 import "./expiring_market.sol";
 import "ds-note/note.sol";
