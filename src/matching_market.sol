@@ -39,7 +39,32 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     
     // ---- Public entrypoints ---- //
 
+    // Make a new offer. Takes funds from the caller into market escrow.
+    function offer(
+        uint oSellAmt,                              // new offer sell amount
+        ERC20 sellGem,                              // new offer sell token
+        uint oBuyAmt,                               // new offer buy amount
+        ERC20 buyGem,                               // new offer buy token
+        uint pos                                    // position to insert offer, 0 should be used if unknown
+    ) public canOffer returns (uint id) {
+        require(dust[sellGem] <= oSellAmt, "Offer intends to sell less than required.");
+        (uint sellAmt, uint buyAmt) = buyOffers(oSellAmt, sellGem, oBuyAmt, buyGem);
+
+        // Create new taker offer if necessary
+        if (buyAmt > 0 && sellAmt > dust[sellGem]) {
+            // New offer should be created
+            id = super.offer(sellAmt, sellGem, buyAmt, buyGem);
+            offers[id].oSellAmt = oSellAmt;         // set original taker pay amount
+            offers[id].oBuyAmt = oBuyAmt;           // set original taker buy amount
+            // Insert offer into the sorted list
+            _sort(id, pos);
+        }
+    }
+
     // Make a new offer without putting it in the sorted list.
+    // ***This function should only be called from smart contracts!***
+    // ***Please call offer(,,,,uint pos) instead for placing a regular offer***
+    // ***Offers created with this method will not be subject for offer matching!***
     // Takes funds from the caller into market escrow.
     // Keepers should call insert(id,pos) to put offer in the sorted list.
     function offer(
@@ -53,27 +78,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         near[id] = head;
         head = id;
         emit LogUnsortedOffer(id);
-    }
-
-    // Make a new offer. Takes funds from the caller into market escrow.
-    function offer(
-        uint oSellAmt,                              // new offer sell amount
-        ERC20 sellGem,                              // new offer sell token
-        uint oBuyAmt,                               // new offer buy amount
-        ERC20 buyGem,                               // new offer buy token
-        uint pos                                    // position to insert offer, 0 should be used if unknown
-    ) public canOffer returns (uint id) {
-        (uint sellAmt, uint buyAmt) = buyOffers(oSellAmt, sellGem, oBuyAmt, buyGem);
-
-        // Create new taker offer if necessary
-        if (buyAmt > 0 && sellAmt > dust[sellGem]) {
-            // New offer should be created
-            id = super.offer(sellAmt, sellGem, buyAmt, buyGem);
-            offers[id].oSellAmt = oSellAmt;         // set original taker pay amount
-            offers[id].oBuyAmt = oBuyAmt;           // set original taker buy amount
-            // Insert offer into the sorted list
-            _sort(id, pos);
-        }
     }
 
     // Transfers funds from caller to offer maker, and from market to caller.
@@ -90,7 +94,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
         // If offer has become dust during buy, we cancel it
         if (isActive(id) && offers[id].sellAmt < dust[offers[id].sellGem]) {
-            dustId = id;
+            dustId = id; //enable current msg.sender to call cancel(id)
             cancel(id);
         }
         return true;
@@ -107,7 +111,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         sellAmt = oSellAmt;                         // taker sell amount (countdown)
         buyAmt = oBuyAmt;                           // taker buy amount (countdown)
 
-        // Auxiliar variables for existing offers which are opposite to the one being created
+        // Auxiliary variables for existing offers which are opposite to the one being created
         uint bestMatchingId;                        // best matching id
         uint matchingOSellAmt;                      // sell amount (original value)
         uint matchingOBuyAmt;                       // buy amount (original value)
@@ -152,7 +156,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
         // If matching offer has become dust during matching, we cancel it
         if (isActive(bestMatchingId) && offers[bestMatchingId].sellAmt < dust[buyGem]) {
-            dustId = bestMatchingId;
+            dustId = bestMatchingId; //enable current msg.sender to call cancel(bestMatchingId)
             cancel(bestMatchingId);
         }
     }
@@ -175,7 +179,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     ) public returns (bool) {
         require(
             !isOfferSorted(id),         // make sure offers[id] is not yet sorted
-            "Offer should not be sorted."
+            "Offer should not be in the sorted list."
         );
         require(
             isActive(id),               // make sure offers[id] is active
@@ -396,7 +400,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint id,                                            // maker (ask) id
         uint pos_                                           // position to insert into (it's an offer Id)
     ) internal {
-        require(isActive(id), "Offer was previously deleted or taken.");
+        require(isActive(id), "Offer has been canceled, taken, or never existed.");
 
         uint pos = pos_;
         address buyGem = address(offers[id].buyGem);
