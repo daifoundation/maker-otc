@@ -118,8 +118,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint matchingSellAmt;                       // sell amount (countdown)
 
         // There is at least one offer stored for token pair
-        while (best[buyGem][sellGem] > 0) {
-            bestMatchingId = best[buyGem][sellGem];
+        while ((bestMatchingId = best[buyGem][sellGem]) > 0) {
             matchingOSellAmt = offers[bestMatchingId].oSellAmt;
             matchingOBuyAmt = offers[bestMatchingId].oBuyAmt;
             matchingSellAmt = offers[bestMatchingId].sellAmt;
@@ -152,12 +151,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             if (sellAmt == 0 || buyAmt == 0) {
                 break;
             }
-        }
-
-        // If matching offer has become dust during matching, we cancel it
-        if (isActive(bestMatchingId) && offers[bestMatchingId].sellAmt < dust[buyGem]) {
-            dustId = bestMatchingId; //enable current msg.sender to call cancel(bestMatchingId)
-            cancel(bestMatchingId);
         }
     }
 
@@ -314,7 +307,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
     function getPayAmount(ERC20 sellGem, ERC20 buyGem, uint buyAmt_) public view returns (uint fillAmt) {
         uint buyAmt = buyAmt_;
-        uint offerId = best[buyGem][sellGem];                       // Get best offer for the token pair
+        uint offerId = best[buyGem][sellGem];                               // Get best offer for the token pair
         while (buyAmt > offers[offerId].sellAmt) {
             fillAmt = add(fillAmt, offers[offerId].buyAmt);                 // Add amount to pay accumulator
             buyAmt = sub(buyAmt, offers[offerId].sellAmt);                  // Decrease amount to buy
@@ -498,4 +491,3 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         return true;
     }
 }
-
