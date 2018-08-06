@@ -123,7 +123,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             matchingOBuyAmt = offers[bestMatchingId].oBuyAmt;
             matchingSellAmt = offers[bestMatchingId].sellAmt;
 
-            // Ugly hack to work around rounding errors. Based on the idea that
+            // Handle round-off error. Based on the idea that
             // the furthest the amounts can stray from their "true" values is 1.
             // Ergo the worst case has sellAmt and matchingSellAmt at +1 away from
             // their "correct" values and matchingObuyAmt and buyAmt at -1.

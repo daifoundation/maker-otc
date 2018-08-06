@@ -75,7 +75,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
         _;
     }
 
-    modifier synchronized {
+    modifier nonReentrant {
         require(!locked, "Reentrancy detected.");
         locked = true;
         _;
@@ -94,7 +94,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
     function offer(uint sellAmt, ERC20 sellGem, uint buyAmt, ERC20 buyGem)
         public
         canOffer
-        synchronized
+        nonReentrant
         returns (uint id)
     {
         require(uint128(sellAmt) == sellAmt, "Sell amount should be less than 2^129-1.");
@@ -137,7 +137,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
     function buy(uint id, uint quantity)
         public
         canBuy(id)
-        synchronized
+        nonReentrant
         returns (bool)
     {
         OfferInfo memory offerInfo = offers[id];
@@ -181,7 +181,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
     function cancel(uint id)
         public
         canCancel(id)
-        synchronized
+        nonReentrant
         returns (bool success)
     {
         // Read-only offer. Modify an offer by directly accessing offers[id]
