@@ -135,9 +135,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
                 break;
             }
 
-            uint offerPrevSellAmt = offers[bestMatchingId].sellAmt;
-            buy(bestMatchingId, min(offers[bestMatchingId].sellAmt, buyAmt));
-            buyAmt = sub(buyAmt, min(offerPrevSellAmt, buyAmt));
+            uint amountToBuy = min(offers[bestMatchingId].sellAmt, buyAmt);
+            buy(bestMatchingId, amountToBuy);
+            buyAmt = sub(buyAmt, amountToBuy);
             sellAmt = mul(buyAmt, oSellAmt) / oBuyAmt;
 
             if (sellAmt == 0 || buyAmt == 0) {
