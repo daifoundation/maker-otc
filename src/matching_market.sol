@@ -110,42 +110,34 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
         sellAmt = oSellAmt;                         // taker sell amount (countdown)
         buyAmt = oBuyAmt;                           // taker buy amount (countdown)
-
-        // Auxiliary variables for existing offers which are opposite to the one being created
         uint bestMatchingId;                        // best matching id
-        uint matchingOSellAmt;                      // sell amount (original value)
-        uint matchingOBuyAmt;                       // buy amount (original value)
-        uint matchingSellAmt;                       // sell amount (countdown)
 
         // There is at least one offer stored for token pair
         while ((bestMatchingId = best[buyGem][sellGem]) > 0) {
-            matchingOSellAmt = offers[bestMatchingId].oSellAmt;
-            matchingOBuyAmt = offers[bestMatchingId].oBuyAmt;
-            matchingSellAmt = offers[bestMatchingId].sellAmt;
-
             // Handle round-off error. Based on the idea that
             // the furthest the amounts can stray from their "true" values is 1.
-            // Ergo the worst case has sellAmt and matchingSellAmt at +1 away from
-            // their "correct" values and matchingObuyAmt and buyAmt at -1.
+            // Ergo the worst case has oSellAmt and offers[bestMatchingId].sellAmt at +1 away from
+            // their "correct" values and offers[bestMatchingId].oBuyAmt and buyAmt at -1.
             // Since (c - 1) * (d - 1) > (a + 1) * (b + 1) is equivalent to
             // c * d > a * b + a + b + c + d, we write...
-            if (mul(matchingOBuyAmt, oBuyAmt) >
+            if (mul(offers[bestMatchingId].oBuyAmt, oBuyAmt) >
                 add(
                     add(
                         add(
-                            add(mul(oSellAmt, matchingOSellAmt), matchingOBuyAmt),
+                            add(mul(oSellAmt, offers[bestMatchingId].oSellAmt), offers[bestMatchingId].oBuyAmt),
                             oBuyAmt
                         ),
                         oSellAmt
                     ),
-                    matchingOSellAmt
+                    offers[bestMatchingId].oSellAmt
                 )
             ) {
                 break;
             }
 
-            buy(bestMatchingId, min(matchingSellAmt, buyAmt));
-            buyAmt = sub(buyAmt, min(matchingSellAmt, buyAmt));
+            uint offerPrevSellAmt = offers[bestMatchingId].sellAmt;
+            buy(bestMatchingId, min(offers[bestMatchingId].sellAmt, buyAmt));
+            buyAmt = sub(buyAmt, min(offerPrevSellAmt, buyAmt));
             sellAmt = mul(buyAmt, oSellAmt) / oBuyAmt;
 
             if (sellAmt == 0 || buyAmt == 0) {
