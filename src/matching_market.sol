@@ -20,8 +20,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     mapping(address => mapping(address => uint)) public best;   // id of the highest offer for a token pair
     mapping(address => mapping(address => uint)) public span;   // number of offers stored for token pair in sorted orderbook
     mapping(address => uint) public dust;                       // minimum sell amount for a token to avoid dust offers
-    mapping(uint => uint) public near;                          // next unsorted offer id
-    uint public head;                                           // first unsorted offer id
     uint public dustId;                                         // id of the latest offer marked as dust
 
     constructor(uint64 closeTime) ExpiringMarket(closeTime) public {
@@ -213,8 +211,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     ) public returns (uint id) {
         require(dust[sellGem] <= sellAmt, "Offer intends to sell less than required.");
         id = super.offer(sellAmt, sellGem, buyAmt, buyGem);
-        near[id] = head;
-        head = id;
         emit LogUnsortedOffer(id);
     }
 
@@ -224,8 +220,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         if (amount == offers[id].sellAmt){
             if (isOfferSorted(id)) {
                 require(_unsort(id), "Offer could not be removed from sorted list.");
-            } else {
-                require(_hide(id), "Offer could not be removed from unsorted list.");
             }
         }
         require(super.buy(id, amount), "Too large, or too low buy quantity.");
@@ -242,8 +236,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     function cancel(uint id) public canCancel(id) returns (bool success) {
         if (isOfferSorted(id)) {
             require(_unsort(id), "Offer could not be removed from sorted list.");
-        } else {
-            require(_hide(id), "Offer could not be removed from unsorted list.");
         }
         return super.cancel(id);        // delete the offer.
     }
@@ -263,7 +255,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             "Offer has been canceled, taken, or never existed."
         );
 
-        _hide(id);                      // remove offer from unsorted offers list
         _sort(id, pos);                 // put offer into the sorted offers list
         emit LogInsert(msg.sender, id);
         return true;
@@ -437,32 +428,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
         span[sellGem][buyGem]--;
         delete rank[id];
-        return true;
-    }
-
-    // Hide offer from the unsorted order book (does not cancel offer)
-    function _hide(
-        uint id                                             // id of maker offer to remove from unsorted list
-    ) internal returns (bool) {
-        uint uid = head;                                    // id of an offer in unsorted offers list
-        uint pre = uid;                                     // id of previous offer in unsorted offers list
-
-        require(!isOfferSorted(id), "Offer is sorted.");    // make sure offer id is not in sorted offers list
-
-        if (head == id) {                                   // check if offer is first offer in unsorted offers list
-            head = near[id];                                // set head to new first unsorted offer
-            near[id] = 0;                                   // delete order from unsorted order list
-            return true;
-        }
-        while (uid > 0 && uid != id) {                      // find offer in unsorted order list
-            pre = uid;
-            uid = near[uid];
-        }
-        if (uid != id) {                                    // did not find offer id in unsorted offers list
-            return false;
-        }
-        near[pre] = near[id];                               // set previous unsorted offer to point to offer after offer id
-        near[id] = 0;                                       // delete order from unsorted order list
         return true;
     }
 }
