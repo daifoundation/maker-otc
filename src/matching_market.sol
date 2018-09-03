@@ -39,16 +39,77 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     
     // ---- Public entrypoints ---- //
 
+    function iocOffer(
+        uint oSellAmt,                              // taker sell amount (original value)
+        ERC20 sellGem,                              // taker sell token
+        uint oBuyAmt,                               // taker buy amount (original value)
+        ERC20 buyGem,                               // taker buy token
+        bool forceSellAmt                           // If true, uses sellAmt as pivot, otherwise buyAmt
+    ) public returns (uint sellAmt, uint buyAmt) {
+        require(dust[sellGem] <= oSellAmt, "Offer sell quantity is less then required.");
+
+        sellAmt = oSellAmt;                         // taker sell amount (countdown)
+        buyAmt = oBuyAmt;                           // taker buy amount (countdown)
+        uint bestMatchingId;                        // best matching id
+
+        // There is at least one offer stored for token pair
+        while ((bestMatchingId = best[buyGem][sellGem]) > 0) {
+            // Handle round-off error. Based on the idea that
+            // the furthest the amounts can stray from their "true" values is 1.
+            // Ergo the worst case has oSellAmt and offers[bestMatchingId].sellAmt at +1 away from
+            // their "correct" values and offers[bestMatchingId].oBuyAmt and buyAmt at -1.
+            // Since (c - 1) * (d - 1) > (a + 1) * (b + 1) is equivalent to
+            // c * d > a * b + a + b + c + d, we write...
+            if (mul(offers[bestMatchingId].oBuyAmt, oBuyAmt) >
+                add(
+                    add(
+                        add(
+                            add(mul(oSellAmt, offers[bestMatchingId].oSellAmt), offers[bestMatchingId].oBuyAmt),
+                            oBuyAmt
+                        ),
+                        oSellAmt
+                    ),
+                    offers[bestMatchingId].oSellAmt
+                )
+            ) {
+                break;
+            }
+
+            if (forceSellAmt) {
+                uint amountToSell = min(offers[bestMatchingId].buyAmt, sellAmt);
+                buy(
+                    bestMatchingId,
+                    min(
+                        offers[bestMatchingId].sellAmt,
+                        mul(amountToSell, offers[bestMatchingId].oSellAmt) / offers[bestMatchingId].oBuyAmt
+                    ) // To avoid rounding issues, we check the amount to buy is not higher than the sellAmt of the offer
+                );
+                sellAmt = sub(sellAmt, amountToSell);
+                buyAmt = mul(sellAmt, oBuyAmt) / oSellAmt;
+            } else {
+                uint amountToBuy = min(offers[bestMatchingId].sellAmt, buyAmt);
+                buy(bestMatchingId, amountToBuy);
+                buyAmt = sub(buyAmt, amountToBuy);
+                sellAmt = mul(buyAmt, oSellAmt) / oBuyAmt;
+            }
+
+            if (sellAmt == 0 || buyAmt == 0) {
+                break;
+            }
+        }
+    }
+
     // Make a new offer. Takes funds from the caller into market escrow.
-    function offer(
+    function limitOffer(
         uint oSellAmt,                              // new offer sell amount
         ERC20 sellGem,                              // new offer sell token
         uint oBuyAmt,                               // new offer buy amount
         ERC20 buyGem,                               // new offer buy token
+        bool forceSellAmt,                          // If true, uses sellAmt as pivot, otherwise buyAmt
         uint pos                                    // position to insert offer, 0 should be used if unknown
     ) public canOffer returns (uint id) {
         require(dust[sellGem] <= oSellAmt, "Offer intends to sell less than required.");
-        (uint sellAmt, uint buyAmt) = buyOffers(oSellAmt, sellGem, oBuyAmt, buyGem);
+        (uint sellAmt, uint buyAmt) = iocOffer(oSellAmt, sellGem, oBuyAmt, buyGem, forceSellAmt);
 
         // Create new taker offer if necessary
         if (buyAmt > 0 && sellAmt > dust[sellGem]) {
@@ -59,6 +120,83 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             // Insert offer into the sorted list
             _sort(id, pos);
         }
+    }
+
+    function fokOffer(
+        uint oSellAmt,                              // new offer sell amount
+        ERC20 sellGem,                              // new offer sell token
+        uint oBuyAmt,                               // new offer buy amount
+        ERC20 buyGem,                               // new offer buy token
+        bool forceSellAmt                           // If true, uses sellAmt as pivot, otherwise buyAmt
+    ) public canOffer returns (uint sellAmt, uint buyAmt) {
+        require(dust[sellGem] <= oSellAmt, "Offer intends to sell less than required.");
+        (sellAmt, buyAmt) = iocOffer(oSellAmt, sellGem, oBuyAmt, buyGem, forceSellAmt);
+
+        if (forceSellAmt) {
+            require(sellAmt == 0, "Not all sell amount was sold");
+        } else {
+            require(buyAmt == 0, "Not all buy amount was bought");
+        }
+    }
+
+    function sellAllAmount(ERC20 sellGem, uint sellAmt_, ERC20 buyGem, uint minFillAmount) public returns (uint fillAmt) {
+        uint sellAmt = sellAmt_;
+        uint offerId;
+        while (sellAmt > 0) {                                               // while there is amount to sell
+            offerId = best[buyGem][sellGem];                                // Get the best offer for the token pair
+            require(offerId != 0, "Not enough offers in market to sell tokens.");
+
+            // There is a chance that sellAmt is smaller than 1 wei of the other token
+            if (sellAmt * 1 ether < (offers[offerId].oBuyAmt * 1 ether / offers[offerId].oSellAmt)) {
+                break;                                                      // We consider that all amount is sold
+            }
+            // If amount to sell is higher or equal than current offer amount to buy
+            if (sellAmt >= offers[offerId].buyAmt) {
+                fillAmt = add(fillAmt, offers[offerId].sellAmt);            // Add amount bought to acumulator
+                sellAmt = sub(sellAmt, offers[offerId].buyAmt);             // Decrease amount to sell
+                buy(offerId, offers[offerId].sellAmt);                      // We take the whole offer
+            } else {                                                        // if lower
+                uint baux = rmul(
+                    sellAmt * 10 ** 9,
+                    rdiv(offers[offerId].oSellAmt, offers[offerId].oBuyAmt)
+                ) / 10 ** 9;
+                fillAmt = add(fillAmt, baux);                               // Add amount bought to acumulator
+                buy(offerId, baux);                                         // We take the portion of the offer that we need
+                sellAmt = 0;                                                // All amount is sold
+            }
+        }
+        require(fillAmt >= minFillAmount, "Not enough offers in market to sell tokens.");
+    }
+
+    function buyAllAmount(ERC20 buyGem, uint buyAmt_, ERC20 sellGem, uint maxFillAmt) public returns (uint fillAmt) {
+        uint buyAmt = buyAmt_;
+        uint offerId;
+        while (buyAmt > 0) {                                                // Meanwhile there is amount to buy
+            offerId = best[buyGem][sellGem];                                // Get the best offer for the token pair
+            require(offerId != 0, "Not enough offers in market to buy tokens.");
+
+            // There is a chance that buyAmt is smaller than 1 wei of the other token
+            if (buyAmt * 1 ether < (offers[offerId].oSellAmt * 1 ether / offers[offerId].oBuyAmt)) {
+                break;                                                      // We consider that all amount is sold
+            }
+            // If amount to buy is higher or equal than current offer amount to sell
+            if (buyAmt >= offers[offerId].sellAmt) {
+                fillAmt = add(fillAmt, offers[offerId].buyAmt);             // Add amount sold to acumulator
+                buyAmt = sub(buyAmt, offers[offerId].sellAmt);              // Decrease amount to buy
+                buy(offerId, offers[offerId].sellAmt);                      // We take the whole offer
+            } else {                                                        // if lower
+                fillAmt = add(
+                    fillAmt,
+                    rmul(
+                        buyAmt * 10 ** 9,
+                        rdiv(offers[offerId].oBuyAmt, offers[offerId].oSellAmt)
+                    ) / 10 ** 9
+                );                                                          // Add amount sold to acumulator
+                buy(offerId, buyAmt);                                       // We take the portion of the offer that we need
+                buyAmt = 0;                                                 // All amount is bought
+            }
+        }
+        require(fillAmt <= maxFillAmt, "Not enough offers in market to buy tokens.");
     }
 
     // Make a new offer without putting it in the sorted list.
@@ -98,52 +236,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             cancel(id);
         }
         return true;
-    }
-
-    function buyOffers(
-        uint oSellAmt,                              // taker sell amount (original value)
-        ERC20 sellGem,                              // taker sell token
-        uint oBuyAmt,                               // taker buy amount (original value)
-        ERC20 buyGem                                // taker buy token
-    ) public returns (uint sellAmt, uint buyAmt) {
-        require(dust[sellGem] <= oSellAmt, "Offer sell quantity is less then required.");
-
-        sellAmt = oSellAmt;                         // taker sell amount (countdown)
-        buyAmt = oBuyAmt;                           // taker buy amount (countdown)
-        uint bestMatchingId;                        // best matching id
-
-        // There is at least one offer stored for token pair
-        while ((bestMatchingId = best[buyGem][sellGem]) > 0) {
-            // Handle round-off error. Based on the idea that
-            // the furthest the amounts can stray from their "true" values is 1.
-            // Ergo the worst case has oSellAmt and offers[bestMatchingId].sellAmt at +1 away from
-            // their "correct" values and offers[bestMatchingId].oBuyAmt and buyAmt at -1.
-            // Since (c - 1) * (d - 1) > (a + 1) * (b + 1) is equivalent to
-            // c * d > a * b + a + b + c + d, we write...
-            if (mul(offers[bestMatchingId].oBuyAmt, oBuyAmt) >
-                add(
-                    add(
-                        add(
-                            add(mul(oSellAmt, offers[bestMatchingId].oSellAmt), offers[bestMatchingId].oBuyAmt),
-                            oBuyAmt
-                        ),
-                        oSellAmt
-                    ),
-                    offers[bestMatchingId].oSellAmt
-                )
-            ) {
-                break;
-            }
-
-            uint amountToBuy = min(offers[bestMatchingId].sellAmt, buyAmt);
-            buy(bestMatchingId, amountToBuy);
-            buyAmt = sub(buyAmt, amountToBuy);
-            sellAmt = mul(buyAmt, oSellAmt) / oBuyAmt;
-
-            if (sellAmt == 0 || buyAmt == 0) {
-                break;
-            }
-        }
     }
 
     // Cancel an offer. Refunds offer maker.
@@ -209,115 +301,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
     function isOfferSorted(uint id) public view returns(bool) {
         return rank[id].next != 0 || rank[id].prev != 0 || best[offers[id].sellGem][offers[id].buyGem] == id;
-    }
-
-    function sellAllAmount(ERC20 sellGem, uint sellAmt_, ERC20 buyGem, uint minFillAmount) public returns (uint fillAmt) {
-        uint sellAmt = sellAmt_;
-        uint offerId;
-        while (sellAmt > 0) {                                               // while there is amount to sell
-            offerId = best[buyGem][sellGem];                                // Get the best offer for the token pair
-            require(
-                offerId != 0,                                               // Fails if there are not more offers
-                "Not enough offers in market to sell tokens."
-            );
-
-            // There is a chance that sellAmt is smaller than 1 wei of the other token
-            if (sellAmt * 1 ether < wdiv(offers[offerId].oBuyAmt, offers[offerId].oSellAmt)) {
-                break;                                                      // We consider that all amount is sold
-            }
-            // If amount to sell is higher or equal than current offer amount to buy
-            if (sellAmt >= offers[offerId].buyAmt) {
-                fillAmt = add(fillAmt, offers[offerId].sellAmt);            // Add amount bought to acumulator
-                sellAmt = sub(sellAmt, offers[offerId].buyAmt);             // Decrease amount to sell
-                buy(offerId, uint128(offers[offerId].sellAmt));             // We take the whole offer
-            } else {                                                        // if lower
-                uint baux = rmul(
-                    sellAmt * 10 ** 9,
-                    rdiv(offers[offerId].oSellAmt, offers[offerId].oBuyAmt)
-                ) / 10 ** 9;
-                fillAmt = add(fillAmt, baux);                               // Add amount bought to acumulator
-                buy(offerId, uint128(baux));                                // We take the portion of the offer that we need
-                sellAmt = 0;                                                // All amount is sold
-            }
-        }
-        require(fillAmt >= minFillAmount, "Not enough offers in market to sell tokens.");
-    }
-
-    function buyAllAmount(ERC20 buyGem, uint buyAmt_, ERC20 sellGem, uint maxFillAmt) public returns (uint fillAmt) {
-        uint buyAmt = buyAmt_;
-        uint offerId;
-        while (buyAmt > 0) {                                                // Meanwhile there is amount to buy
-            offerId = best[buyGem][sellGem];                                // Get the best offer for the token pair
-            require(offerId != 0, "Not enough offers in market to buy tokens.");
-
-            // There is a chance that buyAmt is smaller than 1 wei of the other token
-            if (buyAmt * 1 ether < wdiv(offers[offerId].oSellAmt, offers[offerId].oBuyAmt)) {
-                break;                                                      // We consider that all amount is sold
-            }
-            // If amount to buy is higher or equal than current offer amount to sell
-            if (buyAmt >= offers[offerId].sellAmt) {
-                fillAmt = add(fillAmt, offers[offerId].buyAmt);             // Add amount sold to acumulator
-                buyAmt = sub(buyAmt, offers[offerId].sellAmt);              // Decrease amount to buy
-                buy(offerId, uint128(offers[offerId].sellAmt));             // We take the whole offer
-            } else {                                                        // if lower
-                fillAmt = add(
-                    fillAmt,
-                    rmul(
-                        buyAmt * 10 ** 9,
-                        rdiv(offers[offerId].oBuyAmt, offers[offerId].oSellAmt)
-                    ) / 10 ** 9
-                );                                                          // Add amount sold to acumulator
-                buy(offerId, uint128(buyAmt));                              // We take the portion of the offer that we need
-                buyAmt = 0;                                                 // All amount is bought
-            }
-        }
-        require(fillAmt <= maxFillAmt, "Not enough offers in market to buy tokens.");
-    }
-
-    function getBuyAmount(ERC20 buyGem, ERC20 sellGem, uint sellAmt_) public view returns (uint fillAmt) {
-        uint sellAmt = sellAmt_;
-        uint offerId = best[buyGem][sellGem];                               // Get best offer for the token pair
-        while (sellAmt > offers[offerId].buyAmt) {
-            fillAmt = add(fillAmt, offers[offerId].sellAmt);                // Add amount to buy accumulator
-            sellAmt = sub(sellAmt, offers[offerId].buyAmt);                 // Decrease amount to pay
-            if (sellAmt > 0) {                                              // If we still need more offers
-                offerId = getWorseOffer(offerId);                           // We look for the next best offer
-                require(
-                    offerId != 0,                                           // Fails if there are not enough offers to complete
-                    "Not enough offers in market to buy tokens."
-                );
-            }
-        }
-        fillAmt = add(
-            fillAmt,
-            rmul(
-                sellAmt * 10 ** 9,
-                rdiv(offers[offerId].sellAmt, offers[offerId].buyAmt)
-            ) / 10 ** 9
-        );                                                                  // Add proportional amount of last offer to buy accumulator
-    }
-
-    function getPayAmount(ERC20 sellGem, ERC20 buyGem, uint buyAmt_) public view returns (uint fillAmt) {
-        uint buyAmt = buyAmt_;
-        uint offerId = best[buyGem][sellGem];                               // Get best offer for the token pair
-        while (buyAmt > offers[offerId].sellAmt) {
-            fillAmt = add(fillAmt, offers[offerId].buyAmt);                 // Add amount to pay accumulator
-            buyAmt = sub(buyAmt, offers[offerId].sellAmt);                  // Decrease amount to buy
-            if (buyAmt > 0) {                                               // If we still need more offers
-                offerId = getWorseOffer(offerId);                           // We look for the next best offer
-                require(
-                    offerId != 0,                                           // Fails if there are not enough offers to complete
-                    "Not enough offers in market to sell tokens."
-                );
-            }
-        }
-        fillAmt = add(
-            fillAmt,
-            rmul(
-                buyAmt * 10 ** 9,
-                rdiv(offers[offerId].buyAmt, offers[offerId].sellAmt)
-            ) / 10 ** 9
-        );                                                                  // Add proportional amount of last offer to pay accumulator
     }
 
     // ---- Internal Functions ---- //

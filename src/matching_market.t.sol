@@ -24,16 +24,8 @@ contract MarketTester {
         return market.buy(id, buyAmt);
     }
 
-    function doUnsortedOffer(uint sellAmt, ERC20 sellGem, uint buyAmt,  ERC20 buyGem) public returns (uint) {
-        return market.offer(sellAmt, sellGem, buyAmt, buyGem);
-    }
-
-    function doOffer(uint sellAmt, ERC20 sellGem, uint buyAmt,  ERC20 buyGem) public returns (uint) {
-        return market.offer(sellAmt, sellGem, buyAmt, buyGem, 0);
-    }
-
-    function doOffer(uint sellAmt, ERC20 sellGem, uint buyAmt, ERC20 buyGem, uint pos) public returns (uint) {
-        return market.offer(sellAmt, sellGem, buyAmt, buyGem, pos);
+    function doLimitOffer(uint sellAmt, ERC20 sellGem, uint buyAmt, ERC20 buyGem, bool forceSellAmt, uint pos) public returns (uint) {
+        return market.limitOffer(sellAmt, sellGem, buyAmt, buyGem, forceSellAmt, pos);
     }
 
     function doCancel(uint id) public returns (bool success) {
@@ -44,6 +36,7 @@ contract MarketTester {
         return market;
     }
 }
+
 contract OrderMatchingGasTest is DSTest {
     MarketTester user1;
     ERC20 dai;
@@ -80,18 +73,18 @@ contract OrderMatchingGasTest is DSTest {
     }
 
     function insertOffer(uint sellAmt, ERC20 sellGem, uint buyAmt, ERC20 buyGem) public logs_gas {
-        otc.offer(sellAmt, sellGem, buyAmt, buyGem, 0);
+        otc.limitOffer(sellAmt, sellGem, buyAmt, buyGem, false, 0);
     }
 
     //insert single offer
     function insertOffer(uint sellAmt, ERC20 sellGem, uint buyAmt, ERC20 buyGem, uint pos) public logs_gas {
-        otc.offer(sellAmt, sellGem, buyAmt, buyGem, pos);
+        otc.limitOffer(sellAmt, sellGem, buyAmt, buyGem, false, pos);
     }
 
     //creates offerCount number of offers of increasing price
     function createOffers(uint offerCount_) public {
         for(uint offerIndex = 0; offerIndex < offerCount_; offerIndex++) {
-            offer[offerIndex] = user1.doOffer(offerIndex+1, dai, 1, mkr);
+            offer[offerIndex] = user1.doLimitOffer(offerIndex+1, dai, 1, mkr, false, 0);
         }
     }
 
@@ -383,8 +376,8 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         user1.doApprove(otc, 30, dai);
         mkr.approve(otc, 25);
         otc.setDustLimit(dai, 10);
-        uint id0 = user1.doOffer(30, dai, 30, mkr, 0);
-        uint id1 = otc.offer(25, mkr, 25, dai, 0);
+        uint id0 = user1.doLimitOffer(30, dai, 30, mkr, false, 0);
+        uint id1 = otc.limitOffer(25, mkr, 25, dai, false, 0);
         assert(!otc.isActive(id0));
         assert(!otc.isActive(id1));
     }
@@ -394,7 +387,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         user1.doApprove(otc, 30, dai);
         mkr.approve(otc, 25);
         otc.setDustLimit(dai, 10);
-        uint id0 = user1.doOffer(30, dai, 30, mkr, 0);
+        uint id0 = user1.doLimitOffer(30, dai, 30, mkr, false, 0);
         otc.buy(id0, 25);
         assert(!otc.isActive(id0));
     }
@@ -404,8 +397,8 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         user1.doApprove(otc, 25, dai);
         mkr.approve(otc, 30);
         otc.setDustLimit(mkr, 10);
-        uint id0 = user1.doOffer(25, dai, 25, mkr, 0);
-        uint id1 = otc.offer(30, mkr, 30, dai, 0);
+        uint id0 = user1.doLimitOffer(25, dai, 25, mkr, false, 0);
+        uint id1 = otc.limitOffer(30, mkr, 30, dai, false, 0);
         assert(!otc.isActive(id0));
         assert(id1 == 0);
     }
@@ -419,9 +412,9 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         user1.doApprove(otc, makerSell, dai);
         mkr.approve(otc, takerSell);
         otc.setDustLimit(mkr, takerSell);
-        user1.doOffer(makerSell, dai, makerBuy, mkr);
-        //the below should fail at matching because of overflow
-        otc.offer(takerSell, mkr, takerBuy, dai);
+        user1.doLimitOffer(makerSell, dai, makerBuy, mkr, false, 0);
+        // the below should fail at matching because of overflow
+        otc.limitOffer(takerSell, mkr, takerBuy, dai, false, 0);
     }
 
     function testGetFirstNextUnsortedOfferOneOffer() public {
@@ -484,14 +477,14 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
 
     function testFailInsertOfferThatIsAlreadyInTheSortedList() public {
         mkr.approve(otc, 30);
-        offerId[1] = otc.offer(30, mkr, 100, dai, 0);
+        offerId[1] = otc.limitOffer(30, mkr, 100, dai, false, 0);
         otc.insert(offerId[1],0);
         otc.insert(offerId[1],0);
     }
 
     function testFailInsertOfferThatHasWrongInserPosition() public {
         mkr.approve(otc, 30);
-        offerId[1] = otc.offer(30, mkr, 100, dai, 0);
+        offerId[1] = otc.limitOffer(30, mkr, 100, dai, false, 0);
         otc.insert(offerId[1],7);  //there is no active offer at pos 7
     }
 
@@ -504,7 +497,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         mkr.approve(otc, 30);
         otc.setDustLimit(mkr, 31);
         assertEq(otc.dust(mkr), 31);
-        offerId[1] = otc.offer(30, mkr, 100, dai, 0);
+        offerId[1] = otc.limitOffer(30, mkr, 100, dai, false, 0);
     }
 
     function testFailNonOwnerCanNotSetSellAmount() public {
@@ -515,35 +508,35 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         mkr.approve(otc, 30);
         otc.setDustLimit(mkr,30);
         assertEq(otc.dust(mkr), 30);
-        offerId[1] = otc.offer(30, mkr, 90, dai, 0);
+        offerId[1] = otc.limitOffer(30, mkr, 90, dai, false, 0);
     }
 
     function testErroneousUserHigherIdStillWorks() public {
         dai.transfer(user1, 10);
         user1.doApprove(otc, 10, dai);
-        offerId[1] = user1.doOffer(1, dai, 1,    mkr);
-        offerId[2] = user1.doOffer(2, dai, 1,    mkr);
-        offerId[3] = user1.doOffer(4, dai, 1,    mkr);
-        offerId[4] = user1.doOffer(3, dai, 1,    mkr, offerId[2]);
+        offerId[1] = user1.doLimitOffer(1, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(2, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(4, dai, 1, mkr, false, 0);
+        offerId[4] = user1.doLimitOffer(3, dai, 1, mkr, false, offerId[2]);
     }
 
     function testErroneousUserHigherIdStillWorksOther() public {
         dai.transfer(user1, 11);
         user1.doApprove(otc, 11, dai);
-        offerId[1] = user1.doOffer(2, dai, 1,    mkr);
-        offerId[2] = user1.doOffer(3, dai, 1,    mkr);
-        offerId[3] = user1.doOffer(5, dai, 1,    mkr);
-        offerId[4] = user1.doOffer(1,    dai, 1,    mkr, offerId[3]);
+        offerId[1] = user1.doLimitOffer(2, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(3, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(5, dai, 1, mkr, false, 0);
+        offerId[4] = user1.doLimitOffer(1, dai, 1, mkr, false, offerId[3]);
     }
     
     function testNonExistentOffersPosStillWorks() public {
         dai.transfer(user1, 10);
         user1.doApprove(otc, 10, dai);
         uint nonExistentOfferId = 4;
-        offerId[1] = user1.doOffer(1, dai, 1, mkr);
-        offerId[2] = user1.doOffer(2, dai, 1, mkr);
-        offerId[3] = user1.doOffer(4, dai, 1, mkr);
-        offerId[4] = user1.doOffer(3, dai, 1, mkr, nonExistentOfferId);
+        offerId[1] = user1.doLimitOffer(1, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(2, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(4, dai, 1, mkr, false, 0);
+        offerId[4] = user1.doLimitOffer(3, dai, 1, mkr, false, nonExistentOfferId);
     }
 
     // Derived from error on Kovan, transaction ID:
@@ -561,7 +554,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         mkr.approve(otc, MKR_SUPPLY);
 
         // Does not divide cleanly.
-        otc.offer(1504155374, dgd, 18501111110000000000, dai, 0);
+        otc.limitOffer(1504155374, dgd, 18501111110000000000, dai, false, 0);
 
         uint oldDAIBal = dai.balanceOf(user1);
         uint oldDGDBal = dgd.balanceOf(user1);
@@ -570,7 +563,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
 
         // `false` and `true` both allow rounding to a slightly higher price
         // in order to find a match.
-        user1.doOffer(DAISell, dai, DGDBuy, dgd, 0);
+        user1.doLimitOffer(DAISell, dai, DGDBuy, dgd, false, 0);
 
         // We should have paid a bit more than we offered to pay.
         uint expectedOverpay = 651528437;
@@ -591,7 +584,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         mkr.approve(otc, MKR_SUPPLY);
 
         // Does not divide cleanly.
-        otc.offer(1504155374, dgd, 18501111110000000000, dai, 0);
+        otc.limitOffer(1504155374, dgd, 18501111110000000000, dai, false, 0);
 
         uint oldDAIBal = dai.balanceOf(user1);
         uint oldDGDBal = dgd.balanceOf(user1);
@@ -600,7 +593,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
 
         // `false` and `true` both allow rounding to a slightly higher price
         // in order to find a match.
-        user1.doOffer(DAISell, dai, DGDBuy, dgd, 0);
+        user1.doLimitOffer(DAISell, dai, DGDBuy, dgd, false, 0);
 
         // We should have paid a bit more than we offered to pay.
         uint expectedOverpay = 651528437;
@@ -611,7 +604,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testBestOfferWithOneOffer() public {
         dai.transfer(user1, 1);
         user1.doApprove(otc, 1, dai);
-        offerId[1] = user1.doOffer(1, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(1, dai, 1, mkr, false, 0);
 
         assertEq(otc.best(dai, mkr), offerId[1]);
         assertEq(otc.getBetterOffer(offerId[1]), 0);
@@ -622,7 +615,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testBestOfferWithOneOfferWithUserprovidedId() public {
         dai.transfer(user1, 1);
         user1.doApprove(otc, 1, dai);
-        offerId[1] = user1.doOffer(1, dai, 1, mkr, 0);
+        offerId[1] = user1.doLimitOffer(1, dai, 1, mkr, false, 0);
 
         assertEq(otc.best(dai, mkr), offerId[1]);
         assertEq(otc.getBetterOffer(offerId[1]), 0);
@@ -633,8 +626,8 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testBestOfferWithTwoOffers() public {
         dai.transfer(user1, 25);
         user1.doApprove(otc, 25, dai);
-        offerId[1] = user1.doOffer(10, dai, 1, mkr);
-        offerId[2] = user1.doOffer(15, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(10, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(15, dai, 1, mkr, false, 0);
 
         assertEq(otc.best(dai, mkr), offerId[2]);
         assertEq(otc.getWorseOffer(offerId[1]), 0);
@@ -647,8 +640,8 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testBestOfferWithTwoOffersWithUserprovidedId() public {
         dai.transfer(user1, 25);
         user1.doApprove(otc, 25, dai);
-        offerId[2] = user1.doOffer(15, dai, 1, mkr);
-        offerId[1] = user1.doOffer(10, dai, 1, mkr, offerId[2]);
+        offerId[2] = user1.doLimitOffer(15, dai, 1, mkr, false, 0);
+        offerId[1] = user1.doLimitOffer(10, dai, 1, mkr, false, offerId[2]);
 
         assertEq(otc.best(dai, mkr), offerId[2]);
         assertEq(otc.getWorseOffer(offerId[1]), 0);
@@ -661,9 +654,9 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testBestOfferWithThreeOffers() public {
         dai.transfer(user1, 37);
         user1.doApprove(otc, 37, dai);
-        offerId[1] = user1.doOffer(10, dai, 1, mkr);
-        offerId[2] = user1.doOffer(12, dai, 1, mkr);
-        offerId[3] = user1.doOffer(15, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(10, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(12, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(15, dai, 1, mkr, false, 0);
 
         assertEq(otc.best(dai, mkr), offerId[3]);
         assertEq(otc.getWorseOffer(offerId[1]), 0);
@@ -678,9 +671,9 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testBestOfferWithThreeOffersMixed() public {
         dai.transfer(user1, 37);
         user1.doApprove(otc, 37, dai);
-        offerId[1] = user1.doOffer(10, dai, 1, mkr);
-        offerId[2] = user1.doOffer(15, dai, 1, mkr);
-        offerId[3] = user1.doOffer(12, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(10, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(15, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(12, dai, 1, mkr, false, 0);
 
         assertEq(otc.best(dai, mkr), offerId[2]);
         assertEq(otc.getWorseOffer(offerId[1]), 0);
@@ -695,9 +688,9 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testBestOfferWithThreeOffersMixedWithUserProvidedId() public {
         dai.transfer(user1, 37);
         user1.doApprove(otc, 37, dai);
-        offerId[1] = user1.doOffer(10, dai, 1, mkr);
-        offerId[2] = user1.doOffer(15, dai, 1, mkr);
-        offerId[3] = user1.doOffer(12, dai, 1, mkr, offerId[2]);
+        offerId[1] = user1.doLimitOffer(10, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(15, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(12, dai, 1, mkr, false, offerId[2]);
 
         assertEq(otc.best(dai, mkr), offerId[2]);
         assertEq(otc.getWorseOffer(offerId[1]), 0);
@@ -712,10 +705,10 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testBestOfferWithFourOffersDeleteBetween() public {
         dai.transfer(user1, 53);
         user1.doApprove(otc, 53, dai);
-        offerId[1] = user1.doOffer(10, dai, 1, mkr);
-        offerId[2] = user1.doOffer(12, dai, 1, mkr);
-        offerId[3] = user1.doOffer(15, dai, 1, mkr);
-        offerId[4] = user1.doOffer(16, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(10, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(12, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(15, dai, 1, mkr, false, 0);
+        offerId[4] = user1.doLimitOffer(16, dai, 1, mkr, false, 0);
 
         assertEq(otc.best(dai, mkr), offerId[4]);
         assertEq(otc.getWorseOffer(offerId[1]), 0);
@@ -744,10 +737,10 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testBestOfferWithFourOffersWithUserprovidedId() public {
         dai.transfer(user1, 53);
         user1.doApprove(otc, 53, dai);
-        offerId[4] = user1.doOffer(16, dai, 1, mkr, 0);
-        offerId[3] = user1.doOffer(15, dai, 1, mkr, offerId[4]);
-        offerId[2] = user1.doOffer(12, dai, 1, mkr, offerId[3]);
-        offerId[1] = user1.doOffer(10, dai, 1, mkr, offerId[2]);
+        offerId[4] = user1.doLimitOffer(16, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(15, dai, 1, mkr, false, offerId[4]);
+        offerId[2] = user1.doLimitOffer(12, dai, 1, mkr, false, offerId[3]);
+        offerId[1] = user1.doLimitOffer(10, dai, 1, mkr, false, offerId[2]);
 
         assertEq(otc.best(dai, mkr), offerId[4]);
         assertEq(otc.getWorseOffer(offerId[1]), 0);
@@ -764,10 +757,10 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testBestOfferWithFourOffersTwoSamePriceUserProvidedId() public {
         dai.transfer(user1, 50);
         user1.doApprove(otc, 50, dai);
-        offerId[1] = user1.doOffer(10, dai, 1, mkr);
-        offerId[2] = user1.doOffer(12, dai, 1, mkr);
-        offerId[4] = user1.doOffer(16, dai, 1, mkr);
-        offerId[3] = user1.doOffer(12, dai, 1, mkr, offerId[2]);
+        offerId[1] = user1.doLimitOffer(10, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(12, dai, 1, mkr, false, 0);
+        offerId[4] = user1.doLimitOffer(16, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(12, dai, 1, mkr, false, offerId[2]);
 
         assertEq(otc.best(dai, mkr), offerId[4]);
         assertEq(otc.getWorseOffer(offerId[1]), 0);
@@ -784,8 +777,8 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testBestOfferWithTwoOffersDeletedLowest() public {
         dai.transfer(user1, 22);
         user1.doApprove(otc, 22, dai);
-        offerId[1] = user1.doOffer(10, dai, 1, mkr);
-        offerId[2] = user1.doOffer(12, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(10, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(12, dai, 1, mkr, false, 0);
         user1.doCancel(offerId[1]);
 
         assertEq(otc.best(dai, mkr), offerId[2]);
@@ -800,8 +793,8 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testBestOfferWithTwoOffersDeletedHighest() public {
         dai.transfer(user1, 22);
         user1.doApprove(otc, 22, dai);
-        offerId[1] = user1.doOffer(10, dai, 1, mkr);
-        offerId[2] = user1.doOffer(12, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(10, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(12, dai, 1, mkr, false, 0);
         user1.doCancel(offerId[2]);
 
         assertEq(otc.best(dai, mkr), offerId[1]);
@@ -816,9 +809,9 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testBestOfferWithThreeOffersDeletedLowest() public {
         dai.transfer(user1, 36);
         user1.doApprove(otc, 36, dai);
-        offerId[1] = user1.doOffer(10, dai, 1, mkr);
-        offerId[2] = user1.doOffer(12, dai, 1, mkr);
-        offerId[3] = user1.doOffer(14, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(10, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(12, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(14, dai, 1, mkr, false, 0);
         user1.doCancel(offerId[1]);
         assertEq(otc.best(dai, mkr), offerId[3]);
         assertEq(otc.getWorseOffer(offerId[1]), 0);
@@ -836,9 +829,9 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testBestOfferWithThreeOffersDeletedHighest() public {
         dai.transfer(user1, 36);
         user1.doApprove(otc, 36, dai);
-        offerId[1] = user1.doOffer(10, dai, 1, mkr);
-        offerId[2] = user1.doOffer(12, dai, 1, mkr);
-        offerId[3] = user1.doOffer(14, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(10, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(12, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(14, dai, 1, mkr, false, 0);
         user1.doCancel(offerId[3]);
         assertEq(otc.best(dai, mkr), offerId[2]);
         assertEq(otc.getWorseOffer(offerId[1]), 0);
@@ -860,8 +853,8 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testBestOfferWithTwoOffersWithDifferentTokens() public {
         dai.transfer(user1, 2);
         user1.doApprove(otc, 2, dai);
-        offerId[1] = user1.doOffer(1, dai, 1, dgd);
-        offerId[2] = user1.doOffer(1, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(1, dai, 1, dgd, false, 0);
+        offerId[2] = user1.doLimitOffer(1, dai, 1, mkr, false, 0);
         assertEq(otc.best(dai, dgd), offerId[1]);
         assertEq(otc.best(dai, mkr), offerId[2]);
         assertEq(otc.getBetterOffer(offerId[1]), 0);
@@ -875,10 +868,10 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testBestOfferWithFourOffersWithDifferentTokens() public {
         dai.transfer(user1, 55);
         user1.doApprove(otc, 55, dai);
-        offerId[1] = user1.doOffer(10, dai, 1, mkr);
-        offerId[2] = user1.doOffer(12, dai, 1, mkr);
-        offerId[3] = user1.doOffer(16, dai, 1, dgd);
-        offerId[4] = user1.doOffer(17, dai, 1, dgd);
+        offerId[1] = user1.doLimitOffer(10, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(12, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(16, dai, 1, dgd, false, 0);
+        offerId[4] = user1.doLimitOffer(17, dai, 1, dgd, false, 0);
 
         assertEq(otc.best(dai, mkr), offerId[2]);
         assertEq(otc.best(dai, dgd), offerId[4]);
@@ -897,12 +890,12 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testBestOfferWithSixOffersWithDifferentTokens() public {
         dai.transfer(user1, 88);
         user1.doApprove(otc, 88, dai);
-        offerId[1] = user1.doOffer(10, dai, 1, mkr);
-        offerId[2] = user1.doOffer(12, dai, 1, mkr);
-        offerId[3] = user1.doOffer(15, dai, 1, mkr);
-        offerId[4] = user1.doOffer(16, dai, 1, dgd);
-        offerId[5] = user1.doOffer(17, dai, 1, dgd);
-        offerId[6] = user1.doOffer(18, dai, 1, dgd);
+        offerId[1] = user1.doLimitOffer(10, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(12, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(15, dai, 1, mkr, false, 0);
+        offerId[4] = user1.doLimitOffer(16, dai, 1, dgd, false, 0);
+        offerId[5] = user1.doLimitOffer(17, dai, 1, dgd, false, 0);
+        offerId[6] = user1.doLimitOffer(18, dai, 1, dgd, false, 0);
 
         assertEq(otc.best(dai, mkr), offerId[3]);
         assertEq(otc.best(dai, dgd), offerId[6]);
@@ -925,14 +918,14 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testBestOfferWithEightOffersWithDifferentTokens() public {
         dai.transfer(user1, 106);
         user1.doApprove(otc, 106, dai);
-        offerId[1] = user1.doOffer(10, dai, 1, mkr);
-        offerId[2] = user1.doOffer(12, dai, 1, mkr);
-        offerId[3] = user1.doOffer(15, dai, 1, mkr);
-        offerId[4] = user1.doOffer(16, dai, 1, mkr);
-        offerId[5] = user1.doOffer(10, dai, 1, dgd);
-        offerId[6] = user1.doOffer(12, dai, 1, dgd);
-        offerId[7] = user1.doOffer(15, dai, 1, dgd);
-        offerId[8] = user1.doOffer(16, dai, 1, dgd);
+        offerId[1] = user1.doLimitOffer(10, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(12, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(15, dai, 1, mkr, false, 0);
+        offerId[4] = user1.doLimitOffer(16, dai, 1, mkr, false, 0);
+        offerId[5] = user1.doLimitOffer(10, dai, 1, dgd, false, 0);
+        offerId[6] = user1.doLimitOffer(12, dai, 1, dgd, false, 0);
+        offerId[7] = user1.doLimitOffer(15, dai, 1, dgd, false, 0);
+        offerId[8] = user1.doLimitOffer(16, dai, 1, dgd, false, 0);
 
         assertEq(otc.best(dai, mkr), offerId[4]);
         assertEq(otc.best(dai, dgd), offerId[8]);
@@ -959,11 +952,11 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testBestOfferWithFourOffersWithDifferentTokensLowHighDeleted() public {
         dai.transfer(user1, 29);
         user1.doApprove(otc, 39, dai);
-        offerId[1] = user1.doOffer(10, dai, 1, mkr);
-        offerId[2] = user1.doOffer(12, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(10, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(12, dai, 1, mkr, false, 0);
         user1.doCancel(offerId[1]);
-        offerId[3] = user1.doOffer(8, dai, 1, dgd);
-        offerId[4] = user1.doOffer(9, dai, 1, dgd);
+        offerId[3] = user1.doLimitOffer(8, dai, 1, dgd, false, 0);
+        offerId[4] = user1.doLimitOffer(9, dai, 1, dgd, false, 0);
         user1.doCancel(offerId[3]);
 
         assertEq(otc.best(dai, mkr), offerId[2]);
@@ -985,11 +978,11 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testBestOfferWithFourOffersWithDifferentTokensHighLowDeleted() public {
         dai.transfer(user1, 27);
         user1.doApprove(otc, 39, dai);
-        offerId[1] = user1.doOffer(10, dai, 1, mkr);
-        offerId[2] = user1.doOffer(12, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(10, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(12, dai, 1, mkr, false, 0);
         user1.doCancel(offerId[2]);
-        offerId[3] = user1.doOffer(8, dai, 1, dgd);
-        offerId[4] = user1.doOffer(9, dai, 1, dgd);
+        offerId[3] = user1.doLimitOffer(8, dai, 1, dgd, false, 0);
+        offerId[4] = user1.doLimitOffer(9, dai, 1, dgd, false, 0);
         user1.doCancel(offerId[4]);
         assertEq(otc.best(dai, mkr), offerId[1]);
         assertEq(otc.best(dai, dgd), offerId[3]);
@@ -1010,13 +1003,13 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testBestOfferWithSixOffersWithDifferentTokensLowHighDeleted() public {
         dai.transfer(user1, 78);
         user1.doApprove(otc, 88, dai);
-        offerId[1] = user1.doOffer(10, dai, 1, mkr);
-        offerId[2] = user1.doOffer(12, dai, 1, mkr);
-        offerId[3] = user1.doOffer(15, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(10, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(12, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(15, dai, 1, mkr, false, 0);
         user1.doCancel(offerId[1]);
-        offerId[4] = user1.doOffer(16, dai, 1, dgd);
-        offerId[5] = user1.doOffer(17, dai, 1, dgd);
-        offerId[6] = user1.doOffer(18, dai, 1, dgd);
+        offerId[4] = user1.doLimitOffer(16, dai, 1, dgd, false, 0);
+        offerId[5] = user1.doLimitOffer(17, dai, 1, dgd, false, 0);
+        offerId[6] = user1.doLimitOffer(18, dai, 1, dgd, false, 0);
         user1.doCancel(offerId[6]);
 
         assertEq(otc.best(dai, mkr), offerId[3]);
@@ -1042,13 +1035,13 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testBestOfferWithSixOffersWithDifferentTokensHighLowDeleted() public {
         dai.transfer(user1, 73);
         user1.doApprove(otc, 88, dai);
-        offerId[1] = user1.doOffer(10, dai, 1, mkr);
-        offerId[2] = user1.doOffer(12, dai, 1, mkr);
-        offerId[3] = user1.doOffer(15, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(10, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(12, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(15, dai, 1, mkr, false, 0);
         user1.doCancel(offerId[3]);
-        offerId[4] = user1.doOffer(16, dai, 1, dgd);
-        offerId[5] = user1.doOffer(17, dai, 1, dgd);
-        offerId[6] = user1.doOffer(18, dai, 1, dgd);
+        offerId[4] = user1.doLimitOffer(16, dai, 1, dgd, false, 0);
+        offerId[5] = user1.doLimitOffer(17, dai, 1, dgd, false, 0);
+        offerId[6] = user1.doLimitOffer(18, dai, 1, dgd, false, 0);
         user1.doCancel(offerId[4]);
 
         assertEq(otc.best(dai, mkr), offerId[2]);
@@ -1075,16 +1068,16 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(user1, 13);
         user1.doApprove(otc, 13, dai);
         dai.approve(otc, 11);
-        offerId[1] = user1.doOffer(13, dai, 1, mkr);
-        offerId[2] = otc.offer(11, dai, 1, dgd, offerId[1]);
+        offerId[1] = user1.doLimitOffer(13, dai, 1, mkr, false, 0);
+        offerId[2] = otc.limitOffer(11, dai, 1, dgd, false, offerId[1]);
     }
     
     function testInsertOfferWithUserProvidedIdOfADifferentTokenHigher() public {
         dai.transfer(user1, 13);
         user1.doApprove(otc, 13, dai);
         dai.approve(otc, 14);
-        offerId[1] = user1.doOffer(13, dai, 1, mkr);
-        offerId[2] = otc.offer(14, dai, 1, dgd, offerId[1]);
+        offerId[1] = user1.doLimitOffer(13, dai, 1, mkr, false, 0);
+        offerId[2] = otc.limitOffer(14, dai, 1, dgd, false, offerId[1]);
         assert(otc.getBetterOffer(offerId[2]) == 0);
         assert(otc.getWorseOffer(offerId[2]) == 0);
     }
@@ -1093,11 +1086,11 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 12);
-        offerId[1] = user1.doOffer(13, dai, 1, mkr);
-        offerId[2] = user1.doOffer(11, dai, 1, mkr);
-        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(13, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(11, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(9, dai, 1, mkr, false, 0);
         user1.doCancel(offerId[1]);
-        offerId[4] = otc.offer(12, dai, 1, dgd, offerId[1]);
+        offerId[4] = otc.limitOffer(12, dai, 1, dgd, false, offerId[1]);
         assert(otc.getBetterOffer(offerId[4]) == 0);
         assert(otc.getWorseOffer(offerId[4]) == 0);
     }
@@ -1106,11 +1099,11 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 10);
-        offerId[1] = user1.doOffer(13, dai, 1, mkr);
-        offerId[2] = user1.doOffer(11, dai, 1, mkr);
-        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(13, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(11, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(9, dai, 1, mkr, false, 0);
         user1.doCancel(offerId[2]);
-        offerId[4] = otc.offer(10, dai, 1, dgd, offerId[2]);
+        offerId[4] = otc.limitOffer(10, dai, 1, dgd, false, offerId[2]);
         assert(otc.getBetterOffer(offerId[4]) == 0);
         assert(otc.getWorseOffer(offerId[4]) == 0);
     }
@@ -1119,11 +1112,11 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 8);
-        offerId[1] = user1.doOffer(13, dai, 1, mkr);
-        offerId[2] = user1.doOffer(11, dai, 1, mkr);
-        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(13, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(11, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(9, dai, 1, mkr, false, 0);
         user1.doCancel(offerId[3]);
-        offerId[4] = otc.offer(8, dai, 1, dgd, offerId[3]);
+        offerId[4] = otc.limitOffer(8, dai, 1, dgd, false, offerId[3]);
         assert(otc.getBetterOffer(offerId[4]) == 0);
         assert(otc.getWorseOffer(offerId[4]) == 0);
     }
@@ -1132,11 +1125,11 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 14);
-        offerId[1] = user1.doOffer(13, dai, 1, mkr);
-        offerId[2] = user1.doOffer(11, dai, 1, mkr);
-        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(13, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(11, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(9, dai, 1, mkr, false, 0);
         user1.doCancel(offerId[1]);
-        offerId[4] = otc.offer(14, dai, 1, mkr, offerId[1]);
+        offerId[4] = otc.limitOffer(14, dai, 1, mkr, false, offerId[1]);
         assert(otc.getBetterOffer(offerId[4]) == 0);
         assert(otc.getWorseOffer(offerId[4]) == offerId[2]);
     }
@@ -1145,11 +1138,11 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 14);
-        offerId[1] = user1.doOffer(13, dai, 1, mkr);
-        offerId[2] = user1.doOffer(11, dai, 1, mkr);
-        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(13, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(11, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(9, dai, 1, mkr, false, 0);
         user1.doCancel(offerId[2]);
-        offerId[4] = otc.offer(14, dai, 1, mkr, offerId[2]);
+        offerId[4] = otc.limitOffer(14, dai, 1, mkr, false, offerId[2]);
         assert(otc.getBetterOffer(offerId[4]) == 0);
         assert(otc.getWorseOffer(offerId[4]) == offerId[1]);
     }
@@ -1158,11 +1151,11 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 14);
-        offerId[1] = user1.doOffer(13, dai, 1, mkr);
-        offerId[2] = user1.doOffer(11, dai, 1, mkr);
-        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(13, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(11, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(9, dai, 1, mkr, false, 0);
         user1.doCancel(offerId[3]);
-        offerId[4] = otc.offer(14, dai, 1, mkr, offerId[3]);
+        offerId[4] = otc.limitOffer(14, dai, 1, mkr, false, offerId[3]);
         assert(otc.getBetterOffer(offerId[4]) == 0);
         assert(otc.getWorseOffer(offerId[4]) == offerId[1]);
     }
@@ -1171,11 +1164,11 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 7);
-        offerId[1] = user1.doOffer(13, dai, 1, mkr);
-        offerId[2] = user1.doOffer(11, dai, 1, mkr);
-        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(13, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(11, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(9, dai, 1, mkr, false, 0);
         user1.doCancel(offerId[1]);
-        offerId[4] = otc.offer(7, dai, 1, mkr, offerId[1]);
+        offerId[4] = otc.limitOffer(7, dai, 1, mkr, false, offerId[1]);
         assert(otc.getBetterOffer(offerId[4]) == offerId[3]);
         assert(otc.getWorseOffer(offerId[4]) == 0);
     }
@@ -1184,11 +1177,11 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 7);
-        offerId[1] = user1.doOffer(13, dai, 1, mkr);
-        offerId[2] = user1.doOffer(11, dai, 1, mkr);
-        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(13, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(11, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(9, dai, 1, mkr, false, 0);
         user1.doCancel(offerId[2]);
-        offerId[4] = otc.offer(7, dai, 1, mkr, offerId[2]);
+        offerId[4] = otc.limitOffer(7, dai, 1, mkr, false, offerId[2]);
         assert(otc.getBetterOffer(offerId[4]) == offerId[3]);
         assert(otc.getWorseOffer(offerId[4]) == 0);
     }
@@ -1197,11 +1190,11 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 7);
-        offerId[1] = user1.doOffer(13, dai, 1, mkr);
-        offerId[2] = user1.doOffer(11, dai, 1, mkr);
-        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(13, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(11, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(9, dai, 1, mkr, false, 0);
         user1.doCancel(offerId[3]);
-        offerId[4] = otc.offer(7, dai, 1, mkr, offerId[3]);
+        offerId[4] = otc.limitOffer(7, dai, 1, mkr, false, offerId[3]);
         assert(otc.getBetterOffer(offerId[4]) == offerId[2]);
         assert(otc.getWorseOffer(offerId[4]) == 0);
     }
@@ -1209,11 +1202,11 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 12);
-        offerId[1] = user1.doOffer(13, dai, 1, mkr);
-        offerId[2] = user1.doOffer(11, dai, 1, mkr);
-        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(13, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(11, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(9, dai, 1, mkr, false, 0);
         user1.doCancel(offerId[1]);
-        offerId[4] = otc.offer(12, dai, 1, mkr, offerId[1]);
+        offerId[4] = otc.limitOffer(12, dai, 1, mkr, false, offerId[1]);
         assert(otc.getBetterOffer(offerId[4]) == 0);
         assert(otc.getWorseOffer(offerId[4]) == offerId[2]);
     }
@@ -1222,11 +1215,11 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 10);
-        offerId[1] = user1.doOffer(13, dai, 1, mkr);
-        offerId[2] = user1.doOffer(11, dai, 1, mkr);
-        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(13, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(11, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(9, dai, 1, mkr, false, 0);
         user1.doCancel(offerId[2]);
-        offerId[4] = otc.offer(10, dai, 1, mkr, offerId[2]);
+        offerId[4] = otc.limitOffer(10, dai, 1, mkr, false, offerId[2]);
         assert(otc.getBetterOffer(offerId[4]) == offerId[1]);
         assert(otc.getWorseOffer(offerId[4]) == offerId[3]);
     }
@@ -1235,11 +1228,11 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 8);
-        offerId[1] = user1.doOffer(13, dai, 1, mkr);
-        offerId[2] = user1.doOffer(11, dai, 1, mkr);
-        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(13, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(11, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(9, dai, 1, mkr, false, 0);
         user1.doCancel(offerId[3]);
-        offerId[4] = otc.offer(8, dai, 1, mkr, offerId[3]);
+        offerId[4] = otc.limitOffer(8, dai, 1, mkr, false, offerId[3]);
         assert(otc.getBetterOffer(offerId[4]) == offerId[2]);
         assert(otc.getWorseOffer(offerId[4]) == 0);
     }
@@ -1248,11 +1241,11 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 14);
-        offerId[1] = user1.doOffer(13, dai, 1, mkr);
-        offerId[2] = user1.doOffer(11, dai, 1, mkr);
-        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(13, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(11, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(9, dai, 1, mkr, false, 0);
         user1.doCancel(offerId[1]);
-        offerId[4] = otc.offer(14, dai, 1, mkr, offerId[1]);
+        offerId[4] = otc.limitOffer(14, dai, 1, mkr, false, offerId[1]);
         assert(otc.getBetterOffer(offerId[4]) == 0);
         assert(otc.getWorseOffer(offerId[4]) == offerId[2]);
     }
@@ -1261,11 +1254,11 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 14);
-        offerId[1] = user1.doOffer(13, dai, 1, mkr);
-        offerId[2] = user1.doOffer(11, dai, 1, mkr);
-        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(13, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(11, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(9, dai, 1, mkr, false, 0);
         user1.doCancel(offerId[2]);
-        offerId[4] = otc.offer(14, dai, 1, mkr, offerId[2]);
+        offerId[4] = otc.limitOffer(14, dai, 1, mkr, false, offerId[2]);
         assert(otc.getBetterOffer(offerId[4]) == 0);
         assert(otc.getWorseOffer(offerId[4]) == offerId[1]);
     }
@@ -1274,11 +1267,11 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 14);
-        offerId[1] = user1.doOffer(13, dai, 1, mkr);
-        offerId[2] = user1.doOffer(11, dai, 1, mkr);
-        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(13, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(11, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(9, dai, 1, mkr, false, 0);
         user1.doCancel(offerId[3]);
-        offerId[4] = otc.offer(14, dai, 1, mkr, offerId[3]);
+        offerId[4] = otc.limitOffer(14, dai, 1, mkr, false, offerId[3]);
         assert(otc.getBetterOffer(offerId[4]) == 0);
         assert(otc.getWorseOffer(offerId[4]) == offerId[1]);
     }
@@ -1287,11 +1280,11 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 10);
-        offerId[1] = user1.doOffer(13, dai, 1, mkr);
-        offerId[2] = user1.doOffer(11, dai, 1, mkr);
-        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(13, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(11, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(9, dai, 1, mkr, false, 0);
         user1.doCancel(offerId[1]);
-        offerId[4] = otc.offer(10, dai, 1, mkr, offerId[1]);
+        offerId[4] = otc.limitOffer(10, dai, 1, mkr, false, offerId[1]);
         assert(otc.getBetterOffer(offerId[4]) == offerId[2]);
         assert(otc.getWorseOffer(offerId[4]) == offerId[3]);
     }
@@ -1300,11 +1293,11 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 10);
-        offerId[1] = user1.doOffer(13, dai, 1, mkr);
-        offerId[2] = user1.doOffer(11, dai, 1, mkr);
-        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(13, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(11, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(9, dai, 1, mkr, false, 0);
         user1.doCancel(offerId[2]);
-        offerId[4] = otc.offer(10, dai, 1, mkr, offerId[2]);
+        offerId[4] = otc.limitOffer(10, dai, 1, mkr, false, offerId[2]);
         assert(otc.getBetterOffer(offerId[4]) == offerId[1]);
         assert(otc.getWorseOffer(offerId[4]) == offerId[3]);
     }
@@ -1313,11 +1306,11 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(user1, 33);
         user1.doApprove(otc, 33, dai);
         dai.approve(otc, 10);
-        offerId[1] = user1.doOffer(13, dai, 1, mkr);
-        offerId[2] = user1.doOffer(11, dai, 1, mkr);
-        offerId[3] = user1.doOffer(9, dai, 1, mkr);
+        offerId[1] = user1.doLimitOffer(13, dai, 1, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(11, dai, 1, mkr, false, 0);
+        offerId[3] = user1.doLimitOffer(9, dai, 1, mkr, false, 0);
         user1.doCancel(offerId[3]);
-        offerId[4] = otc.offer(10, dai, 1, mkr, offerId[3]);
+        offerId[4] = otc.limitOffer(10, dai, 1, mkr, false, offerId[3]);
         assert(otc.getBetterOffer(offerId[4]) == offerId[2]);
         assert(otc.getWorseOffer(offerId[4]) == 0);
     }
@@ -1332,8 +1325,8 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         uint user1MKRBalanceBefore = mkr.balanceOf(user1);
         uint user1DAIBalanceBefore = dai.balanceOf(user1);
 
-        offerId[1] = otc.offer(30, mkr, 100, dai, 0);
-        offerId[2] = user1.doOffer(100, dai, 30, mkr);
+        offerId[1] = otc.limitOffer(30, mkr, 100, dai, false, 0);
+        offerId[2] = user1.doLimitOffer(100, dai, 30, mkr, false, 0);
         uint myMKRBalanceAfter = mkr.balanceOf(this);
         uint myDAIBalanceAfter = dai.balanceOf(this);
         uint user1MKRBalanceAfter = mkr.balanceOf(user1);
@@ -1359,8 +1352,8 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         uint user1MKRBalanceBefore = mkr.balanceOf(user1);
         uint user1DAIBalanceBefore = dai.balanceOf(user1);
 
-        offerId[1] = otc.offer(200, mkr, 500, dai, 0);
-        offerId[2] = user1.doOffer(50, dai, 20, mkr);
+        offerId[1] = otc.limitOffer(200, mkr, 500, dai, false, 0);
+        offerId[2] = user1.doLimitOffer(50, dai, 20, mkr, false, 0);
         uint myMKRBalanceAfter = mkr.balanceOf(this);
         uint myDAIBalanceAfter = dai.balanceOf(this);
         uint user1MKRBalanceAfter = mkr.balanceOf(user1);
@@ -1391,8 +1384,8 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         uint user1MKRBalanceBefore = mkr.balanceOf(user1);
         uint user1DAIBalanceBefore = dai.balanceOf(user1);
 
-        offerId[1] = otc.offer(200, mkr, 500, dai, 0);
-        offerId[2] = user1.doOffer(2000, dai, 800, mkr);
+        offerId[1] = otc.limitOffer(200, mkr, 500, dai, false, 0);
+        offerId[2] = user1.doLimitOffer(2000, dai, 800, mkr, false, 0);
         uint myMKRBalanceAfter = mkr.balanceOf(this);
         uint myDAIBalanceAfter = dai.balanceOf(this);
         uint user1MKRBalanceAfter = mkr.balanceOf(user1);
@@ -1418,8 +1411,8 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(user1, 1);
         user1.doApprove(otc, 1, dai);
         mkr.approve(otc, 1);
-        offerId[1] = user1.doOffer(1, dai, 1, mkr);
-        offerId[2] = otc.offer(1, mkr, 1, dai, 0);
+        offerId[1] = user1.doLimitOffer(1, dai, 1, mkr, false, 0);
+        offerId[2] = otc.limitOffer(1, mkr, 1, dai, false, 0);
 
         assertEq(otc.best(dai, mkr), 0);
         assertEq(otc.getBetterOffer(offerId[1]), 0);
@@ -1432,8 +1425,8 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(user1, 5);
         user1.doApprove(otc, 5, dai);
         mkr.approve(otc, 10);
-        offerId[1] = user1.doOffer(5, dai, 1, mkr);
-        offerId[2] = otc.offer(10, mkr, 10, dai, 0);
+        offerId[1] = user1.doLimitOffer(5, dai, 1, mkr, false, 0);
+        offerId[2] = otc.limitOffer(10, mkr, 10, dai, false, 0);
         (,, sellAmt, sellGem, buyAmt, buyGem,,) = otc.offers(offerId[2]);
 
         assertEq(otc.best(dai, mkr), 0);
@@ -1452,8 +1445,8 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         mkr.transfer(user1, 10);
         user1.doApprove(otc, 10, mkr);
         dai.approve(otc, 5);
-        offerId[1] = user1.doOffer(10, mkr, 10, dai);
-        offerId[2] = otc.offer(5, dai, 5, mkr, 0);
+        offerId[1] = user1.doLimitOffer(10, mkr, 10, dai, false, 0);
+        offerId[2] = otc.limitOffer(5, dai, 5, mkr, false, 0);
         (,, sellAmt, sellGem, buyAmt, buyGem,,) = otc.offers(offerId[1]);
 
         assertEq(otc.best(dai, mkr), 0);
@@ -1474,9 +1467,9 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(user1, 9);
         user1.doApprove(otc, 9, dai);
         mkr.approve(otc, 10);
-        offerId[1] = user1.doOffer(5, dai, 1, mkr);
-        offerId[1] = user1.doOffer(4, dai, 1, mkr);
-        offerId[2] = otc.offer(10, mkr, 10, dai, 0);
+        offerId[1] = user1.doLimitOffer(5, dai, 1, mkr, false, 0);
+        offerId[1] = user1.doLimitOffer(4, dai, 1, mkr, false, 0);
+        offerId[2] = otc.limitOffer(10, mkr, 10, dai, false, 0);
         (,, sellAmt, sellGem, buyAmt, buyGem,,) = otc.offers(offerId[2]);
 
         assertEq(otc.best(dai, mkr), 0);
@@ -1495,8 +1488,8 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         mkr.transfer(user1, 5);
         user1.doApprove(otc, 5, mkr);
         dai.approve(otc, 10);
-        offerId[1] = user1.doOffer(5, mkr, 5, dai);
-        offerId[2] = otc.offer(10, dai, 10, mkr, 0);
+        offerId[1] = user1.doLimitOffer(5, mkr, 5, dai, false, 0);
+        offerId[2] = otc.limitOffer(10, dai, 10, mkr, false, 0);
         (,, sellAmt, sellGem, buyAmt, buyGem,,) = otc.offers(offerId[2]);
 
         assertEq(otc.best(dai, mkr), offerId[2]);
@@ -1517,9 +1510,9 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         mkr.transfer(user1, 15);
         user1.doApprove(otc, 15, mkr);
         dai.approve(otc, 1);
-        offerId[1] = user1.doOffer(5, mkr, 10, dai);
-        offerId[2] = user1.doOffer(10, mkr, 10, dai);
-        offerId[3] = otc.offer(1, dai, 1, mkr, 0);
+        offerId[1] = user1.doLimitOffer(5, mkr, 10, dai, false, 0);
+        offerId[2] = user1.doLimitOffer(10, mkr, 10, dai, false, 0);
+        offerId[3] = otc.limitOffer(1, dai, 1, mkr, false, 0);
         (,, sellAmt, sellGem, buyAmt, buyGem,,) = otc.offers(offerId[1]);
         (,, sellAmt1, sellGem1, buyAmt1, buyGem1,,) = otc.offers(offerId[2]);
 
@@ -1545,9 +1538,9 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         mkr.transfer(user1, 6);
         user1.doApprove(otc, 6, mkr);
         dai.approve(otc, 10);
-        offerId[1] = user1.doOffer(5, mkr, 10, dai);
-        offerId[2] = user1.doOffer(1, mkr, 1, dai);
-        offerId[3] = otc.offer(10, dai, 10, mkr, 0);
+        offerId[1] = user1.doLimitOffer(5, mkr, 10, dai, false, 0);
+        offerId[2] = user1.doLimitOffer(1, mkr, 1, dai, false, 0);
+        offerId[3] = otc.limitOffer(10, dai, 10, mkr, false, 0);
         (,, sellAmt, sellGem, buyAmt, buyGem,,) = otc.offers(offerId[1]);
         (,, sellAmt1, sellGem1, buyAmt1, buyGem1,,) = otc.offers(offerId[3]);
 
@@ -1575,10 +1568,10 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(user1, 3);
         user1.doApprove(otc, 3, dai);
         mkr.approve(otc, 12);
-        offerId[1] = otc.offer(1, mkr, 10, dai, 0);
-        offerId[2] = otc.offer(1, mkr,  1, dai, 0);
-        offerId[3] = otc.offer(10, mkr, 10, dai, 0);
-        offerId[4] = user1.doOffer(3, dai, 3, mkr);
+        offerId[1] = otc.limitOffer(1, mkr, 10, dai, false, 0);
+        offerId[2] = otc.limitOffer(1, mkr,  1, dai, false, 0);
+        offerId[3] = otc.limitOffer(10, mkr, 10, dai, false, 0);
+        offerId[4] = user1.doLimitOffer(3, dai, 3, mkr, false, 0);
         (,, sellAmt, sellGem, buyAmt, buyGem,,) = otc.offers(offerId[3]);
         (,, sellAmt1, sellGem1, buyAmt1, buyGem1,,) = otc.offers(offerId[1]);
 
@@ -1609,44 +1602,40 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testSellAllDai() public {
         mkr.approve(otc, uint(-1));
         dai.approve(otc, uint(-1));
-        otc.offer(10 ether, mkr, 3200 ether, dai, 0);
-        otc.offer(10 ether, mkr, 2800 ether, dai, 0);
+        otc.limitOffer(10 ether, mkr, 3200 ether, dai, false, 0);
+        otc.limitOffer(10 ether, mkr, 2800 ether, dai, false, 0);
 
         uint expectedResult = 10 ether * 2800 / 2800 + 10 ether * 1200 / 3200;
-        assertEq(otc.getBuyAmount(mkr, dai, 4000 ether), expectedResult);
         assertEq(otc.sellAllAmount(dai, 4000 ether, mkr, expectedResult), expectedResult);
 
-        otc.offer(10 ether, mkr, 3200 ether, dai, 0);
-        otc.offer(10 ether, mkr, 2800 ether, dai, 0);
+        otc.limitOffer(10 ether, mkr, 3200 ether, dai, false, 0);
+        otc.limitOffer(10 ether, mkr, 2800 ether, dai, false, 0);
 
         // With 319 wei DAI is not possible to buy 1 wei MKR, then 319 wei DAI can not be sold
         expectedResult = 10 ether * 2800 / 2800;
-        assertEq(otc.getBuyAmount(mkr, dai, 2800 ether + 319), expectedResult);
         assertEq(otc.sellAllAmount(dai, 2800 ether + 319, mkr, expectedResult), expectedResult);
 
-        otc.offer(10 ether, mkr, 2800 ether, dai, 0);
+        otc.limitOffer(10 ether, mkr, 2800 ether, dai, false, 0);
         // This time we should be able to buy 1 wei MKR more
         expectedResult = 10 ether * 2800 / 2800 + 1;
-        assertEq(otc.getBuyAmount(mkr, dai, 2800 ether + 320), expectedResult);
         assertEq(otc.sellAllAmount(dai, 2800 ether + 320, mkr, expectedResult), expectedResult);
     }
 
     function testSellAllMkr() public {
         mkr.approve(otc, uint(-1));
         dai.approve(otc, uint(-1));
-        otc.offer(3200 ether, dai, 10 ether, mkr, 0);
-        otc.offer(2800 ether, dai, 10 ether, mkr, 0);
+        otc.limitOffer(3200 ether, dai, 10 ether, mkr, false, 0);
+        otc.limitOffer(2800 ether, dai, 10 ether, mkr, false, 0);
 
         uint expectedResult = 3200 ether * 10 / 10 + 2800 ether * 8 / 10;
-        assertEq(otc.getBuyAmount(dai, mkr, 18 ether), expectedResult);
         assertEq(otc.sellAllAmount(mkr, 18 ether, dai, expectedResult), expectedResult);
     }
 
     function testFailSellAllMkr() public {
         mkr.approve(otc, uint(-1));
         dai.approve(otc, uint(-1));
-        otc.offer(3200 ether, dai, 10 ether, mkr, 0);
-        otc.offer(2800 ether, dai, 10 ether, mkr, 0);
+        otc.limitOffer(3200 ether, dai, 10 ether, mkr, false, 0);
+        otc.limitOffer(2800 ether, dai, 10 ether, mkr, false, 0);
 
         uint expectedResult = 3200 ether * 10 / 10 + 2800 ether * 8 / 10;
         assertEq(otc.sellAllAmount(mkr, 18 ether, dai, expectedResult + 1), expectedResult);
@@ -1655,30 +1644,28 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     function testBuyAllMkr() public {
         mkr.approve(otc, uint(-1));
         dai.approve(otc, uint(-1));
-        otc.offer(10 ether, mkr, 3200 ether, dai, 0);
-        otc.offer(10 ether, mkr, 2800 ether, dai, 0);
+        otc.limitOffer(10 ether, mkr, 3200 ether, dai, false, 0);
+        otc.limitOffer(10 ether, mkr, 2800 ether, dai, false, 0);
 
         uint expectedResult = 2800 ether * 10 / 10 + 3200 ether * 5 / 10;
-        assertEq(otc.getPayAmount(dai, mkr, 15 ether), expectedResult);
         assertEq(otc.buyAllAmount(mkr, 15 ether, dai, expectedResult), expectedResult);
     }
 
     function testBuyAllDai() public {
         mkr.approve(otc, uint(-1));
         dai.approve(otc, uint(-1));
-        otc.offer(3200 ether, dai, 10 ether, mkr, 0);
-        otc.offer(2800 ether, dai, 10 ether, mkr, 0);
+        otc.limitOffer(3200 ether, dai, 10 ether, mkr, false, 0);
+        otc.limitOffer(2800 ether, dai, 10 ether, mkr, false, 0);
 
         uint expectedResult = 10 ether * 3200 / 3200 + 10 ether * 1400 / 2800;
-        assertEq(otc.getPayAmount(mkr, dai, 4600 ether), expectedResult);
         assertEq(otc.buyAllAmount(dai, 4600 ether, mkr, expectedResult), expectedResult);
     }
 
     function testFailBuyAllDai() public {
         mkr.approve(otc, uint(-1));
         dai.approve(otc, uint(-1));
-        otc.offer(3200 ether, dai, 10 ether, mkr, 0);
-        otc.offer(2800 ether, dai, 10 ether, mkr, 0);
+        otc.limitOffer(3200 ether, dai, 10 ether, mkr, false, 0);
+        otc.limitOffer(2800 ether, dai, 10 ether, mkr, false, 0);
 
         uint expectedResult = 10 ether * 3200 / 3200 + 10 ether * 1400 / 2800;
         assertEq(otc.buyAllAmount(dai, 4600 ether, mkr, expectedResult - 1), expectedResult);
@@ -1688,11 +1675,11 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         mkr.approve(otc, uint(-1));
         user1.doApprove(otc, uint(-1), dai);
         dai.transfer(user1, 6000 ether);
-        offerId[1] = user1.doOffer(3200 ether, dai, 10 ether, mkr, 0);
-        offerId[2] = user1.doOffer(2800 ether, dai, 10 ether, mkr, 0);
+        offerId[1] = user1.doLimitOffer(3200 ether, dai, 10 ether, mkr, false, 0);
+        offerId[2] = user1.doLimitOffer(2800 ether, dai, 10 ether, mkr, false, 0);
 
         uint initialBalance = mkr.balanceOf(this);
-        otc.buyOffers(20 ether, mkr, 6000 ether, dai);
+        otc.iocOffer(20 ether, mkr, 6000 ether, dai, false);
         // Just bought one of the offers
         assertEq(mkr.balanceOf(this), initialBalance - 10 ether);
         // First offer (better price) was bought
@@ -1703,5 +1690,76 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         (,, sellAmt,, buyAmt,,,) = otc.offers(offerId[2]);
         assertEq(sellAmt, 2800 ether);
         assertEq(buyAmt, 10 ether);
+    }
+
+    function div(uint x, uint y) internal pure returns (uint z) {
+        z = x * 1 ether / y;
+    }
+
+    function testForceBuyAmount() public {
+        mkr.approve(otc, uint(-1));
+        user1.doApprove(otc, uint(-1), dai);
+        dai.transfer(user1, 6000 ether);
+        offerId[1] = user1.doLimitOffer(3200 ether, dai, 10 ether, mkr, false, 0); // Price: 320
+        offerId[2] = user1.doLimitOffer(2800 ether, dai, 10 ether, mkr, false, 0); // Price: 280
+
+        uint initialBalanceMKR = mkr.balanceOf(this);
+        uint initialBalanceDAI = dai.balanceOf(this);
+        otc.iocOffer(20 ether, mkr, 5000 ether, dai, false); // Price: 250
+        assertEq(dai.balanceOf(this), initialBalanceDAI + 5000 ether);
+        uint mkrSold = 10 ether + div(1800 ether * 10, 2800 ether);
+        assertEq(mkr.balanceOf(this), initialBalanceMKR - mkrSold);
+    }
+
+    function testForceSellAmount() public {
+        mkr.approve(otc, uint(-1));
+        user1.doApprove(otc, uint(-1), dai);
+        dai.transfer(user1, 6000 ether);
+        offerId[1] = user1.doLimitOffer(3200 ether, dai, 10 ether, mkr, false, 0); // Price: 320
+        offerId[2] = user1.doLimitOffer(2800 ether, dai, 10 ether, mkr, false, 0); // Price: 280
+
+        uint initialBalanceMKR = mkr.balanceOf(this);
+        uint initialBalanceDAI = dai.balanceOf(this);
+        otc.iocOffer(20 ether, mkr, 5000 ether, dai, true); // Price: 250
+        assertEq(mkr.balanceOf(this), initialBalanceMKR - 20 ether);
+        assertEq(dai.balanceOf(this), initialBalanceDAI + 6000 ether);
+    }
+
+    function testForceBuyAmountOffer() public {
+        mkr.approve(otc, uint(-1));
+        user1.doApprove(otc, uint(-1), dai);
+        dai.transfer(user1, 6000 ether);
+        offerId[1] = user1.doLimitOffer(3200 ether, dai, 10 ether, mkr, false, 0); // Price: 320
+        offerId[2] = user1.doLimitOffer(1400 ether, dai, 5 ether, mkr, false, 0); // Price: 280
+        offerId[3] = user1.doLimitOffer(600 ether, dai, 2.5 ether, mkr, false, 0); // Price: 240
+
+        uint initialBalanceMKR = mkr.balanceOf(this);
+        uint initialBalanceDAI = dai.balanceOf(this);
+        offerId[4] = otc.limitOffer(20 ether, mkr, 5000 ether, dai, false, 0); // Price: 250
+        assertEq(dai.balanceOf(this), initialBalanceDAI + 4600 ether);
+        (,, sellAmt,, buyAmt,,,) = otc.offers(offerId[4]);
+        assertEq(buyAmt, 400 ether);
+        uint offerSellAmtToBuyMissingDAI = div(400 ether * 20, 5000 ether);
+        assertEq(sellAmt, offerSellAmtToBuyMissingDAI);
+        assertEq(mkr.balanceOf(this), initialBalanceMKR - 15 ether - offerSellAmtToBuyMissingDAI);
+    }
+
+    function testForceSellAmountOffer() public {
+        mkr.approve(otc, uint(-1));
+        user1.doApprove(otc, uint(-1), dai);
+        dai.transfer(user1, 6000 ether);
+        offerId[1] = user1.doLimitOffer(1600 ether, dai, 5 ether, mkr, false, 0); // Price: 320
+        offerId[2] = user1.doLimitOffer(1400 ether, dai, 5 ether, mkr, false, 0); // Price: 280
+        offerId[3] = user1.doLimitOffer(600 ether, dai, 2.5 ether, mkr, false, 0); // Price: 240
+
+        uint initialBalanceMKR = mkr.balanceOf(this);
+        uint initialBalanceDAI = dai.balanceOf(this);
+        offerId[4] = otc.limitOffer(12 ether, mkr, 3000 ether, dai, true, 0); // Price: 250
+        assertEq(mkr.balanceOf(this), initialBalanceMKR - 12 ether);
+        assertEq(dai.balanceOf(this), initialBalanceDAI + 3000 ether);
+        (,, sellAmt,, buyAmt,,,) = otc.offers(offerId[4]);
+        assertEq(sellAmt, 2 ether);
+        uint offerBuyAmtToSellMissingMKR = div(2 ether * 3000, 12 ether);
+        assertEq(buyAmt, offerBuyAmtToSellMissingMKR);
     }
 }
