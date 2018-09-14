@@ -44,7 +44,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         ERC20 buyGem,                               // taker buy token
         bool forceSellAmt                           // If true, uses sellAmt as pivot, otherwise buyAmt
     ) public returns (uint sellAmt, uint buyAmt) {
-        require(dust[sellGem] <= oSellAmt, "Offer sell quantity is less then required.");
+        require(oSellAmt >= dust[sellGem], "Offer sell quantity is less then required.");
 
         sellAmt = oSellAmt;                         // taker sell amount (countdown)
         buyAmt = oBuyAmt;                           // taker buy amount (countdown)
@@ -106,11 +106,10 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         bool forceSellAmt,                          // If true, uses sellAmt as pivot, otherwise buyAmt
         uint pos                                    // position to insert offer, 0 should be used if unknown
     ) public canOffer returns (uint id) {
-        require(dust[sellGem] <= oSellAmt, "Offer intends to sell less than required.");
         (uint sellAmt, uint buyAmt) = iocOffer(oSellAmt, sellGem, oBuyAmt, buyGem, forceSellAmt);
 
         // Create new taker offer if necessary
-        if (buyAmt > 0 && sellAmt > dust[sellGem]) {
+        if (buyAmt > 0 && sellAmt > 0 && sellAmt >= dust[sellGem]) {
             // New offer should be created
             id = super.offer(sellAmt, sellGem, buyAmt, buyGem);
             offers[id].oSellAmt = oSellAmt;         // set original taker pay amount
@@ -127,7 +126,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         ERC20 buyGem,                               // new offer buy token
         bool forceSellAmt                           // If true, uses sellAmt as pivot, otherwise buyAmt
     ) public canOffer returns (uint sellAmt, uint buyAmt) {
-        require(dust[sellGem] <= oSellAmt, "Offer intends to sell less than required.");
         (sellAmt, buyAmt) = iocOffer(oSellAmt, sellGem, oBuyAmt, buyGem, forceSellAmt);
 
         if (forceSellAmt) {
@@ -209,7 +207,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint buyAmt,                                // taker (ask) buy how much
         ERC20 buyGem                                // taker (ask) buy which token
     ) public returns (uint id) {
-        require(dust[sellGem] <= sellAmt, "Offer intends to sell less than required.");
+        require(sellAmt >= dust[sellGem], "Offer intends to sell less than required.");
         id = super.offer(sellAmt, sellGem, buyAmt, buyGem);
         emit LogUnsortedOffer(id);
     }
