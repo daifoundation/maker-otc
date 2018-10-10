@@ -1039,61 +1039,14 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assert(!otc.isActive(offerId[4]));
     }
 
-    function testFailInsertOfferWithUserProvidedIdOfADifferentTokenLower() public {
+    function testInsertOfferWithUserProvidedIdOfADifferentToken() public {
         dai.transfer(user1, 13);
         user1.doApprove(otc, 13, dai);
         dai.approve(otc, 11);
         offerId[1] = user1.doLimitOffer(13, dai, 1, mkr, false, 0);
         offerId[2] = otc.limitOffer(11, dai, 1, dgd, false, offerId[1]);
-    }
-    
-    function testInsertOfferWithUserProvidedIdOfADifferentTokenHigher() public {
-        dai.transfer(user1, 13);
-        user1.doApprove(otc, 13, dai);
-        dai.approve(otc, 14);
-        offerId[1] = user1.doLimitOffer(13, dai, 1, mkr, false, 0);
-        offerId[2] = otc.limitOffer(14, dai, 1, dgd, false, offerId[1]);
         assert(otc.getBetterOffer(offerId[2]) == 0);
         assert(otc.getWorseOffer(offerId[2]) == 0);
-    }
-    
-    function testInsertOfferWithUserProvidedIdOfADifferentTokenHigherToHighest() public {
-        dai.transfer(user1, 33);
-        user1.doApprove(otc, 33, dai);
-        dai.approve(otc, 12);
-        offerId[1] = user1.doLimitOffer(13, dai, 1, mkr, false, 0);
-        offerId[2] = user1.doLimitOffer(11, dai, 1, mkr, false, 0);
-        offerId[3] = user1.doLimitOffer(9, dai, 1, mkr, false, 0);
-        user1.doCancel(offerId[1]);
-        offerId[4] = otc.limitOffer(12, dai, 1, dgd, false, offerId[1]);
-        assert(otc.getBetterOffer(offerId[4]) == 0);
-        assert(otc.getWorseOffer(offerId[4]) == 0);
-    }
-
-    function testInsertOfferWithUserProvidedIdOfADifferentTokenHigherToBetween() public {
-        dai.transfer(user1, 33);
-        user1.doApprove(otc, 33, dai);
-        dai.approve(otc, 10);
-        offerId[1] = user1.doLimitOffer(13, dai, 1, mkr, false, 0);
-        offerId[2] = user1.doLimitOffer(11, dai, 1, mkr, false, 0);
-        offerId[3] = user1.doLimitOffer(9, dai, 1, mkr, false, 0);
-        user1.doCancel(offerId[2]);
-        offerId[4] = otc.limitOffer(10, dai, 1, dgd, false, offerId[2]);
-        assert(otc.getBetterOffer(offerId[4]) == 0);
-        assert(otc.getWorseOffer(offerId[4]) == 0);
-    }
-
-    function testInsertOfferWithUserProvidedIdOfADifferentTokenHigherToLowest() public {
-        dai.transfer(user1, 33);
-        user1.doApprove(otc, 33, dai);
-        dai.approve(otc, 8);
-        offerId[1] = user1.doLimitOffer(13, dai, 1, mkr, false, 0);
-        offerId[2] = user1.doLimitOffer(11, dai, 1, mkr, false, 0);
-        offerId[3] = user1.doLimitOffer(9, dai, 1, mkr, false, 0);
-        user1.doCancel(offerId[3]);
-        offerId[4] = otc.limitOffer(8, dai, 1, dgd, false, offerId[3]);
-        assert(otc.getBetterOffer(offerId[4]) == 0);
-        assert(otc.getWorseOffer(offerId[4]) == 0);
     }
 
     function testInsertOfferWithUserProvidedIdOfASameTokenHigherToHighestWrongPos() public {

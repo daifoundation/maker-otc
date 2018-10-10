@@ -364,18 +364,11 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         address sellGem = address(offers[id].sellGem);
         uint prevId;                                        // maker (ask) id
 
-        if (pos == 0 || !isOfferSorted(pos)) {
-            pos = _findpos(id);
-        } else {
-            pos = _findpos(id, pos);
-            require(
-                pos == 0 || (offers[pos].sellGem == offers[id].sellGem && offers[pos].buyGem == offers[id].buyGem),
-                "Tokenpair belonging to 'id' must be the same as the one belonging to 'pos'."
-            );
-        }
-
-        // Requirement below is satisfied by statements above
-        // require(pos == 0 || isOfferSorted(pos));
+        pos = pos == 0 || offers[pos].sellGem != sellGem || offers[pos].buyGem != buyGem || !isOfferSorted(pos)
+        ?
+            _findpos(id)
+        :
+            _findpos(id, pos);
 
         if (pos != 0) {                                     // offers[id] is not the highest offer
             // Requirement below is satisfied by statements above
