@@ -1690,4 +1690,37 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         uint offerBuyAmtToSellMissingMKR = div(2 ether * 3000, 12 ether);
         assertEq(buyAmt, offerBuyAmtToSellMissingMKR);
     }
+
+    function testEvilOfferPositions() public {
+        mkr.approve(otc, uint(-1));
+        mkr.transfer(user1, 1000 ether);
+        dai.transfer(user1, 1000 ether);
+        user1.doApprove(otc, 1000 ether, dai);
+        user1.doApprove(otc, 1000 ether, mkr);
+        dai.approve(otc, 10 ether);
+
+
+        offerId[1] = user1.doLimitOffer(1 ether, mkr, 301 ether, dai, false, 1);
+        offerId[2] = user1.doLimitOffer(250 ether, dai, 1 ether, mkr, false, 1);
+        offerId[3] = user1.doLimitOffer(280 ether, dai, 1 ether, mkr, false, 1);
+        offerId[4] = user1.doLimitOffer(275 ether, dai, 1 ether, mkr, false, 1);
+
+        uint oSellAmt;
+        uint oBuyAmt;
+
+        (oSellAmt, oBuyAmt,,,,,,) = otc.offers(offerId[1]);
+        assert(oSellAmt == 1 ether && oBuyAmt == 301 ether);
+
+        var currentId = otc.best(dai, mkr);
+        (oSellAmt, oBuyAmt,,,,,,) = otc.offers(currentId);
+        assert(oSellAmt == 280 ether && oBuyAmt == 1 ether);
+
+        currentId = otc.getWorseOffer(currentId);
+        (oSellAmt, oBuyAmt,,,,,,) = otc.offers(currentId);
+        assert(oSellAmt == 275 ether && oBuyAmt == 1 ether);
+
+        currentId = otc.getWorseOffer(currentId);
+        (oSellAmt, oBuyAmt,,,,,,) = otc.offers(currentId);
+        assert(oSellAmt == 250 ether && oBuyAmt == 1 ether);
+    }
 }
