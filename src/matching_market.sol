@@ -222,9 +222,19 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint buyAmt,                                // taker (ask) buy how much
         ERC20 buyGem                                // taker (ask) buy which token
     ) public returns (uint id) {
+        id = offer(sellAmt, sellGem, buyAmt, buyGem, msg.sender);
+    }
+
+    function offer(
+        uint sellAmt,                               // maker (ask) sell how much
+        ERC20 sellGem,                              // maker (ask) sell which token
+        uint buyAmt,                                // taker (ask) buy how much
+        ERC20 buyGem,                               // taker (ask) buy which token
+        address owner                               // owner of the offer to be created
+    ) public returns (uint id) {
         require(!locked, "Reentrancy attempt");
         require(sellAmt >= dust[sellGem], "Offer intends to sell less than required.");
-        id = super.offer(sellAmt, sellGem, buyAmt, buyGem);
+        id = super.offer(sellAmt, sellGem, buyAmt, buyGem, owner);
         emit LogUnsortedOffer(id);
     }
 

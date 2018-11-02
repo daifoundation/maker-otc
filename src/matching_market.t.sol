@@ -1701,6 +1701,17 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assert(oSellAmt == 250 ether && oBuyAmt == 1 ether);
     }
 
+    function testSimpleOfferOtherOwner() public {
+        assertEq(dai.balanceOf(address(123)), 0);
+        mkr.approve(otc, uint(-1));
+        uint id = otc.offer(30, mkr, 100, dai, address(123));
+        (,,,,,, address owner,) = otc.offers(id);
+        assertEq(owner, address(123));
+        dai.approve(otc, uint(-1));
+        otc.buy(id, 30);
+        assertEq(dai.balanceOf(address(123)), 100);
+    }
+
     function testLimitOfferOtherOwner() public {
         mkr.approve(otc, uint(-1));
         user1.doApprove(otc, uint(-1), dai);
