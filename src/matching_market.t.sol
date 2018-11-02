@@ -1711,7 +1711,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         (oSellAmt, oBuyAmt,,,,,,) = otc.offers(offerId[1]);
         assert(oSellAmt == 1 ether && oBuyAmt == 301 ether);
 
-        var currentId = otc.best(dai, mkr);
+        uint currentId = otc.best(dai, mkr);
         (oSellAmt, oBuyAmt,,,,,,) = otc.offers(currentId);
         assert(oSellAmt == 280 ether && oBuyAmt == 1 ether);
 
