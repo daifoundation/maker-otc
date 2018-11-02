@@ -298,6 +298,16 @@ contract OfferTransferTest is TransferTest {
         assertEq(balanceAfter - balanceBefore, 30);
         assert(id > 0);
     }
+
+    function testOfferOtherOwner() public {
+        assertEq(dai.balanceOf(address(123)), 0);
+        uint id = otc.offer(30, mkr, 100, dai, address(123));
+        (,,,,,, address owner,) = otc.offers(id);
+        assertEq(owner, address(123));
+        dai.approve(otc, uint(-1));
+        otc.buy(id, 30);
+        assertEq(dai.balanceOf(address(123)), 100);
+    }
 }
 
 contract BuyTransferTest is TransferTest {

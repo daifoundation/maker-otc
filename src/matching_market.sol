@@ -104,15 +104,27 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         ERC20 sellGem,                              // new offer sell token
         uint oBuyAmt,                               // new offer buy amount
         ERC20 buyGem,                               // new offer buy token
-        bool forceSellAmt,                          // If true, uses sellAmt as pivot, otherwise buyAmt
+        bool forceSellAmt,                          // if true, uses sellAmt as pivot, otherwise buyAmt
         uint pos                                    // position to insert offer, 0 should be used if unknown
+    ) public returns (uint id) {
+        id = limitOffer(oSellAmt, sellGem, oBuyAmt, buyGem, forceSellAmt, pos, msg.sender);
+    }
+
+    function limitOffer(
+        uint oSellAmt,                              // new offer sell amount
+        ERC20 sellGem,                              // new offer sell token
+        uint oBuyAmt,                               // new offer buy amount
+        ERC20 buyGem,                               // new offer buy token
+        bool forceSellAmt,                          // if true, uses sellAmt as pivot, otherwise buyAmt
+        uint pos,                                   // position to insert offer, 0 should be used if unknown
+        address owner                               // if an order is created, defines who will be the owner
     ) public canOffer returns (uint id) {
         (uint sellAmt, uint buyAmt) = iocOffer(oSellAmt, sellGem, oBuyAmt, buyGem, forceSellAmt);
 
         // Create new taker offer if necessary
         if (buyAmt > 0 && sellAmt > 0 && sellAmt >= dust[sellGem]) {
             // New offer should be created
-            id = super.offer(sellAmt, sellGem, buyAmt, buyGem);
+            id = super.offer(sellAmt, sellGem, buyAmt, buyGem, owner);
             offers[id].oSellAmt = oSellAmt;         // set original taker pay amount
             offers[id].oBuyAmt = oBuyAmt;           // set original taker buy amount
             // Insert offer into the sorted list
@@ -125,7 +137,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         ERC20 sellGem,                              // new offer sell token
         uint oBuyAmt,                               // new offer buy amount
         ERC20 buyGem,                               // new offer buy token
-        bool forceSellAmt                           // If true, uses sellAmt as pivot, otherwise buyAmt
+        bool forceSellAmt                           // if true, uses sellAmt as pivot, otherwise buyAmt
     ) public canOffer returns (uint sellAmt, uint buyAmt) {
         (sellAmt, buyAmt) = iocOffer(oSellAmt, sellGem, oBuyAmt, buyGem, forceSellAmt);
 
