@@ -25,8 +25,6 @@ contract MatchingEvents {
     event LogMatchingEnabled(bool isEnabled);
     event LogUnsortedOffer(uint id);
     event LogSortedOffer(uint id);
-    event LogAddTokenPairWhitelist(ERC20 baseToken, ERC20 quoteToken);
-    event LogRemTokenPairWhitelist(ERC20 baseToken, ERC20 quoteToken);
     event LogInsert(address keeper, uint id);
     event LogDelete(address keeper, uint id);
 }
@@ -45,14 +43,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     mapping(address => mapping(address => uint)) public _span;  //number of offers stored for token pair in sorted orderbook
     mapping(address => uint) public _dust;                      //minimum sell amount for a token to avoid dust offers
     mapping(uint => uint) public _near;         //next unsorted offer id
-    mapping(bytes32 => bool) public _menu;      //whitelist tracking which token pairs can be traded
     uint _head;                                 //first unsorted offer id
-
-    //check if token pair is enabled
-    modifier isWhitelist(ERC20 buy_gem, ERC20 pay_gem) {
-        require(_menu[keccak256(buy_gem, pay_gem)] || _menu[keccak256(pay_gem, buy_gem)]);
-        _;
-    }
 
     function MatchingMarket(uint64 close_time) ExpiringMarket(close_time) public {
     }
@@ -100,7 +91,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         ERC20 buy_gem    //taker (ask) buy which token
     )
         public
-        isWhitelist(pay_gem, buy_gem)
         /* NOT synchronized!!! */
         returns (uint)
     {
@@ -117,7 +107,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint pos         //position to insert offer, 0 should be used if unknown
     )
         public
-        isWhitelist(pay_gem, buy_gem)
         /*NOT synchronized!!! */
         can_offer
         returns (uint)
@@ -134,7 +123,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         bool rounding    //match "close enough" orders?
     )
         public
-        isWhitelist(pay_gem, buy_gem)
         /*NOT synchronized!!! */
         can_offer
         returns (uint)
@@ -203,57 +191,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         delete _rank[id];
         LogDelete(msg.sender, id);
         return true;
-    }
-
-    //returns true if token is succesfully added to whitelist
-    //  Function is used to add a token pair to the whitelist
-    //  All incoming offers are checked against the whitelist.
-    function addTokenPairWhitelist(
-        ERC20 baseToken,
-        ERC20 quoteToken
-    )
-        public
-        auth
-        note
-    returns (bool)
-    {
-        require(!isTokenPairWhitelisted(baseToken, quoteToken));
-        require(address(baseToken) != 0x0 && address(quoteToken) != 0x0);
-
-        _menu[keccak256(baseToken, quoteToken)] = true;
-        LogAddTokenPairWhitelist(baseToken, quoteToken);
-        return true;
-    }
-
-    //returns true if token is successfully removed from whitelist
-    //  Function is used to remove a token pair from the whitelist.
-    //  All incoming offers are checked against the whitelist.
-    function remTokenPairWhitelist(
-        ERC20 baseToken,
-        ERC20 quoteToken
-    )
-        public
-        auth
-        note
-    returns (bool)
-    {
-        require(isTokenPairWhitelisted(baseToken, quoteToken));
-
-        delete _menu[keccak256(baseToken, quoteToken)];
-        delete _menu[keccak256(quoteToken, baseToken)];
-        LogRemTokenPairWhitelist(baseToken, quoteToken);
-        return true;
-    }
-
-    function isTokenPairWhitelisted(
-        ERC20 baseToken,
-        ERC20 quoteToken
-    )
-        public
-        constant
-        returns (bool)
-    {
-        return (_menu[keccak256(baseToken, quoteToken)] || _menu[keccak256(quoteToken, baseToken)]);
     }
 
     //set the minimum sell amount for a token
