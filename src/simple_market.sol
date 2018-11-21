@@ -4,42 +4,35 @@ import "ds-math/math.sol";
 import "erc20/erc20.sol";
 
 contract EventfulMarket {
-    event LogItemUpdate(uint id);
-    event LogTrade(
-        uint                sellAmt,
-        address indexed     sellGem,
-        uint                buyAmt,
-        address indexed     buyGem
-    );
-    event LogMake(
+    event LogOffer(
         bytes32  indexed    id,
         bytes32  indexed    pair,
         address  indexed    maker,
         ERC20               sellGem,
         ERC20               buyGem,
-        uint128             sellAmt,
-        uint128             buyAmt,
+        uint                sellAmt,
+        uint                buyAmt,
         uint64              timestamp
     );
-    event LogTake(
+    event LogBuy(
         bytes32             id,
         bytes32  indexed    pair,
         address  indexed    maker,
         ERC20               sellGem,
         ERC20               buyGem,
         address  indexed    taker,
-        uint128             takeAmt,
-        uint128             giveAmt,
+        uint                takeAmt,
+        uint                giveAmt,
         uint64              timestamp
     );
-    event LogKill(
+    event LogCancel(
         bytes32  indexed    id,
         bytes32  indexed    pair,
         address  indexed    maker,
         ERC20               sellGem,
         ERC20               buyGem,
-        uint128             sellAmt,
-        uint128             buyAmt,
+        uint                sellAmt,
+        uint                buyAmt,
         uint64              timestamp
     );
 }
@@ -119,15 +112,14 @@ contract SimpleMarket is EventfulMarket, DSMath {
 
         require(sellGem.transferFrom(msg.sender, this, sellAmt));
 
-        emit LogItemUpdate(id);
-        emit LogMake(
+        emit LogOffer(
             bytes32(id),
             keccak256(abi.encodePacked(sellGem, buyGem)),
             msg.sender,
             sellGem,
             buyGem,
-            uint128(sellAmt),
-            uint128(buyAmt),
+            sellAmt,
+            buyAmt,
             uint64(now)
         );
     }
@@ -143,8 +135,8 @@ contract SimpleMarket is EventfulMarket, DSMath {
         OfferInfo memory offerInfo = offers[id];
         uint spend = mul(quantity, offerInfo.oBuyAmt) / offerInfo.oSellAmt;
 
-        require(uint128(spend) == spend);
-        require(uint128(quantity) == quantity);
+        require(uint128(spend) == spend, "Sell amount should be less than 2^129-1.");
+        require(uint128(quantity) == quantity, "Buy amount should be less than 2^129-1.");
 
         // For backwards semantic compatibility.
         if (quantity == 0 || spend == 0 || quantity > offerInfo.sellAmt || spend > offerInfo.buyAmt) {
@@ -156,19 +148,17 @@ contract SimpleMarket is EventfulMarket, DSMath {
         require(offerInfo.buyGem.transferFrom(msg.sender, offerInfo.owner, spend), "Buy token could not be transferred.");
         require(offerInfo.sellGem.transfer(msg.sender, quantity), "Sell token could not be transferred.");
 
-        emit LogItemUpdate(id);
-        emit LogTake(
+        emit LogBuy(
             bytes32(id),
             keccak256(abi.encodePacked(offerInfo.sellGem, offerInfo.buyGem)),
             offerInfo.owner,
             offerInfo.sellGem,
             offerInfo.buyGem,
             msg.sender,
-            uint128(quantity),
-            uint128(spend),
+            quantity,
+            spend,
             uint64(now)
         );
-        emit LogTrade(quantity, offerInfo.sellGem, spend, offerInfo.buyGem);
 
         if (offers[id].sellAmt == 0) {
             delete offers[id];
@@ -190,15 +180,14 @@ contract SimpleMarket is EventfulMarket, DSMath {
 
         require(offerInfo.sellGem.transfer(offerInfo.owner, offerInfo.sellAmt), "Sell token could not be transferred.");
 
-        emit LogItemUpdate(id);
-        emit LogKill(
+        emit LogCancel(
             bytes32(id),
             keccak256(abi.encodePacked(offerInfo.sellGem, offerInfo.buyGem)),
             offerInfo.owner,
             offerInfo.sellGem,
             offerInfo.buyGem,
-            uint128(offerInfo.sellAmt),
-            uint128(offerInfo.buyAmt),
+            offerInfo.sellAmt,
+            offerInfo.buyAmt,
             uint64(now)
         );
 

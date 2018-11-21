@@ -817,12 +817,6 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(otc.getBetterOffer(offerId[3]), 0);
         assertEq(otc.span(dai, mkr), 2);
         assert(!otc.isActive(offerId[3]));
-
-        expectEventsExact(otc);
-        emit LogItemUpdate(offerId[1]);
-        emit LogItemUpdate(offerId[2]);
-        emit LogItemUpdate(offerId[3]);
-        emit LogItemUpdate(offerId[3]);
     }
 
     function testBestOfferWithTwoOffersWithDifferentTokens() public {
@@ -1263,12 +1257,6 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(myDAIBalanceAfter - myDAIBalanceBefore, 100);
         assertEq(user1MKRBalanceAfter - user1MKRBalanceBefore, 30);
         assertEq(user1DAIBalanceBefore - user1DAIBalanceAfter, 100);
-
-        /* //REPORTS FALSE ERROR:
-        expectEventsExact(otc);
-        emit LogItemUpdate(offerId[1]);
-        emit LogItemUpdate(offerId[1]);
-        emit LogItemUpdate(offerId[2]);*/
     }
     function testOfferMatchOneOnOnePartialSellSendAmounts() public {
         dai.transfer(user1, 50);
@@ -1295,12 +1283,6 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(sellAmt, 180);
         assertEq(buyAmt, 450);
         assert(!otc.isActive(offerId[2]));
-
-        /* //REPORTS FALSE ERROR:
-        expectEventsExact(otc);
-        emit LogItemUpdate(offerId[1]);
-        emit LogItemUpdate(offerId[1]);
-        emit LogItemUpdate(offerId[2]);*/
     }
     function testOfferMatchOneOnOnePartialBuySendAmounts() public {
         dai.transfer(user1, 2000);
@@ -1329,11 +1311,6 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(buyAmt, 0);
         assertEq(sellAmt1, 1500);
         assertEq(buyAmt1, 600);
-
-        expectEventsExact(otc);
-        emit LogItemUpdate(offerId[1]);
-        emit LogItemUpdate(offerId[1]);
-        emit LogItemUpdate(offerId[2]);
     }
     function testOfferMatchingOneOnOneMatch() public {
         dai.transfer(user1, 1);

@@ -89,11 +89,6 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         assertEq(100, myDAIBalanceAfter - myDAIBalanceBefore);
         assertEq(30, user1MKRbalanceAfter - user1MKRBalanceBefore);
         assertEq(100, user1DAIBalanceBefore - user1DAIbalanceAfter);
-
-        expectEventsExact(otc);
-        emit LogItemUpdate(id);
-        emit LogTrade(30, mkr, 100, dai);
-        emit LogItemUpdate(id);
     }
 
     function testPartiallyFilledOrderMkr() public {
@@ -122,11 +117,6 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         assertEq(475, buyAmt);
         assert(address(sellGem) > 0x0);
         assert(address(buyGem) > 0x0);
-
-        expectEventsExact(otc);
-        emit LogItemUpdate(id);
-        emit LogTrade(10, mkr, 25, dai);
-        emit LogItemUpdate(id);
     }
 
     function testPartiallyFilledOrderDai() public {
@@ -155,11 +145,6 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         assertEq(196, buyAmt);
         assert(address(sellGem) > 0x0);
         assert(address(buyGem) > 0x0);
-
-        expectEventsExact(otc);
-        emit LogItemUpdate(id);
-        emit LogTrade(10, dai, 4, mkr);
-        emit LogItemUpdate(id);
     }
 
     function testPartiallyFilledOrderMkrExcessQuantity() public {
@@ -189,9 +174,6 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         assertEq(500, buyAmt);
         assert(address(sellGem) > 0x0);
         assert(address(buyGem) > 0x0);
-
-        expectEventsExact(otc);
-        emit LogItemUpdate(id);
     }
 
     function testInsufficientlyFilledOrder() public {
@@ -210,8 +192,6 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         assert(otc.cancel(id));
 
         expectEventsExact(otc);
-        emit LogItemUpdate(id);
-        emit LogItemUpdate(id);
     }
 
     function testFailCancelNotOwner() public {
