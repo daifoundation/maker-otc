@@ -44,6 +44,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         ERC20 buyGem,                               // taker buy token
         bool forceSellAmt                           // If true, uses sellAmt as pivot, otherwise buyAmt
     ) public returns (uint sellAmt, uint buyAmt) {
+        require(!locked, "Reentrancy attempt");
         require(oSellAmt >= dust[sellGem], "Offer sell quantity is less then required.");
 
         sellAmt = oSellAmt;                         // taker sell amount (countdown)
@@ -136,6 +137,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     }
 
     function sellAllAmount(ERC20 sellGem, uint sellAmt_, ERC20 buyGem, uint minFillAmount) public returns (uint fillAmt) {
+        require(!locked, "Reentrancy attempt");
         uint sellAmt = sellAmt_;
         uint offerId;
         while (sellAmt > 0) {                                               // while there is amount to sell
@@ -165,6 +167,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     }
 
     function buyAllAmount(ERC20 buyGem, uint buyAmt_, ERC20 sellGem, uint maxFillAmt) public returns (uint fillAmt) {
+        require(!locked, "Reentrancy attempt");
         uint buyAmt = buyAmt_;
         uint offerId;
         while (buyAmt > 0) {                                                // Meanwhile there is amount to buy
@@ -207,6 +210,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint buyAmt,                                // taker (ask) buy how much
         ERC20 buyGem                                // taker (ask) buy which token
     ) public returns (uint id) {
+        require(!locked, "Reentrancy attempt");
         require(sellAmt >= dust[sellGem], "Offer intends to sell less than required.");
         id = super.offer(sellAmt, sellGem, buyAmt, buyGem);
         emit LogUnsortedOffer(id);
@@ -214,6 +218,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
     // Transfers funds from caller to offer maker, and from market to caller.
     function buy(uint id, uint amount) public canBuy(id) returns (bool) {
+        require(!locked, "Reentrancy attempt");
         // If all the amount is bought, remove offer sorting data
         if (amount == offers[id].sellAmt){
             if (isOfferSorted(id)) {
@@ -232,6 +237,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
     // Cancel an offer. Refunds offer maker.
     function cancel(uint id) public canCancel(id) returns (bool success) {
+        require(!locked, "Reentrancy attempt");
         if (isOfferSorted(id)) {
             require(_unsort(id), "Offer could not be removed from sorted list.");
         }
@@ -244,6 +250,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint id,                        // maker (ask) id
         uint pos                        // position to insert into
     ) public returns (bool) {
+        require(!locked, "Reentrancy attempt");
         require(
             !isOfferSorted(id),         // make sure offers[id] is not yet sorted
             "Offer should not be in the sorted list."
