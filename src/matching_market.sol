@@ -75,9 +75,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         ERC20 buy_gem    //taker (ask) buy which token
     )
         public
-        /* NOT synchronized!!! */
         returns (uint)
     {
+        require(!locked, "Reentrancy attempt");
         var fn = matchingEnabled ? _offeru : super.offer;
         return fn(pay_amt, pay_gem, buy_amt, buy_gem);
     }
@@ -91,7 +91,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint pos         //position to insert offer, 0 should be used if unknown
     )
         public
-        /*NOT synchronized!!! */
         can_offer
         returns (uint)
     {
@@ -107,10 +106,10 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         bool rounding    //match "close enough" orders?
     )
         public
-        /*NOT synchronized!!! */
         can_offer
         returns (uint)
     {
+        require(!locked, "Reentrancy attempt");
         require(_dust[pay_gem] <= pay_amt);
 
         if (matchingEnabled) {
@@ -122,10 +121,10 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     //Transfers funds from caller to offer maker, and from market to caller.
     function buy(uint id, uint amount)
         public
-        /*NOT synchronized!!! */
         can_buy(id)
         returns (bool)
     {
+        require(!locked, "Reentrancy attempt");
         var fn = matchingEnabled ? _buys : super.buy;
         return fn(id, amount);
     }
@@ -133,10 +132,10 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     // Cancel an offer. Refunds offer maker.
     function cancel(uint id)
         public
-        /*NOT synchronized!!! */
         can_cancel(id)
         returns (bool success)
     {
+        require(!locked, "Reentrancy attempt");
         if (matchingEnabled) {
             if (isOfferSorted(id)) {
                 require(_unsort(id));
@@ -156,6 +155,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         public
         returns (bool)
     {
+        require(!locked, "Reentrancy attempt");
         require(!isOfferSorted(id));    //make sure offers[id] is not yet sorted
         require(isActive(id));          //make sure offers[id] is active
 
@@ -169,8 +169,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     //  Function should be called by keepers.
     function del_rank(uint id)
         public
-    returns (bool)
+        returns (bool)
     {
+        require(!locked, "Reentrancy attempt");
         require(!isActive(id) && _rank[id].delb != 0 && _rank[id].delb < block.number - 10);
         delete _rank[id];
         LogDelete(msg.sender, id);
@@ -281,6 +282,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         public
         returns (uint fill_amt)
     {
+        require(!locked, "Reentrancy attempt");
         uint offerId;
         while (pay_amt > 0) {                           //while there is amount to sell
             offerId = getBestOffer(buy_gem, pay_gem);   //Get the best offer for the token pair
@@ -308,6 +310,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         public
         returns (uint fill_amt)
     {
+        require(!locked, "Reentrancy attempt");
         uint offerId;
         while (buy_amt > 0) {                           //Meanwhile there is amount to buy
             offerId = getBestOffer(buy_gem, pay_gem);   //Get the best offer for the token pair
@@ -397,7 +400,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     function _findpos(uint id, uint pos)
         internal
         view
-    returns (uint)
+        returns (uint)
     {
         require(id > 0);
 
@@ -515,7 +518,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         ERC20 buy_gem      //maker (ask) buy which token
     )
         internal
-        /*NOT synchronized!!! */
         returns (uint id)
     {
         require(_dust[pay_gem] <= pay_amt);
