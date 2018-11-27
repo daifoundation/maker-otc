@@ -76,7 +76,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
 
     mapping (uint => OfferInfo) public offers;
 
-    bool locked;
+    uint lock_nonce;
 
     struct OfferInfo {
         uint     pay_amt;
@@ -103,10 +103,10 @@ contract SimpleMarket is EventfulMarket, DSMath {
     }
 
     modifier synchronized {
-        require(!locked);
-        locked = true;
+        lock_nonce += 1;
+        uint local_lock_nonce = lock_nonce;
         _;
-        locked = false;
+        require(local_lock_nonce == lock_nonce);
     }
 
     function isActive(uint id) public constant returns (bool active) {
