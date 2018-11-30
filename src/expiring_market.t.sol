@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.4.24;
 
 import "ds-test/test.sol";
 import "ds-token/base.sol";
@@ -31,9 +31,9 @@ contract ExpiringSimpleMarketTest is SimpleMarketTest {
         dai = new DSTokenBase(10 ** 9);
         mkr = new DSTokenBase(10 ** 6);
 
-        dai.transfer(user1, 100);
-        user1.doApprove(otc, 100, dai);
-        mkr.approve(otc, 30);
+        dai.transfer(address(user1), 100);
+        user1.doApprove(address(otc), 100, dai);
+        mkr.approve(address(otc), 30);
     }
 }
 
@@ -52,9 +52,9 @@ contract ExpiringMarketTest is DSTest {
         dai = new DSTokenBase(10 ** 9);
         mkr = new DSTokenBase(10 ** 6);
 
-        dai.transfer(user1, 100);
-        user1.doApprove(otc, 100, dai);
-        mkr.approve(otc, 30);
+        dai.transfer(address(user1), 100);
+        user1.doApprove(address(otc), 100, dai);
+        mkr.approve(address(otc), 30);
     }
 
     function testIsClosedBeforeExpiry() public view {
@@ -114,9 +114,9 @@ contract ExpiringTransferTest is TransferTest {
         dai = new DSTokenBase(10 ** 9);
         mkr = new DSTokenBase(10 ** 6);
 
-        dai.transfer(user1, 100);
-        user1.doApprove(otc, 100, dai);
-        mkr.approve(otc, 30);
+        dai.transfer(address(user1), 100);
+        user1.doApprove(address(otc), 100, dai);
+        mkr.approve(address(otc), 30);
     }
 }
 
@@ -130,21 +130,21 @@ contract ExpiringCancelTransferTest is CancelTransferTest, ExpiringTransferTest
 
     function testCancelAfterExpiryTransfersFromMarket() public {
         uint id = otc.offer(30, mkr, 100, dai);
-        WarpingExpiringMarket(otc).warp(LIFETIME + 1 seconds);
+        WarpingExpiringMarket(address(otc)).warp(LIFETIME + 1 seconds);
 
-        uint balanceBefore = mkr.balanceOf(otc);
+        uint balanceBefore = mkr.balanceOf(address(otc));
         otc.cancel(id);
-        uint balanceAfter = mkr.balanceOf(otc);
+        uint balanceAfter = mkr.balanceOf(address(otc));
 
         assertEq(balanceBefore - balanceAfter, 30);
     }
     function testCancelAfterExpiryTransfersToSeller() public {
         uint id = otc.offer(30, mkr, 100, dai);
-        WarpingExpiringMarket(otc).warp(LIFETIME + 1 seconds);
+        WarpingExpiringMarket(address(otc)).warp(LIFETIME + 1 seconds);
 
-        uint balanceBefore = mkr.balanceOf(this);
+        uint balanceBefore = mkr.balanceOf(address(this));
         user1.doCancel(id);
-        uint balanceAfter = mkr.balanceOf(this);
+        uint balanceAfter = mkr.balanceOf(address(this));
 
         assertEq(balanceAfter - balanceBefore, 30);
     }

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pragma solidity ^0.4.24;
+pragma solidity >=0.4.24;
 
 import "ds-math/math.sol";
 import "erc20/erc20.sol";
@@ -130,7 +130,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
         id = ++lastOfferId;
         offers[id] = offerInfo;
 
-        require(sellGem.transferFrom(msg.sender, this, sellAmt));
+        require(sellGem.transferFrom(msg.sender, address(this), sellAmt));
 
         emit LogOffer(
             bytes32(id),

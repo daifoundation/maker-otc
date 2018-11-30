@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pragma solidity ^0.4.24;
+pragma solidity >=0.4.24;
 
 import "./expiring_market.sol";
 import "ds-note/note.sol";
@@ -61,14 +61,14 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         bool forceSellAmt                           // If true, uses sellAmt as pivot, otherwise buyAmt
     ) public returns (uint sellAmt, uint buyAmt) {
         require(!locked, "Reentrancy attempt");
-        require(oSellAmt >= dust[sellGem], "Offer sell quantity is less then required.");
+        require(oSellAmt >= dust[address(sellGem)], "Offer sell quantity is less then required.");
 
         sellAmt = oSellAmt;                         // taker sell amount (countdown)
         buyAmt = oBuyAmt;                           // taker buy amount (countdown)
         uint bestMatchingId;                        // best matching id
 
         // There is at least one offer stored for token pair
-        while ((bestMatchingId = best[buyGem][sellGem]) > 0) {
+        while ((bestMatchingId = best[address(buyGem)][address(sellGem)]) > 0) {
             // Handle round-off error. Based on the idea that
             // the furthest the amounts can stray from their "true" values is 1.
             // Ergo the worst case has oSellAmt and offers[bestMatchingId].sellAmt at +1 away from
@@ -138,7 +138,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         (uint sellAmt, uint buyAmt) = iocOffer(oSellAmt, sellGem, oBuyAmt, buyGem, forceSellAmt);
 
         // Create new taker offer if necessary
-        if (buyAmt > 0 && sellAmt > 0 && sellAmt >= dust[sellGem]) {
+        if (buyAmt > 0 && sellAmt > 0 && sellAmt >= dust[address(sellGem)]) {
             // New offer should be created
             id = super.offer(sellAmt, sellGem, buyAmt, buyGem, owner);
             offers[id].oSellAmt = oSellAmt;         // set original taker pay amount
@@ -169,7 +169,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint sellAmt = sellAmt_;
         uint offerId;
         while (sellAmt > 0) {                                               // while there is amount to sell
-            offerId = best[buyGem][sellGem];                                // Get the best offer for the token pair
+            offerId = best[address(buyGem)][address(sellGem)];              // Get the best offer for the token pair
             require(offerId != 0, "Not enough offers in market to sell tokens.");
 
             // There is a chance that sellAmt is smaller than 1 wei of the other token
@@ -199,7 +199,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint buyAmt = buyAmt_;
         uint offerId;
         while (buyAmt > 0) {                                                // Meanwhile there is amount to buy
-            offerId = best[buyGem][sellGem];                                // Get the best offer for the token pair
+            offerId = best[address(buyGem)][address(sellGem)];              // Get the best offer for the token pair
             require(offerId != 0, "Not enough offers in market to buy tokens.");
 
             // There is a chance that buyAmt is smaller than 1 wei of the other token
@@ -249,7 +249,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         address owner                               // owner of the offer to be created
     ) public returns (uint id) {
         require(!locked, "Reentrancy attempt");
-        require(sellAmt >= dust[sellGem], "Offer intends to sell less than required.");
+        require(sellAmt >= dust[address(sellGem)], "Offer intends to sell less than required.");
         id = super.offer(sellAmt, sellGem, buyAmt, buyGem, owner);
         emit LogUnsortedOffer(id);
     }
@@ -266,7 +266,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         require(super.buy(id, amount), "Too large, or too low buy quantity.");
 
         // If offer has become dust during buy, we cancel it
-        if (isActive(id) && offers[id].sellAmt < dust[offers[id].sellGem]) {
+        if (isActive(id) && offers[id].sellAmt < dust[address(offers[id].sellGem)]) {
             dustId = id; //enable current msg.sender to call cancel(id)
             cancel(id);
         }
@@ -309,7 +309,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     // cost more gas to accept the offer, than the value
     // of tokens received.
     function setDustLimit(
-        ERC20 sellGem,                  // token to assign minimum sell amount to
+        address sellGem,                // token to assign minimum sell amount to
         uint dustAmt                    // maker (ask) minimum sell amount
     ) public auth note returns (bool) {
         dust[sellGem] = dustAmt;
@@ -334,7 +334,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     }
 
     function isOfferSorted(uint id) public view returns(bool) {
-        return rank[id].next != 0 || rank[id].prev != 0 || best[offers[id].sellGem][offers[id].buyGem] == id;
+        return rank[id].next != 0 || rank[id].prev != 0 || best[address(offers[id].sellGem)][address(offers[id].buyGem)] == id;
     }
 
     // ---- Internal Functions ---- //
@@ -345,7 +345,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
         address buyGem = address(offers[id].buyGem);
         address sellGem = address(offers[id].sellGem);
-        uint top = best[sellGem][buyGem];
+        uint top = best[address(sellGem)][address(buyGem)];
         uint oldTop = 0;
 
         // Find the larger-than-id order whose successor is less-than-id.
@@ -409,7 +409,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         address sellGem = address(offers[id].sellGem);
         uint prevId;                                        // maker (ask) id
 
-        pos = pos == 0 || offers[pos].sellGem != sellGem || offers[pos].buyGem != buyGem || !isOfferSorted(pos)
+        pos = pos == 0 || address(offers[pos].sellGem) != sellGem || address(offers[pos].buyGem) != buyGem || !isOfferSorted(pos)
         ?
             _findpos(id)
         :
@@ -422,8 +422,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             rank[pos].prev = id;
             rank[id].next = pos;
         } else {                                            // offers[id] is the highest offer
-            prevId = best[sellGem][buyGem];
-            best[sellGem][buyGem] = id;
+            prevId = best[address(sellGem)][address(buyGem)];
+            best[address(sellGem)][address(buyGem)] = id;
         }
 
         if (prevId != 0) {                                  // if lower offer does exist
@@ -433,36 +433,36 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             rank[id].prev = prevId;
         }
 
-        span[sellGem][buyGem]++;
+        span[address(sellGem)][address(buyGem)]++;
         emit LogSortedOffer(id);
     }
 
     // Remove offer from the sorted list (does not cancel offer)
     function _unsort(
-        uint id                                             // id of maker (ask) offer to remove from sorted list
+        uint id                                                 // id of maker (ask) offer to remove from sorted list
     ) internal returns (bool) {
         address buyGem = address(offers[id].buyGem);
         address sellGem = address(offers[id].sellGem);
-        assert(span[sellGem][buyGem] > 0);
+        assert(span[address(sellGem)][address(buyGem)] > 0);
 
         require(
-            isActive(id) && isOfferSorted(id),              // assert id is in the sorted list
+            isActive(id) && isOfferSorted(id),                  // assert id is in the sorted list
             "Offer has been canceled, taken, or never existed, or not sorted."
         );
 
-        if (id != best[sellGem][buyGem]) {                  // offers[id] is not the highest offer
+        if (id != best[address(sellGem)][address(buyGem)]) {    // offers[id] is not the highest offer
             assert(rank[rank[id].next].prev == id);
             rank[rank[id].next].prev = rank[id].prev;
-        } else {                                            // offers[id] is the highest offer
-            best[sellGem][buyGem] = rank[id].prev;
+        } else {                                                // offers[id] is the highest offer
+            best[address(sellGem)][address(buyGem)] = rank[id].prev;
         }
 
-        if (rank[id].prev != 0) {                           // offers[id] is not the lowest offer
+        if (rank[id].prev != 0) {                               // offers[id] is not the lowest offer
             assert(rank[rank[id].prev].next == id);
             rank[rank[id].prev].next = rank[id].next;
         }
 
-        span[sellGem][buyGem]--;
+        span[address(sellGem)][address(buyGem)]--;
         delete rank[id];
         return true;
     }
