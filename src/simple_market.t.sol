@@ -259,6 +259,17 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         // other buy failures will return false
         otc.buy(id, uint(-1));
     }
+
+    function testOfferOtherOwner() public {
+        assertEq(dai.balanceOf(address(123)), 0);
+        mkr.approve(otc, 30);
+        uint id = otc.offer(30, mkr, 100, dai, address(123));
+        (,,,,,, address owner,) = otc.offers(id);
+        assertEq(owner, address(123));
+        dai.approve(otc, uint(-1));
+        otc.buy(id, 30);
+        assertEq(dai.balanceOf(address(123)), 100);
+    }
 }
 
 contract TransferTest is DSTest {
