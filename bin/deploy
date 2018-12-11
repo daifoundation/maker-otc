@@ -12,7 +12,6 @@ export ETH_GAS=${ETH_GAS:-"4000000"}
 export ETH_FROM=$(seth rpc eth_coinbase)
 export NETWORK=$(seth chain)
 
-. ./bin/$NETWORK-pairs
 . ./bin/$NETWORK-dustlimits
 
 test -z $NETWORK && exit 1
@@ -22,12 +21,6 @@ dapp build
 OTC=$(dapp create MatchingMarket $1)
 
 export SETH_ASYNC=yes
-
-for pair in $pairs; do
-    addr1=$(echo $pair | cut -f1 -d-)
-    addr2=$(echo $pair | cut -f2 -d-)
-    seth send $OTC "addTokenPairWhitelist(address, address)" $addr1 $addr2
-done
 
 for dustLimit in $dustLimits; do
 	token=$(echo $dustLimit | cut -f1 -d-)
