@@ -122,7 +122,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         can_offer
         returns (uint)
     {
-        return offer(pay_amt, pay_gem, buy_amt, buy_gem, pos, false);
+        return offer(pay_amt, pay_gem, buy_amt, buy_gem, pos, true);
     }
 
     function offer(
