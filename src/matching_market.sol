@@ -44,8 +44,20 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     mapping(address => uint) public _dust;                      //minimum sell amount for a token to avoid dust offers
     mapping(uint => uint) public _near;         //next unsorted offer id
     uint _head;                                 //first unsorted offer id
+    uint public dustId;                         // id of the latest offer marked as dust
+
 
     function MatchingMarket(uint64 close_time) ExpiringMarket(close_time) public {
+    }
+
+    // After close, anyone can cancel an offer
+    modifier can_cancel(uint id) {
+        require(isActive(id), "Offer was deleted or taken, or never existed.");
+        require(
+            isClosed() || msg.sender == getOwner(id) || id == dustId,
+            "Offer can not be cancelled because user is not owner, and market is open, and offer sells required amount of tokens."
+        );
+        _;
     }
 
     // ---- Public entrypoints ---- //
@@ -388,6 +400,11 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             _unsort(id);
         }
         require(super.buy(id, amount));
+        // If offer has become dust during buy, we cancel it
+        if (isActive(id) && offers[id].pay_amt < _dust[offers[id].pay_gem]) {
+            dustId = id; //enable current msg.sender to call cancel(id)
+            cancel(id);
+        }
         return true;
     }
 
@@ -504,7 +521,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             }
             // ^ The `rounding` parameter is a compromise borne of a couple days
             // of discussion.
-
             buy(best_maker_id, min(m_pay_amt, t_buy_amt));
             t_buy_amt_old = t_buy_amt;
             t_buy_amt = sub(t_buy_amt, min(m_pay_amt, t_buy_amt));
@@ -515,7 +531,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             }
         }
 
-        if (t_buy_amt > 0 && t_pay_amt > 0) {
+        if (t_buy_amt > 0 && t_pay_amt > 0 && t_pay_amt >= _dust[t_pay_gem]) {
             //new offer should be created
             id = super.offer(t_pay_amt, t_pay_gem, t_buy_amt, t_buy_gem);
             //insert offer into the sorted list

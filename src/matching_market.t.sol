@@ -587,7 +587,37 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(otc.getMinSell(mkr), 30);
         offer_id[1] = otc.offer(30, mkr, 90, dai, 0);
     }
-
+    function testDustMakerOfferCanceled() public {
+        assert(otc.matchingEnabled());
+        dai.transfer(user1, 30);
+        user1.doApprove(otc, 30, dai);
+        mkr.approve(otc, 25);
+        otc.setMinSell(dai, 10);
+        uint id0 = user1.doOffer(30, dai, 30, mkr, 0);
+        uint id1 = otc.offer(25, mkr, 25, dai, 0);
+        assert(!otc.isActive(id0));
+        assert(!otc.isActive(id1));
+    }
+    function testDustNotNewDustOfferIsCreated() public {
+        assert(otc.matchingEnabled());
+        dai.transfer(user1, 30);
+        user1.doApprove(otc, 30, dai);
+        mkr.approve(otc, 25);
+        otc.setMinSell(dai, 10);
+        uint id0 = otc.offer(25, mkr, 25, dai, 0);
+        uint id1 = user1.doOffer(30, dai, 30, mkr, 0);
+        assert(!otc.isActive(id0));
+        assert(!otc.isActive(id1));
+    }
+    function testBuyDustOfferCanceled() public {
+        dai.transfer(user1, 30);
+        user1.doApprove(otc, 30, dai);
+        mkr.approve(otc, 25);
+        otc.setMinSell(dai, 10);
+        uint id0 = user1.doOffer(30, dai, 30, mkr, 0);
+        otc.buy(id0, 25);
+        assert(!otc.isActive(id0));
+    }
     function testErroneousUserHigherIdStillWorks() public {
         dai.transfer(user1, 10);
         user1.doApprove(otc, 10, dai);
