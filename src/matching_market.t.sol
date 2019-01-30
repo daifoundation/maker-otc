@@ -429,6 +429,13 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(otc.getFirstUnsortedOffer(), offer_id[1]);
         assertEq(otc.getNextUnsortedOffer(offer_id[1]), 0);
     }
+    function testGetFirstUnsortedOfferOneOfferBought() public {
+        mkr.approve(otc, 30);
+        dai.transfer(user1, 100 );
+        offer_id[1] = otc.offer(30, mkr, 100, dai);
+        user1.doBuy(offer_id[1], 30);
+        assertEq(otc.getFirstUnsortedOffer(), 0);
+    }
     function testGetFirstNextUnsortedOfferThreeOffers() public {
         mkr.approve(otc, 90);
         offer_id[1] = otc.offer(30, mkr, 100, dai);
