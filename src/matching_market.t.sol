@@ -429,6 +429,13 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(otc.getFirstUnsortedOffer(), offer_id[1]);
         assertEq(otc.getNextUnsortedOffer(offer_id[1]), 0);
     }
+    function testGetFirstUnsortedOfferOneOfferBought() public {
+        mkr.approve(otc, 30);
+        dai.transfer(user1, 100 );
+        offer_id[1] = otc.offer(30, mkr, 100, dai);
+        user1.doBuy(offer_id[1], 30);
+        assertEq(otc.getFirstUnsortedOffer(), 0);
+    }
     function testGetFirstNextUnsortedOfferThreeOffers() public {
         mkr.approve(otc, 90);
         offer_id[1] = otc.offer(30, mkr, 100, dai);
@@ -698,11 +705,37 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         uint dai_pay = 1230000000000000000;
         uint dgd_buy = 100000000;
 
-        user1.doOffer(dai_pay, dai, dgd_buy, dgd, 0);
+        user1.doOffer(dai_pay, dai, dgd_buy, dgd, 0, false);
 
         // Order should not have matched this time.
         assertEq(dgd.balanceOf(user1), old_dgd_bal);
         assertEq(old_dai_bal - dai.balanceOf(user1), dai_pay);
+    }    
+    
+    function testOrderMatchWithRounding() public {
+        // Approvals & user funding
+        mkr.transfer(user1, MKR_SUPPLY / 2);
+        dai.transfer(user1, DAI_SUPPLY / 2);
+        dgd.transfer(user1, DGD_SUPPLY / 2);
+        user1.doApprove(otc, DAI_SUPPLY, dai);
+        user1.doApprove(otc, DGD_SUPPLY, dgd);
+        user1.doApprove(otc, MKR_SUPPLY, mkr);
+        dai.approve(otc, DAI_SUPPLY);
+        dgd.approve(otc, DGD_SUPPLY);
+        mkr.approve(otc, MKR_SUPPLY);
+
+        // Does not divide cleanly.
+        otc.offer(1504155374, dgd, 18501111110000000000, dai, 0);
+
+        uint old_dai_bal = dai.balanceOf(user1);
+        uint old_dgd_bal = dgd.balanceOf(user1);
+        uint dai_pay = 1230000000000000000;
+        uint dgd_buy = 100000000;
+
+        offer_id[1] = user1.doOffer(dai_pay, dai, dgd_buy, dgd, 0);
+
+        // Order should not have matched this time.
+        assertEq(otc.isActive(offer_id[1]), false);
     }
 
     function testBestOfferWithOneOffer() public {

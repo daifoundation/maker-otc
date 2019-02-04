@@ -122,7 +122,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         can_offer
         returns (uint)
     {
-        return offer(pay_amt, pay_gem, buy_amt, buy_gem, pos, false);
+        return offer(pay_amt, pay_gem, buy_amt, buy_gem, pos, true);
     }
 
     function offer(
@@ -394,10 +394,13 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         returns (bool)
     {
         require(buyEnabled);
-
-        if (amount == offers[id].pay_amt && isOfferSorted(id)) {
-            //offers[id] must be removed from sorted list because all of it is bought
-            _unsort(id);
+        if (amount == offers[id].pay_amt) {
+            if (isOfferSorted(id)) {
+                //offers[id] must be removed from sorted list because all of it is bought
+                _unsort(id);
+            }else{
+                _hide(id);
+            }
         }
         require(super.buy(id, amount));
         // If offer has become dust during buy, we cancel it
