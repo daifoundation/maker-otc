@@ -52,8 +52,8 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         user1.doApprove(address(otc), 100, dai);
         uint id0 = user1.doOffer(100, dai, 100, mkr);
         (oSellAmt, oBuyAmt,,,,,,) = otc.offers(id0);
-        assert(oSellAmt == 100);
-        assert(oBuyAmt == 100);
+        assertTrue(oSellAmt == 100);
+        assertTrue(oBuyAmt == 100);
     }
 
     function testOriginalPayAndBuyUnchanged() public {
@@ -65,8 +65,8 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         uint id0 = user1.doOffer(100, dai, 100, mkr);
         otc.offer(10, mkr, 10, dai);
         (oSellAmt, oBuyAmt,,,,,,) = otc.offers(id0);
-        assert(oSellAmt == 100);
-        assert(oBuyAmt == 100);
+        assertTrue(oSellAmt == 100);
+        assertTrue(oBuyAmt == 100);
     }
 
     function testBasicTrade() public {
@@ -80,7 +80,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         uint user1DAIBalanceBefore = dai.balanceOf(address(user1));
 
         uint id = otc.offer(30, mkr, 100, dai);
-        assert(user1.doBuy(id, 30));
+        assertTrue(user1.doBuy(id, 30));
         uint myMKRBalanceAfter = mkr.balanceOf(address(this));
         uint myDAIBalanceAfter = dai.balanceOf(address(this));
         uint user1MKRbalanceAfter = mkr.balanceOf(address(user1));
@@ -102,7 +102,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         uint user1DAIBalanceBefore = dai.balanceOf(address(user1));
 
         uint id = otc.offer(200, mkr, 500, dai);
-        assert(user1.doBuy(id, 10));
+        assertTrue(user1.doBuy(id, 10));
         uint myMKRBalanceAfter = mkr.balanceOf(address(this));
         uint myDAIBalanceAfter = dai.balanceOf(address(this));
         uint user1MKRbalanceAfter = mkr.balanceOf(address(user1));
@@ -115,8 +115,8 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         assertEq(25, user1DAIBalanceBefore - user1DAIbalanceAfter);
         assertEq(190, sellAmt);
         assertEq(475, buyAmt);
-        assert(address(sellGem) > address(0));
-        assert(address(buyGem) > address(0));
+        assertTrue(address(sellGem) > address(0));
+        assertTrue(address(buyGem) > address(0));
     }
 
     function testPartiallyFilledOrderDai() public {
@@ -130,7 +130,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         uint user1DAIBalanceBefore = dai.balanceOf(address(user1));
 
         uint id = otc.offer(500, dai, 200, mkr);
-        assert(user1.doBuy(id, 10));
+        assertTrue(user1.doBuy(id, 10));
         uint myMKRBalanceAfter = mkr.balanceOf(address(this));
         uint myDAIBalanceAfter = dai.balanceOf(address(this));
         uint user1MKRbalanceAfter = mkr.balanceOf(address(user1));
@@ -143,8 +143,8 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         assertEq(4, user1MKRBalanceBefore - user1MKRbalanceAfter);
         assertEq(490, sellAmt);
         assertEq(196, buyAmt);
-        assert(address(sellGem) > address(0));
-        assert(address(buyGem) > address(0));
+        assertTrue(address(sellGem) > address(0));
+        assertTrue(address(buyGem) > address(0));
     }
 
     function testPartiallyFilledOrderMkrExcessQuantity() public {
@@ -158,7 +158,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         uint user1DAIBalanceBefore = dai.balanceOf(address(user1));
 
         uint id = otc.offer(200, mkr, 500, dai);
-        assert(!user1.doBuy(id, 201));
+        assertTrue(!user1.doBuy(id, 201));
 
         uint myMKRBalanceAfter = mkr.balanceOf(address(this));
         uint myDAIBalanceAfter = dai.balanceOf(address(this));
@@ -172,8 +172,8 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         assertEq(0, user1MKRBalanceBefore - user1MKRbalanceAfter);
         assertEq(200, sellAmt);
         assertEq(500, buyAmt);
-        assert(address(sellGem) > address(0));
-        assert(address(buyGem) > address(0));
+        assertTrue(address(sellGem) > address(0));
+        assertTrue(address(buyGem) > address(0));
     }
 
     function testInsufficientlyFilledOrder() public {
@@ -183,13 +183,13 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         dai.transfer(address(user1), 1);
         user1.doApprove(address(otc), 1, dai);
         bool success = user1.doBuy(id, 1);
-        assert(!success);
+        assertTrue(!success);
     }
 
     function testCancel() public {
         mkr.approve(address(otc), 30);
         uint id = otc.offer(30, mkr, 100, dai);
-        assert(otc.cancel(id));
+        assertTrue(otc.cancel(id));
 
         expectEventsExact(address(otc));
     }
@@ -203,14 +203,14 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
     function testFailCancelInactive() public {
         mkr.approve(address(otc), 30);
         uint id = otc.offer(30, mkr, 100, dai);
-        assert(otc.cancel(id));
+        assertTrue(otc.cancel(id));
         otc.cancel(id);
     }
 
     function testFailBuyInactive() public {
         mkr.approve(address(otc), 30);
         uint id = otc.offer(30, mkr, 100, dai);
-        assert(otc.cancel(id));
+        assertTrue(otc.cancel(id));
         otc.buy(id, 0);
     }
 
@@ -225,7 +225,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         user1.doApprove(address(otc), 101, dai);
         emit log_named_uint("user1 dai allowance", dai.allowance(address(user1), address(otc)));
         emit log_named_uint("user1 dai balance before", dai.balanceOf(address(user1)));
-        assert(user1.doBuy(id, 101));
+        assertTrue(user1.doBuy(id, 101));
         emit log_named_uint("user1 dai allowance", dai.allowance(address(user1), address(otc)));
         emit log_named_uint("user1 dai balance after", dai.balanceOf(address(user1)));
     }
@@ -236,7 +236,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         user1.doApprove(address(otc), 99, dai);
         emit log_named_uint("user1 dai allowance", dai.allowance(address(user1), address(otc)));
         emit log_named_uint("user1 dai balance before", dai.balanceOf(address(user1)));
-        assert(user1.doBuy(id, 100));
+        assertTrue(user1.doBuy(id, 100));
         emit log_named_uint("user1 dai allowance", dai.allowance(address(user1), address(otc)));
         emit log_named_uint("user1 dai balance after", dai.balanceOf(address(user1)));
     }
@@ -249,7 +249,7 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
     function testBuyTooMuch() public {
         mkr.approve(address(otc), 30);
         uint id = otc.offer(30, mkr, 100, dai);
-        assert(!otc.buy(id, 50));
+        assertTrue(!otc.buy(id, 50));
     }
 
     function testFailOverflow() public {
@@ -298,7 +298,7 @@ contract OfferTransferTest is TransferTest {
         uint balanceAfter = mkr.balanceOf(address(this));
 
         assertEq(balanceBefore - balanceAfter, 30);
-        assert(id > 0);
+        assertTrue(id > 0);
     }
 
     function testOfferTransfersToMarket() public {
@@ -307,7 +307,7 @@ contract OfferTransferTest is TransferTest {
         uint balanceAfter = mkr.balanceOf(address(otc));
 
         assertEq(balanceAfter - balanceBefore, 30);
-        assert(id > 0);
+        assertTrue(id > 0);
     }
 }
 
