@@ -431,8 +431,9 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     }
     function testGetFirstUnsortedOfferOneOfferBought() public {
         mkr.approve(otc, 30);
-        dai.transfer(user1, 100 );
+        dai.transfer(user1, 100);
         offer_id[1] = otc.offer(30, mkr, 100, dai);
+        user1.doApprove(otc, 100, dai);
         user1.doBuy(offer_id[1], 30);
         assertEq(otc.getFirstUnsortedOffer(), 0);
     }
@@ -735,7 +736,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         offer_id[1] = user1.doOffer(dai_pay, dai, dgd_buy, dgd, 0);
 
         // Order should not have matched this time.
-        assertEq(otc.isActive(offer_id[1]), false);
+        assertTrue(!otc.isActive(offer_id[1]));
     }
 
     function testBestOfferWithOneOffer() public {
