@@ -575,25 +575,11 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         address pay_gem = address(offers[id].pay_gem);
         uint prev_id;                                      //maker (ask) id
 
-        if (pos == 0 || !isOfferSorted(pos)) {
-            pos = _find(id);
-        } else {
-            pos = _findpos(id, pos);
-
-            //if user has entered a `pos` that belongs to another currency pair
-            //we start from scratch
-            if(pos != 0 && (offers[pos].pay_gem != offers[id].pay_gem
-                      || offers[pos].buy_gem != offers[id].buy_gem))
-            {
-                pos = 0;
-                pos=_find(id);
-            }
-        }
-
-
-        //requirement below is satisfied by statements above
-        //require(pos == 0 || isOfferSorted(pos));
-
+        pos = pos == 0 || offers[pos].pay_gem != pay_gem || offers[pos].buy_gem != buy_gem || !isOfferSorted(pos)
+        ?
+            _find(id)
+        :
+            _findpos(id, pos);
 
         if (pos != 0) {                                    //offers[id] is not the highest offer
             //requirement below is satisfied by statements above

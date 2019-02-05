@@ -1794,4 +1794,36 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         uint expectedResult = 10 ether * 3200 / 3200 + 10 ether * 1400 / 2800;
         assertEq(otc.buyAllAmount(dai, 4600 ether, mkr, expectedResult - 1), expectedResult);
     }
+
+    function testEvilOfferPositions() public {
+        mkr.approve(otc, uint(-1));
+        mkr.transfer(user1, 1000 ether);
+        dai.transfer(user1, 1000 ether);
+        user1.doApprove(otc, 1000 ether, dai);
+        user1.doApprove(otc, 1000 ether, mkr);
+        dai.approve(otc, 10 ether);
+
+        offer_id[1] = user1.doOffer(1 ether, mkr, 301 ether, dai, 1);
+        offer_id[2] = user1.doOffer(250 ether, dai, 1 ether, mkr, 1);
+        offer_id[3] = user1.doOffer(280 ether, dai, 1 ether, mkr, 1);
+        offer_id[4] = user1.doOffer(275 ether, dai, 1 ether, mkr, 1);
+
+        uint sellAmt;
+        uint buyAmt;
+
+        (sellAmt,, buyAmt,,,) = otc.offers(offer_id[1]);
+        assertTrue(sellAmt == 1 ether && buyAmt == 301 ether);
+
+        var currentId = otc.getBestOffer(dai, mkr);
+        (sellAmt,, buyAmt,,,) = otc.offers(currentId);
+        assertTrue(sellAmt == 280 ether && buyAmt == 1 ether);
+
+        currentId = otc.getWorseOffer(currentId);
+        (sellAmt,, buyAmt,,,) = otc.offers(currentId);
+        assertTrue(sellAmt == 275 ether && buyAmt == 1 ether);
+
+        currentId = otc.getWorseOffer(currentId);
+        (sellAmt,, buyAmt,,,) = otc.offers(currentId);
+        assertTrue(sellAmt == 250 ether && buyAmt == 1 ether);
+    }
 }
