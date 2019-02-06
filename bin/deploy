@@ -18,7 +18,7 @@ dustLimits=
 
 test -z "$NETWORK" && exit 1
 
-dapp --use solc:0.4.25 build
+dapp build
 
 ETH_NONCE=$(seth nonce "$ETH_FROM")
 
