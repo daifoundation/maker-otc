@@ -4,11 +4,17 @@ This repository contains implementation of the protocol to exchange ERC20 compli
 
 ## Design Consideration
 
+The protocol uses on-chain order book and matching engine. The primary advantage of such approach is that the liquidity is avaiable for other smart contracts that can access it in one atomic ethereum transaction. The second advantage is that the protocol is fully decentralized without any need for an operator. 
+
+Order book for each market is implemented as two double-linked sorted lists, one for each side of the market. At any one time the list should be sorted. 
+
+The second important design choice is the use of the Escrow model for Makers - every order on the order book needs to be "backed up" by the liquidity that is escrowed in the contract. Although such approach locks down liquidity, it guarantees zero-risk, instantenous settlement. 
+
 ## API
 
 Smart Contract API for exchange users consists of four groups of calls:
 
-1. API for accessing sorted order book and matching engine - this is the API that will be used by most users. Order book is implemented as a double-linked sorted list. At any one time the list should be sorted.
+1. API for accessing sorted order book and matching engine - this is the API that will be used by most users. 
 2. API for Takers to execute a special type of order - fill-or-kill - that was used for example by Oasis.Direct (or is used now by eth2dai Instant tab). This order will never stay on the order book - if it cannot be matched, the transaction will revert
 3. API for accessing “unsorted order book” - largely deprecated. Unsorted order book is meant as a placeholder for orders before they will be put in the sorted order book by external actors. It could also be used for OTC trades, although there is no guarantee that the order will not be moved to the sorted order book as it can be done by anyone. Putting order into the unsorted orderbook costs much less gas (as there is no matching). This feature of the matching market will likely be removed in the next version of the contract. 
 4. Administrative functions to set market parameters
