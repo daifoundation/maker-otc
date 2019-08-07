@@ -135,7 +135,6 @@ contract OrderMatchingGasTest is DSTest {
         dai = new DSTokenBase(DAI_SUPPLY);
         mkr = new DSTokenBase(MKR_SUPPLY);
         dgd = new DSTokenBase(DGD_SUPPLY);
-        otc.addTokenPairWhitelist(dai, mkr);
         user1 = new MarketTester(otc);
         dai.transfer(user1, (DAI_SUPPLY / 3) * 2);
         user1.doApprove(otc, DAI_SUPPLY / 3, dai );
@@ -422,8 +421,6 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         mkr = new DSTokenBase(MKR_SUPPLY);
         dgd = new DSTokenBase(DGD_SUPPLY);
         otc = new MatchingMarket(uint64(now + 1 weeks));
-        otc.addTokenPairWhitelist(dai, mkr);
-        otc.addTokenPairWhitelist(dgd, dai);
         user1 = new MarketTester(otc);
     }
     function testGetFirstNextUnsortedOfferOneOffer() public {
@@ -431,6 +428,14 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         offer_id[1] = otc.offer(30, mkr, 100, dai);
         assertEq(otc.getFirstUnsortedOffer(), offer_id[1]);
         assertEq(otc.getNextUnsortedOffer(offer_id[1]), 0);
+    }
+    function testGetFirstUnsortedOfferOneOfferBought() public {
+        mkr.approve(otc, 30);
+        dai.transfer(user1, 100);
+        offer_id[1] = otc.offer(30, mkr, 100, dai);
+        user1.doApprove(otc, 100, dai);
+        user1.doBuy(offer_id[1], 30);
+        assertEq(otc.getFirstUnsortedOffer(), 0);
     }
     function testGetFirstNextUnsortedOfferThreeOffers() public {
         mkr.approve(otc, 90);
@@ -590,7 +595,37 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(otc.getMinSell(mkr), 30);
         offer_id[1] = otc.offer(30, mkr, 90, dai, 0);
     }
-
+    function testDustMakerOfferCanceled() public {
+        assert(otc.matchingEnabled());
+        dai.transfer(user1, 30);
+        user1.doApprove(otc, 30, dai);
+        mkr.approve(otc, 25);
+        otc.setMinSell(dai, 10);
+        uint id0 = user1.doOffer(30, dai, 30, mkr, 0);
+        uint id1 = otc.offer(25, mkr, 25, dai, 0);
+        assert(!otc.isActive(id0));
+        assert(!otc.isActive(id1));
+    }
+    function testDustNotNewDustOfferIsCreated() public {
+        assert(otc.matchingEnabled());
+        dai.transfer(user1, 30);
+        user1.doApprove(otc, 30, dai);
+        mkr.approve(otc, 25);
+        otc.setMinSell(dai, 10);
+        uint id0 = otc.offer(25, mkr, 25, dai, 0);
+        uint id1 = user1.doOffer(30, dai, 30, mkr, 0);
+        assert(!otc.isActive(id0));
+        assert(!otc.isActive(id1));
+    }
+    function testBuyDustOfferCanceled() public {
+        dai.transfer(user1, 30);
+        user1.doApprove(otc, 30, dai);
+        mkr.approve(otc, 25);
+        otc.setMinSell(dai, 10);
+        uint id0 = user1.doOffer(30, dai, 30, mkr, 0);
+        otc.buy(id0, 25);
+        assert(!otc.isActive(id0));
+    }
     function testErroneousUserHigherIdStillWorks() public {
         dai.transfer(user1, 10);
         user1.doApprove(otc, 10, dai);
@@ -671,11 +706,37 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         uint dai_pay = 1230000000000000000;
         uint dgd_buy = 100000000;
 
-        user1.doOffer(dai_pay, dai, dgd_buy, dgd, 0);
+        user1.doOffer(dai_pay, dai, dgd_buy, dgd, 0, false);
 
         // Order should not have matched this time.
         assertEq(dgd.balanceOf(user1), old_dgd_bal);
         assertEq(old_dai_bal - dai.balanceOf(user1), dai_pay);
+    }    
+    
+    function testOrderMatchWithRounding() public {
+        // Approvals & user funding
+        mkr.transfer(user1, MKR_SUPPLY / 2);
+        dai.transfer(user1, DAI_SUPPLY / 2);
+        dgd.transfer(user1, DGD_SUPPLY / 2);
+        user1.doApprove(otc, DAI_SUPPLY, dai);
+        user1.doApprove(otc, DGD_SUPPLY, dgd);
+        user1.doApprove(otc, MKR_SUPPLY, mkr);
+        dai.approve(otc, DAI_SUPPLY);
+        dgd.approve(otc, DGD_SUPPLY);
+        mkr.approve(otc, MKR_SUPPLY);
+
+        // Does not divide cleanly.
+        otc.offer(1504155374, dgd, 18501111110000000000, dai, 0);
+
+        uint old_dai_bal = dai.balanceOf(user1);
+        uint old_dgd_bal = dgd.balanceOf(user1);
+        uint dai_pay = 1230000000000000000;
+        uint dgd_buy = 100000000;
+
+        offer_id[1] = user1.doOffer(dai_pay, dai, dgd_buy, dgd, 0);
+
+        // Order should not have matched this time.
+        assertTrue(!otc.isActive(offer_id[1]));
     }
 
     function testBestOfferWithOneOffer() public {
@@ -1656,59 +1717,6 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assert(address(sell_token1) > 0x0);
         assert(address(buy_token1) > 0x0);
     }
-    //check if a token pair is whitelisted
-    function testIsTokenPairWhitelisted() public constant {
-        ERC20 baseToken = mkr;
-        ERC20 quoteToken = dai;
-        assert(otc.isTokenPairWhitelisted(baseToken, quoteToken));
-    }
-    //check if a token pair in reverse order is whitelisted
-    function testIsTokenPairWhitelisted2() public constant {
-        ERC20 baseToken = dai;
-        ERC20 quoteToken = mkr;
-        assert(otc.isTokenPairWhitelisted(baseToken, quoteToken));
-    }
-    //check if a token pair that is not in whitelist is whitelisted
-    function testIsTokenPairWhitelisted3() public {
-        ERC20 gnt = new DSTokenBase(10 ** 9);
-        ERC20 baseToken = dgd;
-        ERC20 quoteToken = gnt;
-        assert(!otc.isTokenPairWhitelisted(baseToken, quoteToken));
-    }
-    //remove token pair in same order it was added
-    function testRemTokenPairFromWhitelist() public {
-        ERC20 baseToken = dai;
-        ERC20 quoteToken = mkr;
-        assert(otc.isTokenPairWhitelisted(baseToken, quoteToken));
-        assert(otc.remTokenPairWhitelist(baseToken, quoteToken));
-        assert(!otc.isTokenPairWhitelisted(baseToken, quoteToken));
-    }
-    //remove token pair in reverse order of which it was added
-    function testRemTokenPairFromWhitelist2() public {
-        ERC20 baseToken = dai;
-        ERC20 quoteToken = dgd;
-        assert(otc.isTokenPairWhitelisted(baseToken, quoteToken));
-        assert(otc.remTokenPairWhitelist(baseToken, quoteToken));
-        assert(!otc.isTokenPairWhitelisted(baseToken, quoteToken));
-    }
-    //add new token pair to whitelist
-    function testAddTokenPairToWhitelist() public {
-        ERC20 baseToken = mkr;
-        ERC20 quoteToken = dgd;
-        assert(!otc.isTokenPairWhitelisted(baseToken, quoteToken));
-        assert(otc.addTokenPairWhitelist(baseToken, quoteToken));
-        assert(otc.isTokenPairWhitelisted(baseToken, quoteToken));
-    }
-    //add token pair that was previously added and removed from whitelist
-    function testAddTokenPairToWhitelist2() public {
-        ERC20 baseToken = mkr;
-        ERC20 quoteToken = dai;
-        assert(otc.remTokenPairWhitelist(baseToken, quoteToken));
-        assert(!otc.isTokenPairWhitelisted(baseToken, quoteToken));
-        assert(otc.addTokenPairWhitelist(baseToken, quoteToken));
-        assert(otc.isTokenPairWhitelisted(baseToken, quoteToken));
-    }
-
     function testSellAllDai() public {
         mkr.approve(otc, uint(-1));
         dai.approve(otc, uint(-1));
@@ -1785,5 +1793,37 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
 
         uint expectedResult = 10 ether * 3200 / 3200 + 10 ether * 1400 / 2800;
         assertEq(otc.buyAllAmount(dai, 4600 ether, mkr, expectedResult - 1), expectedResult);
+    }
+
+    function testEvilOfferPositions() public {
+        mkr.approve(otc, uint(-1));
+        mkr.transfer(user1, 1000 ether);
+        dai.transfer(user1, 1000 ether);
+        user1.doApprove(otc, 1000 ether, dai);
+        user1.doApprove(otc, 1000 ether, mkr);
+        dai.approve(otc, 10 ether);
+
+        offer_id[1] = user1.doOffer(1 ether, mkr, 301 ether, dai, 1);
+        offer_id[2] = user1.doOffer(250 ether, dai, 1 ether, mkr, 1);
+        offer_id[3] = user1.doOffer(280 ether, dai, 1 ether, mkr, 1);
+        offer_id[4] = user1.doOffer(275 ether, dai, 1 ether, mkr, 1);
+
+        uint sellAmt;
+        uint buyAmt;
+
+        (sellAmt,, buyAmt,,,) = otc.offers(offer_id[1]);
+        assertTrue(sellAmt == 1 ether && buyAmt == 301 ether);
+
+        var currentId = otc.getBestOffer(dai, mkr);
+        (sellAmt,, buyAmt,,,) = otc.offers(currentId);
+        assertTrue(sellAmt == 280 ether && buyAmt == 1 ether);
+
+        currentId = otc.getWorseOffer(currentId);
+        (sellAmt,, buyAmt,,,) = otc.offers(currentId);
+        assertTrue(sellAmt == 275 ether && buyAmt == 1 ether);
+
+        currentId = otc.getWorseOffer(currentId);
+        (sellAmt,, buyAmt,,,) = otc.offers(currentId);
+        assertTrue(sellAmt == 250 ether && buyAmt == 1 ether);
     }
 }

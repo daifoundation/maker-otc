@@ -25,8 +25,6 @@ contract MatchingEvents {
     event LogMatchingEnabled(bool isEnabled);
     event LogUnsortedOffer(uint id);
     event LogSortedOffer(uint id);
-    event LogAddTokenPairWhitelist(ERC20 baseToken, ERC20 quoteToken);
-    event LogRemTokenPairWhitelist(ERC20 baseToken, ERC20 quoteToken);
     event LogInsert(address keeper, uint id);
     event LogDelete(address keeper, uint id);
 }
@@ -45,16 +43,21 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     mapping(address => mapping(address => uint)) public _span;  //number of offers stored for token pair in sorted orderbook
     mapping(address => uint) public _dust;                      //minimum sell amount for a token to avoid dust offers
     mapping(uint => uint) public _near;         //next unsorted offer id
-    mapping(bytes32 => bool) public _menu;      //whitelist tracking which token pairs can be traded
     uint _head;                                 //first unsorted offer id
+    uint public dustId;                         // id of the latest offer marked as dust
 
-    //check if token pair is enabled
-    modifier isWhitelist(ERC20 buy_gem, ERC20 pay_gem) {
-        require(_menu[keccak256(buy_gem, pay_gem)] || _menu[keccak256(pay_gem, buy_gem)]);
-        _;
-    }
 
     function MatchingMarket(uint64 close_time) ExpiringMarket(close_time) public {
+    }
+
+    // After close, anyone can cancel an offer
+    modifier can_cancel(uint id) {
+        require(isActive(id), "Offer was deleted or taken, or never existed.");
+        require(
+            isClosed() || msg.sender == getOwner(id) || id == dustId,
+            "Offer can not be cancelled because user is not owner, and market is open, and offer sells required amount of tokens."
+        );
+        _;
     }
 
     // ---- Public entrypoints ---- //
@@ -100,10 +103,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         ERC20 buy_gem    //taker (ask) buy which token
     )
         public
-        isWhitelist(pay_gem, buy_gem)
-        /* NOT synchronized!!! */
         returns (uint)
     {
+        require(!locked, "Reentrancy attempt");
         var fn = matchingEnabled ? _offeru : super.offer;
         return fn(pay_amt, pay_gem, buy_amt, buy_gem);
     }
@@ -117,12 +119,10 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint pos         //position to insert offer, 0 should be used if unknown
     )
         public
-        isWhitelist(pay_gem, buy_gem)
-        /*NOT synchronized!!! */
         can_offer
         returns (uint)
     {
-        return offer(pay_amt, pay_gem, buy_amt, buy_gem, pos, false);
+        return offer(pay_amt, pay_gem, buy_amt, buy_gem, pos, true);
     }
 
     function offer(
@@ -134,11 +134,10 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         bool rounding    //match "close enough" orders?
     )
         public
-        isWhitelist(pay_gem, buy_gem)
-        /*NOT synchronized!!! */
         can_offer
         returns (uint)
     {
+        require(!locked, "Reentrancy attempt");
         require(_dust[pay_gem] <= pay_amt);
 
         if (matchingEnabled) {
@@ -150,10 +149,10 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     //Transfers funds from caller to offer maker, and from market to caller.
     function buy(uint id, uint amount)
         public
-        /*NOT synchronized!!! */
         can_buy(id)
         returns (bool)
     {
+        require(!locked, "Reentrancy attempt");
         var fn = matchingEnabled ? _buys : super.buy;
         return fn(id, amount);
     }
@@ -161,10 +160,10 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     // Cancel an offer. Refunds offer maker.
     function cancel(uint id)
         public
-        /*NOT synchronized!!! */
         can_cancel(id)
         returns (bool success)
     {
+        require(!locked, "Reentrancy attempt");
         if (matchingEnabled) {
             if (isOfferSorted(id)) {
                 require(_unsort(id));
@@ -184,6 +183,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         public
         returns (bool)
     {
+        require(!locked, "Reentrancy attempt");
         require(!isOfferSorted(id));    //make sure offers[id] is not yet sorted
         require(isActive(id));          //make sure offers[id] is active
 
@@ -197,63 +197,13 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     //  Function should be called by keepers.
     function del_rank(uint id)
         public
-    returns (bool)
+        returns (bool)
     {
+        require(!locked, "Reentrancy attempt");
         require(!isActive(id) && _rank[id].delb != 0 && _rank[id].delb < block.number - 10);
         delete _rank[id];
         LogDelete(msg.sender, id);
         return true;
-    }
-
-    //returns true if token is succesfully added to whitelist
-    //  Function is used to add a token pair to the whitelist
-    //  All incoming offers are checked against the whitelist.
-    function addTokenPairWhitelist(
-        ERC20 baseToken,
-        ERC20 quoteToken
-    )
-        public
-        auth
-        note
-    returns (bool)
-    {
-        require(!isTokenPairWhitelisted(baseToken, quoteToken));
-        require(address(baseToken) != 0x0 && address(quoteToken) != 0x0);
-
-        _menu[keccak256(baseToken, quoteToken)] = true;
-        LogAddTokenPairWhitelist(baseToken, quoteToken);
-        return true;
-    }
-
-    //returns true if token is successfully removed from whitelist
-    //  Function is used to remove a token pair from the whitelist.
-    //  All incoming offers are checked against the whitelist.
-    function remTokenPairWhitelist(
-        ERC20 baseToken,
-        ERC20 quoteToken
-    )
-        public
-        auth
-        note
-    returns (bool)
-    {
-        require(isTokenPairWhitelisted(baseToken, quoteToken));
-
-        delete _menu[keccak256(baseToken, quoteToken)];
-        delete _menu[keccak256(quoteToken, baseToken)];
-        LogRemTokenPairWhitelist(baseToken, quoteToken);
-        return true;
-    }
-
-    function isTokenPairWhitelisted(
-        ERC20 baseToken,
-        ERC20 quoteToken
-    )
-        public
-        constant
-        returns (bool)
-    {
-        return (_menu[keccak256(baseToken, quoteToken)] || _menu[keccak256(quoteToken, baseToken)]);
     }
 
     //set the minimum sell amount for a token
@@ -360,6 +310,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         public
         returns (uint fill_amt)
     {
+        require(!locked, "Reentrancy attempt");
         uint offerId;
         while (pay_amt > 0) {                           //while there is amount to sell
             offerId = getBestOffer(buy_gem, pay_gem);   //Get the best offer for the token pair
@@ -387,6 +338,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         public
         returns (uint fill_amt)
     {
+        require(!locked, "Reentrancy attempt");
         uint offerId;
         while (buy_amt > 0) {                           //Meanwhile there is amount to buy
             offerId = getBestOffer(buy_gem, pay_gem);   //Get the best offer for the token pair
@@ -442,12 +394,20 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         returns (bool)
     {
         require(buyEnabled);
-
-        if (amount == offers[id].pay_amt && isOfferSorted(id)) {
-            //offers[id] must be removed from sorted list because all of it is bought
-            _unsort(id);
+        if (amount == offers[id].pay_amt) {
+            if (isOfferSorted(id)) {
+                //offers[id] must be removed from sorted list because all of it is bought
+                _unsort(id);
+            }else{
+                _hide(id);
+            }
         }
         require(super.buy(id, amount));
+        // If offer has become dust during buy, we cancel it
+        if (isActive(id) && offers[id].pay_amt < _dust[offers[id].pay_gem]) {
+            dustId = id; //enable current msg.sender to call cancel(id)
+            cancel(id);
+        }
         return true;
     }
 
@@ -476,7 +436,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     function _findpos(uint id, uint pos)
         internal
         view
-    returns (uint)
+        returns (uint)
     {
         require(id > 0);
 
@@ -564,7 +524,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             }
             // ^ The `rounding` parameter is a compromise borne of a couple days
             // of discussion.
-
             buy(best_maker_id, min(m_pay_amt, t_buy_amt));
             t_buy_amt_old = t_buy_amt;
             t_buy_amt = sub(t_buy_amt, min(m_pay_amt, t_buy_amt));
@@ -575,7 +534,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             }
         }
 
-        if (t_buy_amt > 0 && t_pay_amt > 0) {
+        if (t_buy_amt > 0 && t_pay_amt > 0 && t_pay_amt >= _dust[t_pay_gem]) {
             //new offer should be created
             id = super.offer(t_pay_amt, t_pay_gem, t_buy_amt, t_buy_gem);
             //insert offer into the sorted list
@@ -594,7 +553,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         ERC20 buy_gem      //maker (ask) buy which token
     )
         internal
-        /*NOT synchronized!!! */
         returns (uint id)
     {
         require(_dust[pay_gem] <= pay_amt);
@@ -617,25 +575,11 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         address pay_gem = address(offers[id].pay_gem);
         uint prev_id;                                      //maker (ask) id
 
-        if (pos == 0 || !isOfferSorted(pos)) {
-            pos = _find(id);
-        } else {
-            pos = _findpos(id, pos);
-
-            //if user has entered a `pos` that belongs to another currency pair
-            //we start from scratch
-            if(pos != 0 && (offers[pos].pay_gem != offers[id].pay_gem
-                      || offers[pos].buy_gem != offers[id].buy_gem))
-            {
-                pos = 0;
-                pos=_find(id);
-            }
-        }
-
-
-        //requirement below is satisfied by statements above
-        //require(pos == 0 || isOfferSorted(pos));
-
+        pos = pos == 0 || offers[pos].pay_gem != pay_gem || offers[pos].buy_gem != buy_gem || !isOfferSorted(pos)
+        ?
+            _find(id)
+        :
+            _findpos(id, pos);
 
         if (pos != 0) {                                    //offers[id] is not the highest offer
             //requirement below is satisfied by statements above
