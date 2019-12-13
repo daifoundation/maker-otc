@@ -35,17 +35,6 @@ contract EventfulMarket {
         uint64            timestamp
     );
 
-    event LogBump(
-        bytes32  indexed  id,
-        bytes32  indexed  pair,
-        address  indexed  maker,
-        ERC20             pay_gem,
-        ERC20             buy_gem,
-        uint128           pay_amt,
-        uint128           buy_amt,
-        uint64            timestamp
-    );
-
     event LogTake(
         bytes32           id,
         bytes32  indexed  pair,
@@ -124,23 +113,6 @@ contract SimpleMarket is EventfulMarket, DSMath {
     }
 
     // ---- Public entrypoints ---- //
-
-    function bump(bytes32 id_)
-        public
-        can_buy(uint256(id_))
-    {
-        uint256 id = uint256(id_);
-        emit LogBump(
-            id_,
-            keccak256(abi.encodePacked(offers[id].pay_gem, offers[id].buy_gem)),
-            offers[id].owner,
-            offers[id].pay_gem,
-            offers[id].buy_gem,
-            uint128(offers[id].pay_amt),
-            uint128(offers[id].buy_amt),
-            offers[id].timestamp
-        );
-    }
 
     // Accept given `quantity` of an offer. Transfers funds from caller to
     // offer maker, and from market to caller.
