@@ -45,7 +45,6 @@ Maker who is certain that their offer will not be matched should always send opt
 ### Unsorted List Operations
 * `offer(pay_amt, pay_gem, buy_amt, buy_gem)` - creates offer in an unsorted list, 
 * `make(pay_gem, buy_gem, pay_amt, buy_amt)` - byte32 version of offer(pay_amt, pay_gem, buy_amt, buy_gem()) 
-* `insert(id, pos)` - inserts offer with Id at the pos from unsorted to sorted list 
 * `del_rank()`
 * `getFirstUnsortedOffer()`
 * `getNextUnsortedOffer()`
