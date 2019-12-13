@@ -447,54 +447,6 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(otc.getNextUnsortedOffer(offer_id[2]), offer_id[1]);
         assertEq(otc.getNextUnsortedOffer(offer_id[3]), offer_id[2]);
     }
-    function testGetFirstNextUnsortedOfferAfterInsertOne() public {
-        mkr.approve(address(otc), 90);
-        offer_id[1] = otc.offer(30, mkr, 100, dai);
-        offer_id[2] = otc.offer(30, mkr, 100, dai);
-        offer_id[3] = otc.offer(30, mkr, 100, dai);
-        otc.insert(offer_id[3], 0);
-        assertEq(otc.getBestOffer( mkr, dai ), offer_id[3]);
-        assertEq(otc.getFirstUnsortedOffer(), offer_id[2]);
-        assertEq(otc.getNextUnsortedOffer(offer_id[1]), 0);
-        assertEq(otc.getNextUnsortedOffer(offer_id[2]), offer_id[1]);
-        assertEq(otc.getNextUnsortedOffer(offer_id[3]), 0);
-    }
-    function testGetFirstNextUnsortedOfferAfterInsertTwo() public {
-        mkr.approve(address(otc), 90);
-        offer_id[1] = otc.offer(30, mkr, 100, dai);
-        offer_id[2] = otc.offer(30, mkr, 100, dai);
-        offer_id[3] = otc.offer(30, mkr, 100, dai);
-        otc.insert(offer_id[3],0);
-        otc.insert(offer_id[2],0);
-        assertEq( otc.getFirstUnsortedOffer(), offer_id[1]);
-        assertEq( otc.getNextUnsortedOffer(offer_id[1]), 0);
-        assertEq( otc.getNextUnsortedOffer(offer_id[2]), 0);
-        assertEq( otc.getNextUnsortedOffer(offer_id[3]), 0);
-    }
-    function testGetFirstNextUnsortedOfferAfterInsertTheree() public {
-        mkr.approve(address(otc), 90);
-        offer_id[1] = otc.offer(30, mkr, 100, dai);
-        offer_id[2] = otc.offer(30, mkr, 100, dai);
-        offer_id[3] = otc.offer(30, mkr, 100, dai);
-        otc.insert(offer_id[3],0);
-        otc.insert(offer_id[2],0);
-        otc.insert(offer_id[1],0);
-        assertEq(otc.getFirstUnsortedOffer(), 0);
-        assertEq(otc.getNextUnsortedOffer(offer_id[1]), 0);
-        assertEq(otc.getNextUnsortedOffer(offer_id[2]), 0);
-        assertEq(otc.getNextUnsortedOffer(offer_id[3]), 0);
-    }
-    function testFailInsertOfferThatIsAlreadyInTheSortedList() public {
-        mkr.approve(address(otc), 30);
-        offer_id[1] = otc.offer(30, mkr, 100, dai, 0);
-        otc.insert(offer_id[1],0);
-        otc.insert(offer_id[1],0);
-    }
-    function testFailInsertOfferThatHasWrongInserPosition() public {
-        mkr.approve(address(otc), 30);
-        offer_id[1] = otc.offer(30, mkr, 100, dai, 0);
-        otc.insert(offer_id[1],7);  //there is no active offer at pos 7
-    }
     function testBuyEnabledByDefault() public {
         assertTrue(otc.buyEnabled());
     }

@@ -25,7 +25,6 @@ contract MatchingEvents {
     event LogMatchingEnabled(bool isEnabled);
     event LogUnsortedOffer(uint id);
     event LogSortedOffer(uint id);
-    event LogInsert(address keeper, uint id);
     event LogDelete(address keeper, uint id);
 }
 
@@ -88,8 +87,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     //     * creates new offer without putting it in
     //       the sorted list.
     //     * available to authorized contracts only!
-    //     * keepers should call insert(id,pos)
-    //       to put offer in the sorted list.
     //
     // If matching is disabled:
     //     * calls expiring market's offer().
@@ -172,25 +169,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             }
         }
         return super.cancel(id);    //delete the offer.
-    }
-
-    //insert offer into the sorted list
-    //keepers need to use this function
-    function insert(
-        uint id,   //maker (ask) id
-        uint pos   //position to insert into
-    )
-        public
-        returns (bool)
-    {
-        require(!locked, "Reentrancy attempt");
-        require(!isOfferSorted(id));    //make sure offers[id] is not yet sorted
-        require(isActive(id));          //make sure offers[id] is active
-
-        _hide(id);                      //remove offer from unsorted offers list
-        _sort(id, pos);                 //put offer into the sorted offers list
-        emit LogInsert(msg.sender, id);
-        return true;
     }
 
     //deletes _rank [id]
