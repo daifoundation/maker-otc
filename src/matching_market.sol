@@ -23,7 +23,6 @@ contract MatchingEvents {
     event LogBuyEnabled(bool isEnabled);
     event LogMinSell(address pay_gem, uint min_amount);
     event LogMatchingEnabled(bool isEnabled);
-    event LogUnsortedOffer(uint id);
     event LogSortedOffer(uint id);
     event LogDelete(address keeper, uint id);
 }
@@ -41,8 +40,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     mapping(address => mapping(address => uint)) public _best;  //id of the highest offer for a token pair
     mapping(address => mapping(address => uint)) public _span;  //number of offers stored for token pair in sorted orderbook
     mapping(address => uint) public _dust;                      //minimum sell amount for a token to avoid dust offers
-    mapping(uint => uint) public _near;         //next unsorted offer id
-    uint _head;                                 //first unsorted offer id
     uint public dustId;                         // id of the latest offer marked as dust
 
 
@@ -103,8 +100,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         returns (uint)
     {
         require(!locked, "Reentrancy attempt");
-        function (uint256,ERC20,uint256,ERC20) returns (uint256) fn = matchingEnabled ? _offeru : super.offer;
-        return fn(pay_amt, pay_gem, buy_amt, buy_gem);
+        return super.offer(pay_amt, pay_gem, buy_amt, buy_gem);
     }
 
     // Make a new offer. Takes funds from the caller into market escrow.
@@ -162,11 +158,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     {
         require(!locked, "Reentrancy attempt");
         if (matchingEnabled) {
-            if (isOfferSorted(id)) {
-                require(_unsort(id));
-            } else {
-                require(_hide(id));
-            }
+            require(_unsort(id));
         }
         return super.cancel(id);    //delete the offer.
     }
@@ -261,21 +253,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     //return the amount of better offers for a token pair
     function getOfferCount(ERC20 sell_gem, ERC20 buy_gem) public view returns(uint) {
         return _span[address(sell_gem)][address(buy_gem)];
-    }
-
-    //get the first unsorted offer that was inserted by a contract
-    //      Contracts can't calculate the insertion position of their offer because it is not an O(1) operation.
-    //      Their offers get put in the unsorted list of offers.
-    //      Keepers can calculate the insertion position offchain and pass it to the insert() function to insert
-    //      the unsorted offer into the sorted list. Unsorted offers will not be matched, but can be bought with buy().
-    function getFirstUnsortedOffer() public view returns(uint) {
-        return _head;
-    }
-
-    //get the next unsorted offer
-    //      Can be used to cycle through all the unsorted offers.
-    function getNextUnsortedOffer(uint id) public view returns(uint) {
-        return _near[id];
     }
 
     function isOfferSorted(uint id) public view returns(bool) {
@@ -373,12 +350,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     {
         require(buyEnabled);
         if (amount == offers[id].pay_amt) {
-            if (isOfferSorted(id)) {
-                //offers[id] must be removed from sorted list because all of it is bought
-                _unsort(id);
-            }else{
-                _hide(id);
-            }
+            //offers[id] must be removed from sorted list because all of it is bought
+            _unsort(id);
         }
         require(super.buy(id, amount));
         // If offer has become dust during buy, we cancel it
@@ -520,26 +493,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         }
     }
 
-    // Make a new offer without putting it in the sorted list.
-    // Takes funds from the caller into market escrow.
-    // ****Available to authorized contracts only!**********
-    // Keepers should call insert(id,pos) to put offer in the sorted list.
-    function _offeru(
-        uint pay_amt,      //maker (ask) sell how much
-        ERC20 pay_gem,     //maker (ask) sell which token
-        uint buy_amt,      //maker (ask) buy how much
-        ERC20 buy_gem      //maker (ask) buy which token
-    )
-        internal
-        returns (uint id)
-    {
-        require(_dust[address(pay_gem)] <= pay_amt);
-        id = super.offer(pay_amt, pay_gem, buy_amt, buy_gem);
-        _near[id] = _head;
-        _head = id;
-        emit LogUnsortedOffer(id);
-    }
-
     //put offer into the sorted list
     function _sort(
         uint id,    //maker (ask) id
@@ -609,35 +562,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
         _span[pay_gem][buy_gem]--;
         _rank[id].delb = block.number;                    //mark _rank[id] for deletion
-        return true;
-    }
-
-    //Hide offer from the unsorted order book (does not cancel offer)
-    function _hide(
-        uint id     //id of maker offer to remove from unsorted list
-    )
-        internal
-        returns (bool)
-    {
-        uint uid = _head;               //id of an offer in unsorted offers list
-        uint pre = uid;                 //id of previous offer in unsorted offers list
-
-        require(!isOfferSorted(id));    //make sure offer id is not in sorted offers list
-
-        if (_head == id) {              //check if offer is first offer in unsorted offers list
-            _head = _near[id];          //set head to new first unsorted offer
-            _near[id] = 0;              //delete order from unsorted order list
-            return true;
-        }
-        while (uid > 0 && uid != id) {  //find offer in unsorted order list
-            pre = uid;
-            uid = _near[uid];
-        }
-        if (uid != id) {                //did not find offer id in unsorted offers list
-            return false;
-        }
-        _near[pre] = _near[id];         //set previous unsorted offer to point to offer after offer id
-        _near[id] = 0;                  //delete order from unsorted order list
         return true;
     }
 }
