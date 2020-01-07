@@ -10,19 +10,6 @@ contract MarketTester {
     function MarketTester(MatchingMarket  market_) public {
         market = market_;
     }
-    function doSetMatchingEnabled(bool ema_)
-        public
-        returns (bool)
-    {
-        return market.setMatchingEnabled(ema_);
-    }
-    function doIsMatchingEnabled()
-        public
-        constant
-        returns (bool)
-    {
-        return market.matchingEnabled();
-    }
     function doSetBuyEnabled(bool ebu_)
         public
         returns (bool)
@@ -449,36 +436,14 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         LogTrade(30, mkr, 100, dai);
         LogItemUpdate(offer_id[1]);
     }
-    function testMatchingEnabledByDefault() public constant {
-        assert(otc.matchingEnabled());
-    }
-    function testDisableMatching() public {
-        assert(otc.setMatchingEnabled(false));
-        assert(!otc.matchingEnabled());
-        expectEventsExact(otc);
-        LogMatchingEnabled(false);
-    }
     function testFailMatchingEnabledUserCantMakeUnsortedOffer() public {
-        assert(otc.matchingEnabled());
         dai.transfer(user1, 1);
         offer_id[1] = user1.doUnsortedOffer(1, dai, 1, mkr);
     }
     function testMatchingEnabledAuthUserCanMakeUnsortedOffer() public {
-        assert(otc.setMatchingEnabled(true));
-        assert(otc.matchingEnabled());
         dai.approve(otc, 1);
         offer_id[1] = otc.offer(1, dai, 1, mkr);
         assert(offer_id[1] > 0);
-    }
-    function testMatchingDisabledCancelDoesNotChangeSortedList() public {
-        assert(otc.setMatchingEnabled(true));
-        assert(otc.matchingEnabled());
-        dai.approve(otc, 1);
-        offer_id[1] = otc.offer(1, dai, 1, mkr, 0);
-        assert(otc.setMatchingEnabled(false));
-        assert(!otc.matchingEnabled());
-        otc.cancel(offer_id[1]);
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[1]);
     }
     function testSetGetMinSellAmout() public {
         otc.setMinSell(dai, 100);
@@ -500,7 +465,6 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         offer_id[1] = otc.offer(30, mkr, 90, dai, 0);
     }
     function testDustMakerOfferCanceled() public {
-        assert(otc.matchingEnabled());
         dai.transfer(user1, 30);
         user1.doApprove(otc, 30, dai);
         mkr.approve(otc, 25);
@@ -511,7 +475,6 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assert(!otc.isActive(id1));
     }
     function testDustNotNewDustOfferIsCreated() public {
-        assert(otc.matchingEnabled());
         dai.transfer(user1, 30);
         user1.doApprove(otc, 30, dai);
         mkr.approve(otc, 25);
