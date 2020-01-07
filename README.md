@@ -52,6 +52,5 @@ Maker who is certain that their offer will not be matched should always send opt
 
 ### Administrative methods
 * `stop()` - stops the market
-* `setMatchingEnabled()` - stops matching engine
 * `setMinSell()`/`getMinSell()` - sets/gets the dust limit for a token 
 
