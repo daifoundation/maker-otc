@@ -83,6 +83,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         ERC20 buy_gem    //taker (ask) buy which token
     )
         public
+        can_offer
         returns (uint)
     {
         return offer(pay_amt, pay_gem, buy_amt, buy_gem, 0, true);
@@ -128,8 +129,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         returns (bool)
     {
         require(!locked, "Reentrancy attempt");
-        function (uint256,uint256) returns (bool) fn = _buys;
-        return fn(id, amount);
+        return _buys(id, amount);
     }
 
     // Cancel an offer. Refunds offer maker.
