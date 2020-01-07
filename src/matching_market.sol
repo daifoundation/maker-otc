@@ -76,17 +76,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     }
 
     // Make a new offer. Takes funds from the caller into market escrow.
-    //
-    // If matching is enabled:
-    //     * creates new offer without putting it in
-    //       the sorted list.
-    //     * available to authorized contracts only!
-    //
-    // If matching is disabled:
-    //     * calls expiring market's offer().
-    //     * available to everyone without authorization.
-    //     * no sorting is done.
-    //
     function offer(
         uint pay_amt,    //maker (ask) sell how much
         ERC20 pay_gem,   //maker (ask) sell which token
@@ -96,8 +85,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         public
         returns (uint)
     {
-        require(!locked, "Reentrancy attempt");
-        return super.offer(pay_amt, pay_gem, buy_amt, buy_gem);
+        return offer(pay_amt, pay_gem, buy_amt, buy_gem, 0, true);
     }
 
     // Make a new offer. Takes funds from the caller into market escrow.
