@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pragma solidity ^0.4.18;
+pragma solidity ^0.5.12;
 
 import "ds-auth/auth.sol";
 
@@ -47,17 +47,17 @@ contract ExpiringMarket is DSAuth, SimpleMarket {
         _;
     }
 
-    function ExpiringMarket(uint64 _close_time)
+    constructor(uint64 _close_time)
         public
     {
         close_time = _close_time;
     }
 
-    function isClosed() public constant returns (bool closed) {
+    function isClosed() public view returns (bool closed) {
         return stopped || getTime() > close_time;
     }
 
-    function getTime() public constant returns (uint64) {
+    function getTime() public view returns (uint64) {
         return uint64(now);
     }
 
