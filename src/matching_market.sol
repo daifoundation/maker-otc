@@ -27,15 +27,15 @@ contract MatchingEvents {
 
 contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     struct sortInfo {
-        uint next;  //points to id of next higher offer
-        uint prev;  //points to id of previous lower offer
-        uint delb;  //the blocknumber where this entry was marked for delete
+        uint next;  // Points to id of next higher offer
+        uint prev;  // Points to id of previous lower offer
+        uint delb;  // The blocknumber where this entry was marked for delete
     }
-    mapping(uint => sortInfo) public _rank;                     //doubly linked lists of sorted offer ids
-    mapping(address => mapping(address => uint)) public _best;  //id of the highest offer for a token pair
-    mapping(address => mapping(address => uint)) public _span;  //number of offers stored for token pair in sorted orderbook
-    mapping(address => uint) public _dust;                      //minimum sell amount for a token to avoid dust offers
-    uint public dustId;                         // id of the latest offer marked as dust
+    mapping(uint => sortInfo) public _rank;                     // Doubly linked lists of sorted offer ids
+    mapping(address => mapping(address => uint)) public _best;  // id of the highest offer for a token pair
+    mapping(address => mapping(address => uint)) public _span;  // Number of offers stored for token pair in sorted orderbook
+    mapping(address => uint) public _dust;                      // Minimum sell amount for a token to avoid dust offers
+    uint public dustId;                                         // id of the latest offer marked as dust
 
 
     constructor(uint64 close_time) ExpiringMarket(close_time) public {
@@ -75,10 +75,10 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
     // Make a new offer. Takes funds from the caller into market escrow.
     function offer(
-        uint pay_amt,    //maker (ask) sell how much
-        ERC20 pay_gem,   //maker (ask) sell which token
-        uint buy_amt,    //taker (ask) buy how much
-        ERC20 buy_gem    //taker (ask) buy which token
+        uint pay_amt,    // Maker (ask) sell how much
+        ERC20 pay_gem,   // Maker (ask) sell which token
+        uint buy_amt,    // Taker (ask) buy how much
+        ERC20 buy_gem    // Taker (ask) buy which token
     )
         public
         returns (uint)
@@ -88,11 +88,11 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
     // Make a new offer. Takes funds from the caller into market escrow.
     function offer(
-        uint pay_amt,    //maker (ask) sell how much
-        ERC20 pay_gem,   //maker (ask) sell which token
-        uint buy_amt,    //maker (ask) buy how much
-        ERC20 buy_gem,   //maker (ask) buy which token
-        uint pos         //position to insert offer, 0 should be used if unknown
+        uint pay_amt,    // Maker (ask) sell how much
+        ERC20 pay_gem,   // Maker (ask) sell which token
+        uint buy_amt,    // Maker (ask) buy how much
+        ERC20 buy_gem,   // Maker (ask) buy which token
+        uint pos         // Position to insert offer, 0 should be used if unknown
     )
         public
         returns (uint)
@@ -101,12 +101,12 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     }
 
     function offer(
-        uint pay_amt,    //maker (ask) sell how much
-        ERC20 pay_gem,   //maker (ask) sell which token
-        uint buy_amt,    //maker (ask) buy how much
-        ERC20 buy_gem,   //maker (ask) buy which token
-        uint pos,        //position to insert offer, 0 should be used if unknown
-        bool rounding    //match "close enough" orders?
+        uint pay_amt,    // Maker (ask) sell how much
+        ERC20 pay_gem,   // Maker (ask) sell which token
+        uint buy_amt,    // Maker (ask) buy how much
+        ERC20 buy_gem,   // Maker (ask) buy which token
+        uint pos,        // Position to insert offer, 0 should be used if unknown
+        bool rounding    // Match "close enough" orders?
     )
         public
         can_offer
@@ -115,15 +115,15 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         require(!locked, "Reentrancy attempt");
         require(_dust[address(pay_gem)] <= pay_amt);
 
-        uint best_maker_id;     //highest maker id
-        uint m_buy_amt;         //maker offer wants to buy this much token
-        uint m_pay_amt;         //maker offer wants to sell this much token
+        uint best_maker_id;     // Highest maker id
+        uint m_buy_amt;         // Maker offer wants to buy this much token
+        uint m_pay_amt;         // Maker offer wants to sell this much token
 
         uint t_buy_amt_old;
         uint t_buy_amt = buy_amt;
         uint t_pay_amt = pay_amt;
 
-        // there is at least one offer stored for token pair
+        // There is at least one offer stored for token pair
         while (_best[address(buy_gem)][address(pay_gem)] > 0) {
             best_maker_id = _best[address(buy_gem)][address(pay_gem)];
             m_buy_amt = offers[best_maker_id].buy_amt;
@@ -153,14 +153,14 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         }
 
         if (t_buy_amt > 0 && t_pay_amt > 0 && t_pay_amt >= _dust[address(pay_gem)]) {
-            //new offer should be created
+            // New offer should be created
             id = super.offer(t_pay_amt, pay_gem, t_buy_amt, buy_gem);
-            //insert offer into the sorted list
+            // Insert offer into the sorted list
             _sort(id, pos);
         }
     }
 
-    //Transfers funds from caller to offer maker, and from market to caller.
+    // Transfers funds from caller to offer maker, and from market to caller.
     function buy(uint id, uint amount)
         public
         can_buy(id)
@@ -169,13 +169,13 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         require(!locked, "Reentrancy attempt");
 
         if (amount == offers[id].pay_amt) {
-            //offers[id] must be removed from sorted list because all of it is bought
+            // offers[id] must be removed from sorted list because all of it is bought
             _unsort(id);
         }
         require(super.buy(id, amount));
         // If offer has become dust during buy, we cancel it
         if (isActive(id) && offers[id].pay_amt < _dust[address(offers[id].pay_gem)]) {
-            dustId = id; //enable current msg.sender to call cancel(id)
+            dustId = id; // Enable current msg.sender to call cancel(id)
             cancel(id);
         }
         return true;
@@ -192,8 +192,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         return super.cancel(id);    //delete the offer.
     }
 
-    //deletes _rank [id]
-    //  Function should be called by keepers.
+    // Deletes _rank [id]
+    // Function should be called by keepers.
     function del_rank(uint id)
         public
         returns (bool)
@@ -205,14 +205,14 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         return true;
     }
 
-    //set the minimum sell amount for a token
-    //    Function is used to avoid "dust offers" that have
-    //    very small amount of tokens to sell, and it would
-    //    cost more gas to accept the offer, than the value
-    //    of tokens received.
+    // Set the minimum sell amount for a token
+    // Function is used to avoid "dust offers" that have
+    // very small amount of tokens to sell, and it would
+    // cost more gas to accept the offer, than the value
+    // of tokens received.
     function setMinSell(
-        ERC20 pay_gem,     //token to assign minimum sell amount to
-        uint dust          //maker (ask) minimum sell amount
+        ERC20 pay_gem,     // Token to assign minimum sell amount to
+        uint dust          // Maker (ask) minimum sell amount
     )
         public
         auth
@@ -224,9 +224,9 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         return true;
     }
 
-    //returns the minimum sell amount for an offer
+    // Returns the minimum sell amount for an offer
     function getMinSell(
-        ERC20 pay_gem      //token for which minimum sell amount is queried
+        ERC20 pay_gem      // Token for which minimum sell amount is queried
     )
         public
         view
@@ -235,31 +235,31 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         return _dust[address(pay_gem)];
     }
 
-    //return the best offer for a token pair
-    //      the best offer is the lowest one if it's an ask,
-    //      and highest one if it's a bid offer
+    // Return the best offer for a token pair
+    // the best offer is the lowest one if it's an ask,
+    // and highest one if it's a bid offer
     function getBestOffer(ERC20 sell_gem, ERC20 buy_gem) public view returns(uint) {
         return _best[address(sell_gem)][address(buy_gem)];
     }
 
-    //return the next worse offer in the sorted list
-    //      the worse offer is the higher one if its an ask,
-    //      a lower one if its a bid offer,
-    //      and in both cases the newer one if they're equal.
+    // Return the next worse offer in the sorted list
+    // the worse offer is the higher one if its an ask,
+    // a lower one if its a bid offer,
+    // and in both cases the newer one if they're equal.
     function getWorseOffer(uint id) public view returns(uint) {
         return _rank[id].prev;
     }
 
-    //return the next better offer in the sorted list
-    //      the better offer is in the lower priced one if its an ask,
-    //      the next higher priced one if its a bid offer
-    //      and in both cases the older one if they're equal.
+    // Return the next better offer in the sorted list
+    // the better offer is in the lower priced one if its an ask,
+    // the next higher priced one if its a bid offer
+    // and in both cases the older one if they're equal.
     function getBetterOffer(uint id) public view returns(uint) {
 
         return _rank[id].next;
     }
 
-    //return the amount of better offers for a token pair
+    // Return the amount of better offers for a token pair
     function getOfferCount(ERC20 sell_gem, ERC20 buy_gem) public view returns(uint) {
         return _span[address(sell_gem)][address(buy_gem)];
     }
@@ -277,23 +277,23 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         require(!locked, "Reentrancy attempt");
         uint offerId;
         uint pay_amt = _pay_amt;
-        while (pay_amt > 0) {                                   //while there is amount to sell
-            offerId = getBestOffer(_buy_gem, _pay_gem);         //Get the best offer for the token pair
-            require(offerId != 0);                              //Fails if there are not more offers
+        while (pay_amt > 0) {                                               // While there is amount to sell
+            offerId = getBestOffer(_buy_gem, _pay_gem);                     // Get the best offer for the token pair
+            require(offerId != 0);                                          // Fails if there are not more offers
 
             // There is a chance that pay_amt is smaller than 1 wei of the other token
             if (pay_amt * 1 ether < wdiv(offers[offerId].buy_amt, offers[offerId].pay_amt)) {
-                break;                                          //We consider that all amount is sold
+                break;                                                      // We consider that all amount is sold
             }
-            if (pay_amt >= offers[offerId].buy_amt) {                       //If amount to sell is higher or equal than current offer amount to buy
-                fill_amt = add(fill_amt, offers[offerId].pay_amt);          //Add amount bought to acumulator
-                pay_amt = sub(pay_amt, offers[offerId].buy_amt);            //Decrease amount to sell
-                take(bytes32(offerId), uint128(offers[offerId].pay_amt));   //We take the whole offer
+            if (pay_amt >= offers[offerId].buy_amt) {                       // If amount to sell is higher or equal than current offer amount to buy
+                fill_amt = add(fill_amt, offers[offerId].pay_amt);          // Add amount bought to acumulator
+                pay_amt = sub(pay_amt, offers[offerId].buy_amt);            // Decrease amount to sell
+                take(bytes32(offerId), uint128(offers[offerId].pay_amt));   // We take the whole offer
             } else { // if lower
                 uint baux = rmul(pay_amt * 10 ** 9, rdiv(offers[offerId].pay_amt, offers[offerId].buy_amt)) / 10 ** 9;
-                fill_amt = add(fill_amt, baux);         //Add amount bought to acumulator
-                take(bytes32(offerId), uint128(baux));  //We take the portion of the offer that we need
-                pay_amt = 0;                            //All amount is sold
+                fill_amt = add(fill_amt, baux);                             // Add amount bought to acumulator
+                take(bytes32(offerId), uint128(baux));                      // We take the portion of the offer that we need
+                pay_amt = 0;                                                // All amount is sold
             }
         }
         require(fill_amt >= _min_fill_amount);
@@ -306,62 +306,62 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         require(!locked, "Reentrancy attempt");
         uint offerId;
         uint buy_amt = _buy_amt;
-        while (buy_amt > 0) {                               //Meanwhile there is amount to buy
-            offerId = getBestOffer(_buy_gem, _pay_gem);     //Get the best offer for the token pair
+        while (buy_amt > 0) {                                               // Meanwhile there is amount to buy
+            offerId = getBestOffer(_buy_gem, _pay_gem);                     // Get the best offer for the token pair
             require(offerId != 0);
 
             // There is a chance that buy_amt is smaller than 1 wei of the other token
             if (buy_amt * 1 ether < wdiv(offers[offerId].pay_amt, offers[offerId].buy_amt)) {
-                break;                                  //We consider that all amount is sold
+                break;                                                      // We consider that all amount is sold
             }
-            if (buy_amt >= offers[offerId].pay_amt) {                       //If amount to buy is higher or equal than current offer amount to sell
-                fill_amt = add(fill_amt, offers[offerId].buy_amt);          //Add amount sold to acumulator
-                buy_amt = sub(buy_amt, offers[offerId].pay_amt);            //Decrease amount to buy
-                take(bytes32(offerId), uint128(offers[offerId].pay_amt));   //We take the whole offer
-            } else {                                                        //if lower
+            if (buy_amt >= offers[offerId].pay_amt) {                       // If amount to buy is higher or equal than current offer amount to sell
+                fill_amt = add(fill_amt, offers[offerId].buy_amt);          // Add amount sold to acumulator
+                buy_amt = sub(buy_amt, offers[offerId].pay_amt);            // Decrease amount to buy
+                take(bytes32(offerId), uint128(offers[offerId].pay_amt));   // We take the whole offer
+            } else {                                                        // If lower
                 fill_amt = add(fill_amt, rmul(buy_amt * 10 ** 9, rdiv(offers[offerId].buy_amt, offers[offerId].pay_amt)) / 10 ** 9); //Add amount sold to acumulator
-                take(bytes32(offerId), uint128(buy_amt));                   //We take the portion of the offer that we need
-                buy_amt = 0;                                                //All amount is bought
+                take(bytes32(offerId), uint128(buy_amt));                   // We take the portion of the offer that we need
+                buy_amt = 0;                                                // All amount is bought
             }
         }
         require(fill_amt <= _max_fill_amount);
     }
 
     function getBuyAmount(ERC20 _buy_gem, ERC20 _pay_gem, uint _pay_amt) public view returns (uint fill_amt) {
-        uint offerId = getBestOffer(_buy_gem, _pay_gem);           //Get best offer for the token pair
+        uint offerId = getBestOffer(_buy_gem, _pay_gem);            // Get best offer for the token pair
         uint pay_amt = _pay_amt;
         while (pay_amt > offers[offerId].buy_amt) {
-            fill_amt = add(fill_amt, offers[offerId].pay_amt);  //Add amount to buy accumulator
-            pay_amt = sub(pay_amt, offers[offerId].buy_amt);    //Decrease amount to pay
-            if (pay_amt > 0) {                                  //If we still need more offers
-                offerId = getWorseOffer(offerId);               //We look for the next best offer
-                require(offerId != 0);  //Fails if there are not enough offers to complete
+            fill_amt = add(fill_amt, offers[offerId].pay_amt);      // Add amount to buy accumulator
+            pay_amt = sub(pay_amt, offers[offerId].buy_amt);        // Decrease amount to pay
+            if (pay_amt > 0) {                                      // If we still need more offers
+                offerId = getWorseOffer(offerId);                   // We look for the next best offer
+                require(offerId != 0);                              // Fails if there are not enough offers to complete
             }
         }
         fill_amt = add(
             fill_amt,
             rmul(pay_amt * 10 ** 9, rdiv(offers[offerId].pay_amt, offers[offerId].buy_amt)) / 10 ** 9
-        ); //Add proportional amount of last offer to buy accumulator
+        ); // Add proportional amount of last offer to buy accumulator
     }
 
     function getPayAmount(ERC20 _pay_gem, ERC20 _buy_gem, uint _buy_amt) public view returns (uint fill_amt) {
-        uint offerId = getBestOffer(_buy_gem, _pay_gem);           //Get best offer for the token pair
+        uint offerId = getBestOffer(_buy_gem, _pay_gem);            // Get best offer for the token pair
         uint buy_amt = _buy_amt;
         while (buy_amt > offers[offerId].pay_amt) {
-            fill_amt = add(fill_amt, offers[offerId].buy_amt);  //Add amount to pay accumulator
-            buy_amt = sub(buy_amt, offers[offerId].pay_amt);    //Decrease amount to buy
-            if (buy_amt > 0) {                                  //If we still need more offers
-                offerId = getWorseOffer(offerId);               //We look for the next best offer
-                require(offerId != 0);  //Fails if there are not enough offers to complete
+            fill_amt = add(fill_amt, offers[offerId].buy_amt);      // Add amount to pay accumulator
+            buy_amt = sub(buy_amt, offers[offerId].pay_amt);        // Decrease amount to buy
+            if (buy_amt > 0) {                                      // If we still need more offers
+                offerId = getWorseOffer(offerId);                   // We look for the next best offer
+                require(offerId != 0);                              // Fails if there are not enough offers to complete
             }
         }
         fill_amt = add(
             fill_amt,
             rmul(buy_amt * 10 ** 9, rdiv(offers[offerId].buy_amt, offers[offerId].pay_amt)) / 10 ** 9
-        ); //Add proportional amount of last offer to pay accumulator
+        ); // Add proportional amount of last offer to pay accumulator
     }
 
-    //find the id of the next higher offer after offers[id]
+    // Find the id of the next higher offer after offers[id]
     function _find(uint id)
         internal
         view
@@ -382,7 +382,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         return old_top;
     }
 
-    //find the id of the next higher offer after offers[id]
+    // Find the id of the next higher offer after offers[id]
     function _findpos(uint id, uint _pos)
         internal
         view
@@ -397,11 +397,11 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         }
 
         if (pos == 0) {
-            //if we got to the end of list without a single active offer
+            // If we got to the end of list without a single active offer
             return _find(id);
 
         } else {
-            // if we did find a nearby active offer
+            // If we did find a nearby active offer
             // Walk the order book down from there...
             if(_isPricedLtOrEq(id, pos)) {
                 uint old_pos;
@@ -424,10 +424,10 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         }
     }
 
-    //return true if offers[low] priced less than or equal to offers[high]
+    // Return true if offers[low] priced less than or equal to offers[high]
     function _isPricedLtOrEq(
-        uint low,   //lower priced offer's id
-        uint high   //higher priced offer's id
+        uint low,   // Lower priced offer's id
+        uint high   // Higher priced offer's id
     )
         internal
         view
@@ -437,19 +437,19 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
           >= mul(offers[high].buy_amt, offers[low].pay_amt);
     }
 
-    //put offer into the sorted list
+    // Put offer into the sorted list
     function _sort(
-        uint id,    //maker (ask) id
-        uint _pos   //position to insert into
+        uint id,    // Maker (ask) id
+        uint _pos   // Position to insert into
     )
         internal
     {
-        require(isActive(id), "error-not-active");
+        require(isActive(id));
         uint pos = _pos;
 
         ERC20 buy_gem = offers[id].buy_gem;
         ERC20 pay_gem = offers[id].pay_gem;
-        uint prev_id;                                      //maker (ask) id
+        uint prev_id;                                      // Maker (ask) id
 
         pos = pos == 0 || offers[pos].pay_gem != pay_gem || offers[pos].buy_gem != buy_gem || !isOfferSorted(pos)
         ?
@@ -457,20 +457,20 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         :
             _findpos(id, pos);
 
-        if (pos != 0) {                                    //offers[id] is not the highest offer
-            //requirement below is satisfied by statements above
-            //require(_isPricedLtOrEq(id, pos));
+        if (pos != 0) {                                    // offers[id] is not the highest offer
+            // Requirement below is satisfied by statements above
+            // require(_isPricedLtOrEq(id, pos));
             prev_id = _rank[pos].prev;
             _rank[pos].prev = id;
             _rank[id].next = pos;
-        } else {                                           //offers[id] is the highest offer
+        } else {                                           // offers[id] is the highest offer
             prev_id = _best[address(pay_gem)][address(buy_gem)];
             _best[address(pay_gem)][address(buy_gem)] = id;
         }
 
-        if (prev_id != 0) {                               //if lower offer does exist
-            //requirement below is satisfied by statements above
-            //require(!_isPricedLtOrEq(id, prev_id));
+        if (prev_id != 0) {                               // If lower offer does exist
+            // Requirement below is satisfied by statements above
+            // require(!_isPricedLtOrEq(id, prev_id));
             _rank[prev_id].next = id;
             _rank[id].prev = prev_id;
         }
@@ -481,7 +481,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
     // Remove offer from the sorted list (does not cancel offer)
     function _unsort(
-        uint id    //id of maker (ask) offer to remove from sorted list
+        uint id    // id of maker (ask) offer to remove from sorted list
     )
         internal
         returns (bool)
@@ -490,23 +490,22 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         address pay_gem = address(offers[id].pay_gem);
         require(_span[pay_gem][buy_gem] > 0);
 
-        require(_rank[id].delb == 0 &&                    //assert id is in the sorted list
-                 isOfferSorted(id));
+        require(_rank[id].delb == 0 && isOfferSorted(id));  // Assert id is in the sorted list
 
-        if (id != _best[pay_gem][buy_gem]) {              // offers[id] is not the highest offer
+        if (id != _best[pay_gem][buy_gem]) {                // offers[id] is not the highest offer
             require(_rank[_rank[id].next].prev == id);
             _rank[_rank[id].next].prev = _rank[id].prev;
-        } else {                                          //offers[id] is the highest offer
+        } else {                                            // offers[id] is the highest offer
             _best[pay_gem][buy_gem] = _rank[id].prev;
         }
 
-        if (_rank[id].prev != 0) {                        //offers[id] is not the lowest offer
+        if (_rank[id].prev != 0) {                          // offers[id] is not the lowest offer
             require(_rank[_rank[id].prev].next == id);
             _rank[_rank[id].prev].next = _rank[id].next;
         }
 
         _span[pay_gem][buy_gem]--;
-        _rank[id].delb = block.number;                    //mark _rank[id] for deletion
+        _rank[id].delb = block.number;                      // Mark _rank[id] for deletion
         return true;
     }
 }
