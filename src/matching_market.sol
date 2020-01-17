@@ -81,7 +81,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         ERC20 buy_gem    //taker (ask) buy which token
     )
         public
-        can_offer
         returns (uint)
     {
         return offer(pay_amt, pay_gem, buy_amt, buy_gem, 0, true);
@@ -96,7 +95,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         uint pos         //position to insert offer, 0 should be used if unknown
     )
         public
-        can_offer
         returns (uint)
     {
         return offer(pay_amt, pay_gem, buy_amt, buy_gem, pos, true);
@@ -112,12 +110,51 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     )
         public
         can_offer
-        returns (uint)
+        returns (uint id)
     {
         require(!locked, "Reentrancy attempt");
         require(_dust[address(pay_gem)] <= pay_amt);
 
-        return _matcho(pay_amt, pay_gem, buy_amt, buy_gem, pos, rounding);
+        uint best_maker_id;    //highest maker id
+        uint buy_amt_old;    //taker buy how much saved
+        uint m_buy_amt;        //maker offer wants to buy this much token
+        uint m_pay_amt;        //maker offer wants to sell this much token
+
+        // there is at least one offer stored for token pair
+        while (_best[address(buy_gem)][address(pay_gem)] > 0) {
+            best_maker_id = _best[address(buy_gem)][address(pay_gem)];
+            m_buy_amt = offers[best_maker_id].buy_amt;
+            m_pay_amt = offers[best_maker_id].pay_amt;
+
+            // Ugly hack to work around rounding errors. Based on the idea that
+            // the furthest the amounts can stray from their "true" values is 1.
+            // Ergo the worst case has pay_amt and m_pay_amt at +1 away from
+            // their "correct" values and m_buy_amt and buy_amt at -1.
+            // Since (c - 1) * (d - 1) > (a + 1) * (b + 1) is equivalent to
+            // c * d > a * b + a + b + c + d, we write...
+            if (mul(m_buy_amt, buy_amt) > mul(pay_amt, m_pay_amt) +
+                (rounding ? m_buy_amt + buy_amt + pay_amt + m_pay_amt : 0))
+            {
+                break;
+            }
+            // ^ The `rounding` parameter is a compromise borne of a couple days
+            // of discussion.
+            buy(best_maker_id, min(m_pay_amt, buy_amt));
+            buy_amt_old = buy_amt;
+            buy_amt = sub(buy_amt, min(m_pay_amt, buy_amt));
+            pay_amt = mul(buy_amt, pay_amt) / buy_amt_old;
+
+            if (pay_amt == 0 || buy_amt == 0) {
+                break;
+            }
+        }
+
+        if (buy_amt > 0 && pay_amt > 0 && pay_amt >= _dust[address(pay_gem)]) {
+            //new offer should be created
+            id = super.offer(pay_amt, pay_gem, buy_amt, buy_gem);
+            //insert offer into the sorted list
+            _sort(id, pos);
+        }
     }
 
     //Transfers funds from caller to offer maker, and from market to caller.
@@ -384,62 +421,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     {
         return mul(offers[low].buy_amt, offers[high].pay_amt)
           >= mul(offers[high].buy_amt, offers[low].pay_amt);
-    }
-
-    //these variables are global only because of solidity local variable limit
-
-    //match offers with taker offer, and execute token transactions
-    function _matcho(
-        uint t_pay_amt,    //taker sell how much
-        ERC20 t_pay_gem,   //taker sell which token
-        uint t_buy_amt,    //taker buy how much
-        ERC20 t_buy_gem,   //taker buy which token
-        uint pos,          //position id
-        bool rounding      //match "close enough" orders?
-    )
-        internal
-        returns (uint id)
-    {
-        uint best_maker_id;    //highest maker id
-        uint t_buy_amt_old;    //taker buy how much saved
-        uint m_buy_amt;        //maker offer wants to buy this much token
-        uint m_pay_amt;        //maker offer wants to sell this much token
-
-        // there is at least one offer stored for token pair
-        while (_best[address(t_buy_gem)][address(t_pay_gem)] > 0) {
-            best_maker_id = _best[address(t_buy_gem)][address(t_pay_gem)];
-            m_buy_amt = offers[best_maker_id].buy_amt;
-            m_pay_amt = offers[best_maker_id].pay_amt;
-
-            // Ugly hack to work around rounding errors. Based on the idea that
-            // the furthest the amounts can stray from their "true" values is 1.
-            // Ergo the worst case has t_pay_amt and m_pay_amt at +1 away from
-            // their "correct" values and m_buy_amt and t_buy_amt at -1.
-            // Since (c - 1) * (d - 1) > (a + 1) * (b + 1) is equivalent to
-            // c * d > a * b + a + b + c + d, we write...
-            if (mul(m_buy_amt, t_buy_amt) > mul(t_pay_amt, m_pay_amt) +
-                (rounding ? m_buy_amt + t_buy_amt + t_pay_amt + m_pay_amt : 0))
-            {
-                break;
-            }
-            // ^ The `rounding` parameter is a compromise borne of a couple days
-            // of discussion.
-            buy(best_maker_id, min(m_pay_amt, t_buy_amt));
-            t_buy_amt_old = t_buy_amt;
-            t_buy_amt = sub(t_buy_amt, min(m_pay_amt, t_buy_amt));
-            t_pay_amt = mul(t_buy_amt, t_pay_amt) / t_buy_amt_old;
-
-            if (t_pay_amt == 0 || t_buy_amt == 0) {
-                break;
-            }
-        }
-
-        if (t_buy_amt > 0 && t_pay_amt > 0 && t_pay_amt >= _dust[address(t_pay_gem)]) {
-            //new offer should be created
-            id = super.offer(t_pay_amt, t_pay_gem, t_buy_amt, t_buy_gem);
-            //insert offer into the sorted list
-            _sort(id, pos);
-        }
     }
 
     //put offer into the sorted list
