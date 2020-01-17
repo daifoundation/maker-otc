@@ -127,7 +127,18 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         returns (bool)
     {
         require(!locked, "Reentrancy attempt");
-        return _buys(id, amount);
+
+        if (amount == offers[id].pay_amt) {
+            //offers[id] must be removed from sorted list because all of it is bought
+            _unsort(id);
+        }
+        require(super.buy(id, amount));
+        // If offer has become dust during buy, we cancel it
+        if (isActive(id) && offers[id].pay_amt < _dust[address(offers[id].pay_gem)]) {
+            dustId = id; //enable current msg.sender to call cancel(id)
+            cancel(id);
+        }
+        return true;
     }
 
     // Cancel an offer. Refunds offer maker.
@@ -297,25 +308,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
             }
         }
         fill_amt = add(fill_amt, rmul(buy_amt * 10 ** 9, rdiv(offers[offerId].buy_amt, offers[offerId].pay_amt)) / 10 ** 9); //Add proportional amount of last offer to pay accumulator
-    }
-
-    // ---- Internal Functions ---- //
-
-    function _buys(uint id, uint amount)
-        internal
-        returns (bool)
-    {
-        if (amount == offers[id].pay_amt) {
-            //offers[id] must be removed from sorted list because all of it is bought
-            _unsort(id);
-        }
-        require(super.buy(id, amount));
-        // If offer has become dust during buy, we cancel it
-        if (isActive(id) && offers[id].pay_amt < _dust[address(offers[id].pay_gem)]) {
-            dustId = id; //enable current msg.sender to call cancel(id)
-            cancel(id);
-        }
-        return true;
     }
 
     //find the id of the next higher offer after offers[id]
