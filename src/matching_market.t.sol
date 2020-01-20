@@ -1650,4 +1650,22 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         (sellAmt,, buyAmt,,,) = otc.offers(currentId);
         assertTrue(sellAmt == 250 ether && buyAmt == 1 ether);
     }
+
+    function testOfferPositionItself() public {
+        mkr.approve(address(otc), uint(-1));
+        mkr.transfer(address(user1), 1000 ether);
+        dai.transfer(address(user1), 1000 ether);
+        user1.doApprove(address(otc), 1000 ether, dai);
+        user1.doApprove(address(otc), 1000 ether, mkr);
+        dai.approve(address(otc), 10 ether);
+        dgd.approve(address(otc), 10 ether);
+        dgd.transfer(address(user1), 1000 ether);
+        user1.doApprove(address(otc), 1000 ether, dgd);
+
+        offer_id[1] = user1.doOffer(250 ether, dai, 1 ether, mkr, 1);
+        assertEq(otc._best(address(dai), address(mkr)), offer_id[1]);
+        (uint prev, uint next,) = otc._rank(offer_id[1]);
+        assertEq(prev, 0);
+        assertEq(next, 0);
+    }
 }
