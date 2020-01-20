@@ -263,10 +263,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         return _span[address(sell_gem)][address(buy_gem)];
     }
 
-    function isOfferSorted(uint id) public view returns(bool) {
-        return _rank[id].next != 0 ||
-            _rank[id].prev != 0 ||
-            _best[address(offers[id].pay_gem)][address(offers[id].buy_gem)] == id;
+    function hasSortInfo(uint id) public view returns(bool) {
+        return isActive(id) || _rank[id].next != 0 || _rank[id].prev != 0;
     }
 
     function sellAllAmount(ERC20 _pay_gem, uint _pay_amt, ERC20 _buy_gem, uint _min_fill_amount)
@@ -450,7 +448,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         ERC20 pay_gem = offers[id].pay_gem;
         uint prev_id;                                      // Maker (ask) id
 
-        pos = pos == 0 || offers[pos].pay_gem != pay_gem || offers[pos].buy_gem != buy_gem || !isOfferSorted(pos)
+        pos = pos == 0 || offers[pos].pay_gem != pay_gem || offers[pos].buy_gem != buy_gem || !hasSortInfo(pos)
         ?
             _find(id)
         :
@@ -489,7 +487,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         address pay_gem = address(offers[id].pay_gem);
         require(_span[pay_gem][buy_gem] > 0);
 
-        require(_rank[id].delb == 0 && isOfferSorted(id));  // Assert id is in the sorted list
+        require(isActive(id));                              // Assert id is active, then it is in the sorted list
 
         if (id != _best[pay_gem][buy_gem]) {                // offers[id] is not the highest offer
             require(_rank[_rank[id].next].prev == id);
