@@ -137,8 +137,8 @@ contract SimpleMarket is EventfulMarket, DSMath {
 
         offers[id].pay_amt = sub(offer.pay_amt, quantity);
         offers[id].buy_amt = sub(offer.buy_amt, spend);
-        require( offer.buy_gem.transferFrom(msg.sender, offer.owner, spend) );
-        require( offer.pay_gem.transfer(msg.sender, quantity) );
+        require(offer.buy_gem.transferFrom(msg.sender, offer.owner, spend));
+        require(offer.pay_gem.transfer(msg.sender, quantity));
 
         emit LogItemUpdate(id);
         emit LogTake(
@@ -172,7 +172,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
         OfferInfo memory offer = offers[id];
         delete offers[id];
 
-        require( offer.pay_gem.transfer(offer.owner, offer.pay_amt) );
+        require(offer.pay_gem.transfer(offer.owner, offer.pay_amt));
 
         emit LogItemUpdate(id);
         emit LogKill(
@@ -232,7 +232,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
         id = _next_id();
         offers[id] = info;
 
-        require( pay_gem.transferFrom(msg.sender, address(this), pay_amt) );
+        require(pay_gem.transferFrom(msg.sender, address(this), pay_amt));
 
         emit LogItemUpdate(id);
         emit LogMake(
@@ -257,6 +257,8 @@ contract SimpleMarket is EventfulMarket, DSMath {
         internal
         returns (uint)
     {
-        last_offer_id++; return last_offer_id;
+        last_offer_id++;
+        require(last_offer_id > 0);
+        return last_offer_id;
     }
 }

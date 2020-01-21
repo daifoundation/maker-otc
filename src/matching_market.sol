@@ -37,7 +37,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     mapping(address => uint) public _dust;                      // Minimum sell amount for a token to avoid dust offers
     uint public dustId;                                         // id of the latest offer marked as dust
 
-
     constructor(uint64 close_time) ExpiringMarket(close_time) public {
     }
 
@@ -92,20 +91,20 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         ERC20 pay_gem,   // Maker (ask) sell which token
         uint buy_amt,    // Maker (ask) buy how much
         ERC20 buy_gem,   // Maker (ask) buy which token
-        uint pos         // Position to insert offer, 0 should be used if unknown
+        uint idPos       // id of tentative offer which should be the next better one (0 should be used if unknown)
     )
         public
         returns (uint)
     {
-        return offer(pay_amt, pay_gem, buy_amt, buy_gem, pos, true);
+        return offer(pay_amt, pay_gem, buy_amt, buy_gem, idPos, true);
     }
 
     function offer(
-        uint pay_amt,    // Maker (ask) sell how much
-        ERC20 pay_gem,   // Maker (ask) sell which token
-        uint buy_amt,    // Maker (ask) buy how much
-        ERC20 buy_gem,   // Maker (ask) buy which token
-        uint pos,        // Position to insert offer, 0 should be used if unknown
+        uint pay_amt,    // New offer pay amount
+        ERC20 pay_gem,   // New offer pay token
+        uint buy_amt,    // New offer buy amount
+        ERC20 buy_gem,   // New offer buy token
+        uint idPos,      // id of tentative offer which should be the next better one (0 should be used if unknown)
         bool rounding    // Match "close enough" orders?
     )
         public
@@ -115,48 +114,55 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         require(!locked, "Reentrancy attempt");
         require(_dust[address(pay_gem)] <= pay_amt);
 
-        uint best_maker_id;     // Highest maker id
-        uint m_buy_amt;         // Maker offer wants to buy this much token
-        uint m_pay_amt;         // Maker offer wants to sell this much token
+        uint best;          // Best existing offer id from opposite pair (for matching)
+        uint oBuyAmt;       // Existing offer buy amount from opposite pair
+        uint oPayAmt;       // Existing offer pay amount from opposite pair
 
-        uint t_buy_amt_old;
-        uint t_buy_amt = buy_amt;
-        uint t_pay_amt = pay_amt;
+        uint buyAmtAux;
+        uint buyAmt = buy_amt;
+        uint payAmt = pay_amt;
 
         // There is at least one offer stored for token pair
         while (_best[address(buy_gem)][address(pay_gem)] > 0) {
-            best_maker_id = _best[address(buy_gem)][address(pay_gem)];
-            m_buy_amt = offers[best_maker_id].buy_amt;
-            m_pay_amt = offers[best_maker_id].pay_amt;
+            best = _best[address(buy_gem)][address(pay_gem)];
+            oBuyAmt = offers[best].buy_amt;
+            oPayAmt = offers[best].pay_amt;
 
             // Ugly hack to work around rounding errors. Based on the idea that
             // the furthest the amounts can stray from their "true" values is 1.
-            // Ergo the worst case has t_pay_amt and m_pay_amt at +1 away from
-            // their "correct" values and m_buy_amt and t_buy_amt at -1.
+            // Ergo the worst case has payAmt and oPayAmt at +1 away from
+            // their "correct" values and oBuyAmt and buyAmt at -1.
             // Since (c - 1) * (d - 1) > (a + 1) * (b + 1) is equivalent to
             // c * d > a * b + a + b + c + d, we write...
-            if (mul(m_buy_amt, t_buy_amt) > mul(t_pay_amt, m_pay_amt) +
-                (rounding ? m_buy_amt + t_buy_amt + t_pay_amt + m_pay_amt : 0))
+            if (mul(oBuyAmt, buyAmt) > mul(payAmt, oPayAmt) +
+                (rounding ? oBuyAmt + buyAmt + payAmt + oPayAmt : 0))
             {
                 break;
             }
             // ^ The `rounding` parameter is a compromise borne of a couple days
             // of discussion.
-            buy(best_maker_id, min(m_pay_amt, t_buy_amt));
-            t_buy_amt_old = t_buy_amt;
-            t_buy_amt = sub(t_buy_amt, min(m_pay_amt, t_buy_amt));
-            t_pay_amt = mul(t_buy_amt, t_pay_amt) / t_buy_amt_old;
 
-            if (t_pay_amt == 0 || t_buy_amt == 0) {
+            // Calculate how much to buy (the minimum between the pay amount ofmatched offer and the buy amount of new offer)
+            uint amtToBuy = min(oPayAmt, buyAmt);
+            // Execute buy
+            buy(best, amtToBuy);
+
+            buyAmtAux = buyAmt;
+            // Calculate rest amount to buy
+            buyAmt = sub(buyAmt, amtToBuy);
+            // Calculate rest amount to pay (rest amount to buy * price)
+            payAmt = mul(buyAmt, payAmt) / buyAmtAux;
+
+            if (payAmt == 0 || buyAmt == 0) {
                 break;
             }
         }
 
-        if (t_buy_amt > 0 && t_pay_amt > 0 && t_pay_amt >= _dust[address(pay_gem)]) {
+        if (buyAmt > 0 && payAmt > 0 && payAmt >= _dust[address(pay_gem)]) {
             // New offer should be created
-            id = super.offer(t_pay_amt, pay_gem, t_buy_amt, buy_gem);
+            id = super.offer(payAmt, pay_gem, buyAmt, buy_gem);
             // Insert offer into the sorted list
-            _sort(id, pos);
+            _sort(id, idPos);
         }
     }
 
@@ -167,17 +173,22 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         returns (bool)
     {
         require(!locked, "Reentrancy attempt");
+        require(isActive(id));
 
         if (amount == offers[id].pay_amt) {
-            // offers[id] must be removed from sorted list because all of it is bought
+            // offers[id] must be removed from sorted list because all of it will be bought
             _unsort(id);
         }
+
+        // Execute buy
         require(super.buy(id, amount));
+
         // If offer has become dust during buy, we cancel it
         if (isActive(id) && offers[id].pay_amt < _dust[address(offers[id].pay_gem)]) {
             dustId = id; // Enable current msg.sender to call cancel(id)
             cancel(id);
         }
+
         return true;
     }
 
@@ -188,8 +199,13 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         returns (bool success)
     {
         require(!locked, "Reentrancy attempt");
-        require(_unsort(id));
-        return super.cancel(id);    //delete the offer.
+        require(isActive(id));
+
+        // Unsort the offer
+        _unsort(id);
+
+        // Delete the offer.
+        return super.cancel(id);
     }
 
     // Deletes _rank [id]
@@ -263,10 +279,8 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         return _span[address(sell_gem)][address(buy_gem)];
     }
 
-    function isOfferSorted(uint id) public view returns(bool) {
-        return _rank[id].next != 0 ||
-            _rank[id].prev != 0 ||
-            _best[address(offers[id].pay_gem)][address(offers[id].buy_gem)] == id;
+    function hasSortInfo(uint id) public view returns(bool) {
+        return isActive(id) || _rank[id].next != 0 || _rank[id].prev != 0;
     }
 
     function sellAllAmount(ERC20 _pay_gem, uint _pay_amt, ERC20 _buy_gem, uint _min_fill_amount)
@@ -360,151 +374,144 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         ); // Add proportional amount of last offer to pay accumulator
     }
 
-    // Find the id of the next higher offer after offers[id]
+    // Find the id of the next better offer after offers[id]
     function _find(uint id)
         internal
         view
-        returns (uint)
+        returns (uint idPos)
     {
-        require(id > 0);
-
         address buy_gem = address(offers[id].buy_gem);
         address pay_gem = address(offers[id].pay_gem);
-        uint top = _best[pay_gem][buy_gem];
-        uint old_top = 0;
+        uint idAux = _best[pay_gem][buy_gem];
 
-        // Find the larger-than-id order whose successor is less-than-id.
-        while (top != 0 && _isPricedLtOrEq(id, top)) {
-            old_top = top;
-            top = _rank[top].prev;
+        // Find the offer 'idPos' which is the the next better one than id
+        while (idAux != 0 && _isWorseOrEq(id, idAux)) {
+            idPos = idAux;
+            idAux = _rank[idAux].prev;
         }
-        return old_top;
     }
 
-    // Find the id of the next higher offer after offers[id]
-    function _findpos(uint id, uint _pos)
+    // Find the id of the next better offer after offers[id] (using an existing offers[idPos] as starting point)
+    function _findpos(uint id, uint _idPos)
         internal
         view
-        returns (uint)
+        returns (uint idPos)
     {
-        require(id > 0);
-        uint pos = _pos;
+        idPos = _idPos;
 
-        // Look for an active order.
-        while (pos != 0 && !isActive(pos)) {
-            pos = _rank[pos].prev;
+        // If the initial idPos is a cancelled offer, then start looking for worse offers until one is active or getting the end.
+        while (idPos != 0 && !isActive(idPos)) {
+            idPos = _rank[idPos].prev;
         }
 
-        if (pos == 0) {
-            // If we got to the end of list without a single active offer
-            return _find(id);
-
+        // If we got to the end of list without a single active offer
+        if (idPos == 0) {
+            // Then look for position from the top of the list
+            idPos = _find(id);
         } else {
-            // If we did find a nearby active offer
-            // Walk the order book down from there...
-            if(_isPricedLtOrEq(id, pos)) {
-                uint old_pos;
-
-                // Guaranteed to run at least once because of
-                // the prior if statements.
-                while (pos != 0 && _isPricedLtOrEq(id, pos)) {
-                    old_pos = pos;
-                    pos = _rank[pos].prev;
+            // If new offer id is worse than found (idPos)
+            if(_isWorseOrEq(id, idPos)) {
+                uint idAux = _rank[idPos].prev;
+                while (idAux != 0 && _isWorseOrEq(id, idAux)) {
+                    idPos = idAux;
+                    idAux = _rank[idPos].prev;
                 }
-                return old_pos;
-
-            // ...or walk it up.
             } else {
-                while (pos != 0 && !_isPricedLtOrEq(id, pos)) {
-                    pos = _rank[pos].next;
+                while (idPos != 0 && !_isWorseOrEq(id, idPos)) {
+                    idPos = _rank[idPos].next;
                 }
-                return pos;
             }
         }
     }
 
-    // Return true if offers[low] priced less than or equal to offers[high]
-    function _isPricedLtOrEq(
-        uint low,   // Lower priced offer's id
-        uint high   // Higher priced offer's id
+    // Return true if offers[worse] is less convinient than or equal to offers[better] (from a buyer point of view)
+    function _isWorseOrEq(
+        uint worse,   // worse priced offer's id
+        uint better   // better priced offer's id
     )
         internal
         view
         returns (bool)
     {
-        return mul(offers[low].buy_amt, offers[high].pay_amt)
-          >= mul(offers[high].buy_amt, offers[low].pay_amt);
+        return mul(
+                    offers[worse].buy_amt,
+                    offers[better].pay_amt
+                ) >=
+                mul(
+                    offers[better].buy_amt,
+                    offers[worse].pay_amt
+                );
     }
 
     // Put offer into the sorted list
     function _sort(
-        uint id,    // Maker (ask) id
-        uint _pos   // Position to insert into
+        uint id,        // id of offer to insert into sorted list
+        uint _idPos     // id of tentative offer which should be the next better one
     )
         internal
-    {
-        require(isActive(id));
-        uint pos = _pos;
-
-        ERC20 buy_gem = offers[id].buy_gem;
-        ERC20 pay_gem = offers[id].pay_gem;
-        uint prev_id;                                      // Maker (ask) id
-
-        pos = pos == 0 || offers[pos].pay_gem != pay_gem || offers[pos].buy_gem != buy_gem || !isOfferSorted(pos)
-        ?
-            _find(id)
-        :
-            _findpos(id, pos);
-
-        if (pos != 0) {                                    // offers[id] is not the highest offer
-            // Requirement below is satisfied by statements above
-            // require(_isPricedLtOrEq(id, pos));
-            prev_id = _rank[pos].prev;
-            _rank[pos].prev = id;
-            _rank[id].next = pos;
-        } else {                                           // offers[id] is the highest offer
-            prev_id = _best[address(pay_gem)][address(buy_gem)];
-            _best[address(pay_gem)][address(buy_gem)] = id;
-        }
-
-        if (prev_id != 0) {                               // If lower offer does exist
-            // Requirement below is satisfied by statements above
-            // require(!_isPricedLtOrEq(id, prev_id));
-            _rank[prev_id].next = id;
-            _rank[id].prev = prev_id;
-        }
-
-        _span[address(pay_gem)][address(buy_gem)]++;
-        emit LogSortedOffer(id);
-    }
-
-    // Remove offer from the sorted list (does not cancel offer)
-    function _unsort(
-        uint id    // id of maker (ask) offer to remove from sorted list
-    )
-        internal
-        returns (bool)
     {
         address buy_gem = address(offers[id].buy_gem);
         address pay_gem = address(offers[id].pay_gem);
-        require(_span[pay_gem][buy_gem] > 0);
+        uint idAux;
 
-        require(_rank[id].delb == 0 && isOfferSorted(id));  // Assert id is in the sorted list
+        // If pos not defined or the pos offer doesn't correspond with the id one or if there is not sort info
+        uint idPos = _idPos == 0 ||
+                    address(offers[_idPos].pay_gem) != pay_gem ||
+                    address(offers[_idPos].buy_gem) != buy_gem ||
+                    !hasSortInfo(_idPos)
+        ?
+            // Then is necessary to look for the position from the top of the list
+            _find(id)
+        :
+            // Otherwise use that position for starting
+            _findpos(id, _idPos);
 
-        if (id != _best[pay_gem][buy_gem]) {                // offers[id] is not the highest offer
-            require(_rank[_rank[id].next].prev == id);
+        // If offers[id] is not the best offer
+        if (idPos != 0) {
+            idAux = _rank[idPos].prev;
+            _rank[idPos].prev = id;
+            _rank[id].next = idPos;
+        } else {
+            idAux = _best[pay_gem][buy_gem];
+            _best[pay_gem][buy_gem] = id;
+        }
+
+        // If worse offer exists
+        if (idAux != 0) {
+            _rank[idAux].next = id;
+            _rank[id].prev = idAux;
+        }
+
+        // Add one to the counter
+        _span[pay_gem][buy_gem]++;
+        emit LogSortedOffer(id);
+    }
+
+    // Remove offer from the sorted list
+    function _unsort(
+        uint id    // id of offer to remove from sorted list
+    )
+        internal
+    {
+        address buy_gem = address(offers[id].buy_gem);
+        address pay_gem = address(offers[id].pay_gem);
+
+        // If offers[id] is not the best offer
+        if (id != _best[pay_gem][buy_gem]) {
             _rank[_rank[id].next].prev = _rank[id].prev;
-        } else {                                            // offers[id] is the highest offer
+        } else {
             _best[pay_gem][buy_gem] = _rank[id].prev;
         }
 
-        if (_rank[id].prev != 0) {                          // offers[id] is not the lowest offer
-            require(_rank[_rank[id].prev].next == id);
+        // If offers[id] is not the worst offer
+        if (_rank[id].prev != 0) {
             _rank[_rank[id].prev].next = _rank[id].next;
         }
 
+        // Substract one to the counter
         _span[pay_gem][buy_gem]--;
-        _rank[id].delb = block.number;                      // Mark _rank[id] for deletion
-        return true;
+
+        // Mark _rank[id] for deletion
+        _rank[id].delb = block.number;
     }
 }
