@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pragma solidity ^0.5.12;
+pragma solidity 0.5.12;
 
 import "./expiring_market.sol";
 import "ds-note/note.sol";
@@ -199,7 +199,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         returns (bool success)
     {
         require(!locked, "Reentrancy attempt");
-        require(isActive(id));
 
         // Unsort the offer
         _unsort(id);

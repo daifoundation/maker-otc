@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pragma solidity ^0.5.12;
+pragma solidity 0.5.12;
 
 import "ds-math/math.sol";
 import "erc20/erc20.sol";
@@ -65,7 +65,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
 
     mapping (uint => OfferInfo) public offers;
 
-    bool locked;
+    bool internal locked;
 
     struct OfferInfo {
         uint     pay_amt;
