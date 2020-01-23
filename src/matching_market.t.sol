@@ -390,6 +390,9 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         offer_id[1] = otc.offer(30, mkr, 90, dai, 0);
         user1.doBuy(offer_id[1], 30);
 
+        // TODO(cmooney): this isn't testing anything.  This is not the correct
+        // event order, not does this test fail if I change values below.
+        // look into this.
         expectEventsExact(address(otc));
         emit LogItemUpdate(offer_id[1]);
         emit LogTrade(30, address(mkr), 100, address(dai));
