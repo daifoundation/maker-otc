@@ -404,7 +404,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         offer_id[1] = otc.offer(1, dai, 1, mkr);
         assertTrue(offer_id[1] > 0);
     }
-    function testSetGetMinSellAmout() public {
+    function testSetGetMinSellAmount() public {
         otc.setMinSell(dai, 100);
         assertEq(otc.getMinSell(dai), 100);
     }
