@@ -173,7 +173,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         returns (bool)
     {
         require(!locked, "Reentrancy attempt");
-        require(isActive(id));
 
         if (amount == offers[id].pay_amt) {
             // offers[id] must be removed from sorted list because all of it will be bought
