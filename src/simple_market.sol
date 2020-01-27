@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pragma solidity ^0.4.18;
+pragma solidity ^0.5.12;
 
 import "ds-math/math.sol";
 import "erc20/erc20.sol";
@@ -109,16 +109,16 @@ contract SimpleMarket is EventfulMarket, DSMath {
         locked = false;
     }
 
-    function isActive(uint id) public constant returns (bool active) {
+    function isActive(uint id) public view returns (bool active) {
         return offers[id].timestamp > 0;
     }
 
-    function getOwner(uint id) public constant returns (address owner) {
+    function getOwner(uint id) public view returns (address owner) {
         return offers[id].owner;
     }
 
-    function getOffer(uint id) public constant returns (uint, ERC20, uint, ERC20) {
-      var offer = offers[id];
+    function getOffer(uint id) public view returns (uint, ERC20, uint, ERC20) {
+      OfferInfo memory offer = offers[id];
       return (offer.pay_amt, offer.pay_gem,
               offer.buy_amt, offer.buy_gem);
     }
@@ -129,10 +129,10 @@ contract SimpleMarket is EventfulMarket, DSMath {
         public
         can_buy(uint256(id_))
     {
-        var id = uint256(id_);
-        LogBump(
+        uint256 id = uint256(id_);
+        emit LogBump(
             id_,
-            keccak256(offers[id].pay_gem, offers[id].buy_gem),
+            keccak256(abi.encodePacked(offers[id].pay_gem, offers[id].buy_gem)),
             offers[id].owner,
             offers[id].pay_gem,
             offers[id].buy_gem,
@@ -168,10 +168,10 @@ contract SimpleMarket is EventfulMarket, DSMath {
         require( offer.buy_gem.transferFrom(msg.sender, offer.owner, spend) );
         require( offer.pay_gem.transfer(msg.sender, quantity) );
 
-        LogItemUpdate(id);
-        LogTake(
+        emit LogItemUpdate(id);
+        emit LogTake(
             bytes32(id),
-            keccak256(offer.pay_gem, offer.buy_gem),
+            keccak256(abi.encodePacked(offer.pay_gem, offer.buy_gem)),
             offer.owner,
             offer.pay_gem,
             offer.buy_gem,
@@ -180,7 +180,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
             uint128(spend),
             uint64(now)
         );
-        LogTrade(quantity, offer.pay_gem, spend, offer.buy_gem);
+        emit LogTrade(quantity, address(offer.pay_gem), spend, address(offer.buy_gem));
 
         if (offers[id].pay_amt == 0) {
           delete offers[id];
@@ -202,10 +202,10 @@ contract SimpleMarket is EventfulMarket, DSMath {
 
         require( offer.pay_gem.transfer(offer.owner, offer.pay_amt) );
 
-        LogItemUpdate(id);
-        LogKill(
+        emit LogItemUpdate(id);
+        emit LogKill(
             bytes32(id),
-            keccak256(offer.pay_gem, offer.buy_gem),
+            keccak256(abi.encodePacked(offer.pay_gem, offer.buy_gem)),
             offer.owner,
             offer.pay_gem,
             offer.buy_gem,
@@ -260,12 +260,12 @@ contract SimpleMarket is EventfulMarket, DSMath {
         id = _next_id();
         offers[id] = info;
 
-        require( pay_gem.transferFrom(msg.sender, this, pay_amt) );
+        require( pay_gem.transferFrom(msg.sender, address(this), pay_amt) );
 
-        LogItemUpdate(id);
-        LogMake(
+        emit LogItemUpdate(id);
+        emit LogMake(
             bytes32(id),
-            keccak256(pay_gem, buy_gem),
+            keccak256(abi.encodePacked(pay_gem, buy_gem)),
             msg.sender,
             pay_gem,
             buy_gem,
