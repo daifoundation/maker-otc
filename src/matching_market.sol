@@ -17,8 +17,10 @@
 
 pragma solidity ^0.5.12;
 
-import "./expiring_market.sol";
 import "ds-note/note.sol";
+import "ds-auth/auth.sol";
+import "./simple_market.sol";
+
 
 contract MatchingEvents {
     event LogBuyEnabled(bool isEnabled);
@@ -30,7 +32,7 @@ contract MatchingEvents {
     event LogDelete(address keeper, uint id);
 }
 
-contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
+contract MatchingMarket is MatchingEvents, SimpleMarket, DSAuth, DSNote {
     bool public buyEnabled = true;      //buy enabled
     bool public matchingEnabled = true; //true: enable matching,
                                          //false: revert to expiring market
@@ -48,14 +50,11 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     uint public dustId;                         // id of the latest offer marked as dust
 
 
-    constructor(uint64 close_time) ExpiringMarket(close_time) public {
-    }
-
     // After close, anyone can cancel an offer
     modifier can_cancel(uint id) {
         require(isActive(id), "Offer was deleted or taken, or never existed.");
         require(
-            isClosed() || msg.sender == getOwner(id) || id == dustId,
+            msg.sender == getOwner(id) || id == dustId,
             "Offer can not be cancelled because user is not owner, and market is open, and offer sells required amount of tokens."
         );
         _;
