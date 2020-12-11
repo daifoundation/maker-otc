@@ -166,8 +166,8 @@ contract SimpleMarket is EventfulMarket, DSMath {
 
         offers[id].pay_amt = sub(offer.pay_amt, quantity);
         offers[id].buy_amt = sub(offer.buy_amt, spend);
-        require( offer.buy_gem.transferFrom(msg.sender, offer.owner, spend) );
-        require( offer.pay_gem.transfer(msg.sender, quantity) );
+        safeTransferFrom(offer.buy_gem, msg.sender, offer.owner, spend);
+        safeTransfer(offer.pay_gem, msg.sender, quantity);
 
         emit LogItemUpdate(id);
         emit LogTake(
@@ -201,7 +201,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
         OfferInfo memory offer = offers[id];
         delete offers[id];
 
-        require( offer.pay_gem.transfer(offer.owner, offer.pay_amt) );
+        safeTransfer(offer.pay_gem, offer.owner, offer.pay_amt);
 
         emit LogItemUpdate(id);
         emit LogKill(
@@ -261,7 +261,7 @@ contract SimpleMarket is EventfulMarket, DSMath {
         id = _next_id();
         offers[id] = info;
 
-        require( pay_gem.transferFrom(msg.sender, address(this), pay_amt) );
+        safeTransferFrom(pay_gem, msg.sender, address(this), pay_amt);
 
         emit LogItemUpdate(id);
         emit LogMake(
@@ -287,5 +287,26 @@ contract SimpleMarket is EventfulMarket, DSMath {
         returns (uint)
     {
         last_offer_id++; return last_offer_id;
+    }
+
+    function safeTransfer(ERC20 token, address to, uint256 value) internal {
+        _callOptionalReturn(token, abi.encodeWithSelector(token.transfer.selector, to, value));
+    }
+
+    function safeTransferFrom(ERC20 token, address from, address to, uint256 value) internal {
+        _callOptionalReturn(token, abi.encodeWithSelector(token.transferFrom.selector, from, to, value));
+    }
+
+    function _callOptionalReturn(ERC20 token, bytes memory data) private {
+        // We need to perform a low level call here, to bypass Solidity's return data size checking mechanism, since
+        // we're implementing it ourselves. We use {Address.functionCall} to perform this call, which verifies that
+        // the target address contains contract code and also asserts for success in the low-level call.
+
+        (bool success, bytes memory returndata) = address(token).call(data);
+        require(success, "Token call failed");
+        if (returndata.length > 0) { // Return data is optional
+            // solhint-disable-next-line max-line-length
+            require(abi.decode(returndata, (bool)), "SafeERC20: ERC20 operation did not succeed");
+        }
     }
 }
