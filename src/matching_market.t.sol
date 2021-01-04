@@ -7,8 +7,10 @@ import "./matching_market.sol";
 
 contract MarketTester {
     MatchingMarket market;
-    constructor(MatchingMarket  market_) public {
+    DummyUniswapFactory uniswapFactory;
+    constructor(MatchingMarket  market_, DummyUniswapFactory uniswapFactory_) public {
         market = market_;
+        uniswapFactory = uniswapFactory_;
     }
     function doGetFirstUnsortedOffer()
         public
@@ -54,7 +56,8 @@ contract MarketTester {
         public
         returns (bool)
     {
-        return market.setMinSell(pay_gem, min_amount);
+        
+        return market.setMinSell(pay_gem);
     }
     function doGetMinSellAmount(ERC20 pay_gem)
         public
@@ -114,6 +117,17 @@ contract MarketTester {
         return market;
     }
 }
+
+contract DummyUniswapFactory {
+    mapping (address => uint256) reserves;
+
+    function setReserve(address addr, uint256 reserve) public {
+        reserves[addr] = reserve;
+    }
+
+
+}
+
 contract OrderMatchingGasTest is DSTest {
     MarketTester user1;
     ERC20 dai;
@@ -131,11 +145,13 @@ contract OrderMatchingGasTest is DSTest {
     uint constant MKR_SUPPLY = (10 ** 9) * (10 ** 18);
 
     function setUp() public {
-        otc = new MatchingMarket();
         dai = new DSTokenBase(DAI_SUPPLY);
         mkr = new DSTokenBase(MKR_SUPPLY);
         dgd = new DSTokenBase(DGD_SUPPLY);
-        user1 = new MarketTester(otc);
+
+        DummyUniswapFactory uniswapFactory = new DummyUniswapFactory();
+        otc = new MatchingMarket(address(dai), address(uniswapFactory), 10 ether);
+        user1 = new MarketTester(otc, uniswapFactory);
         dai.transfer(address(user1), (DAI_SUPPLY / 3) * 2);
         user1.doApprove(address(otc), DAI_SUPPLY / 3, dai );
         mkr.approve(address(otc), MKR_SUPPLY);
@@ -420,8 +436,9 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai = new DSTokenBase(DAI_SUPPLY);
         mkr = new DSTokenBase(MKR_SUPPLY);
         dgd = new DSTokenBase(DGD_SUPPLY);
-        otc = new MatchingMarket();
-        user1 = new MarketTester(otc);
+        DummyUniswapFactory uniswapFactory = new DummyUniswapFactory();
+        otc = new MatchingMarket(address(dai), address(uniswapFactory), 10 ether);
+        user1 = new MarketTester(otc, uniswapFactory);
     }
     function testGetFirstNextUnsortedOfferOneOffer() public {
         mkr.approve(address(otc), 30);
@@ -577,12 +594,12 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertEq(otc.getBestOffer(dai, mkr), offer_id[1]);
     }
     function testSetGetMinSellAmout() public {
-        otc.setMinSell(dai, 100);
+        user1.doSetMinSellAmount(dai, 100);
         assertEq(otc.getMinSell(dai), 100);
     }
     function testFailOfferSellsLessThanRequired() public {
         mkr.approve(address(otc), 30);
-        otc.setMinSell(mkr, 31);
+        user1.doSetMinSellAmount(mkr, 31);
         assertEq(otc.getMinSell(mkr), 31);
         offer_id[1] = otc.offer(30, mkr, 100, dai, 0);
     }
@@ -591,7 +608,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     }
     function testOfferSellsMoreThanOrEqualThanRequired() public {
         mkr.approve(address(otc), 30);
-        otc.setMinSell(mkr,30);
+        user1.doSetMinSellAmount(mkr,30);
         assertEq(otc.getMinSell(mkr), 30);
         offer_id[1] = otc.offer(30, mkr, 90, dai, 0);
     }
@@ -600,7 +617,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(address(user1), 30);
         user1.doApprove(address(otc), 30, dai);
         mkr.approve(address(otc), 25);
-        otc.setMinSell(dai, 10);
+        user1.doSetMinSellAmount(dai, 10);
         uint id0 = user1.doOffer(30, dai, 30, mkr, 0);
         uint id1 = otc.offer(25, mkr, 25, dai, 0);
         assertTrue(!otc.isActive(id0));
@@ -611,7 +628,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(address(user1), 30);
         user1.doApprove(address(otc), 30, dai);
         mkr.approve(address(otc), 25);
-        otc.setMinSell(dai, 10);
+        user1.doSetMinSellAmount(dai, 10);
         uint id0 = otc.offer(25, mkr, 25, dai, 0);
         uint id1 = user1.doOffer(30, dai, 30, mkr, 0);
         assertTrue(!otc.isActive(id0));
@@ -621,7 +638,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         dai.transfer(address(user1), 30);
         user1.doApprove(address(otc), 30, dai);
         mkr.approve(address(otc), 25);
-        otc.setMinSell(dai, 10);
+        user1.doSetMinSellAmount(dai, 10);
         uint id0 = user1.doOffer(30, dai, 30, mkr, 0);
         otc.buy(id0, 25);
         assertTrue(!otc.isActive(id0));
@@ -1823,5 +1840,47 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         currentId = otc.getWorseOffer(currentId);
         (sellAmt,, buyAmt,,,) = otc.offers(currentId);
         assertTrue(sellAmt == 250 ether && buyAmt == 1 ether);
+    }
+}
+
+contract LiveTest is DSTest {
+    function liveTestSetMinSellForWETH() public {
+        // mainnet addresses
+        address uniswapFactory = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
+        address dai = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+        address weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+
+        MatchingMarket otc = new MatchingMarket(dai, uniswapFactory, 10 ether);
+        
+        otc.setMinSell(ERC20(weth));
+
+        uint256 expectedWethAmount = 8207693541443256; // 10 DAI in eth
+        assertEq(otc.getMinSell(ERC20(weth)), expectedWethAmount);
+    }
+
+    function testFailliveTestSetMinSellForDAI() public {
+        // mainnet addresses
+        address uniswapFactory = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
+        address dai = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+        uint256 dustInDAI = 10 ether;
+
+        MatchingMarket otc = new MatchingMarket(dai, uniswapFactory, dustInDAI);
+        
+        // this reverts
+        otc.setMinSell(ERC20(dai));
+    }
+
+    function liveTestSetMinSellForBAT() public {
+        // mainnet addresses
+        address uniswapFactory = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
+        address dai = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+        address bat = 0x0D8775F648430679A709E98d2b0Cb6250d2887EF;
+
+        MatchingMarket otc = new MatchingMarket(dai, uniswapFactory, 10 ether);
+        
+        otc.setMinSell(ERC20(bat));
+
+        uint256 expectedBatAmount = 37835208948564443771; // 10 DAI in bat
+        assertEq(otc.getMinSell(ERC20(bat)), expectedBatAmount);
     }
 }

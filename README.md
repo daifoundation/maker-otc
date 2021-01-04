@@ -2,6 +2,15 @@
 
 This repository contains implementation of the protocol to exchange ERC20 compliant tokens using fully decentralized, on-chain order book and matching engine. The protocol is used by OasisDEX, eth2dai.com and many other DeFi projects. 
 
+
+## Development
+
+```
+dapp build
+dapp test 
+./scripts/run-live-tests.sh # runs tests against the mainnet
+```
+
 ## Design Consideration
 
 The protocol uses on-chain order book and matching engine. The primary advantage of such approach is that the liquidity is avaiable for other smart contracts that can access it in one atomic ethereum transaction. The second advantage is that the protocol is fully decentralized without any need for an operator. 
@@ -55,4 +64,3 @@ Maker who is certain that their offer will not be matched should always send opt
 * `stop()` - stops the market
 * `setMatchingEnabled()` - stops matching engine
 * `setMinSell()`/`getMinSell()` - sets/gets the dust limit for a token 
-
