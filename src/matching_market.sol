@@ -217,7 +217,7 @@ contract MatchingMarket is MatchingEvents, SimpleMarket, DSAuth, DSNote {
         return true;
     }
 
-    //set the minimum sell amount for a token
+    //set the minimum sell amount for a token. Uses Uniswap as a price oracle.
     //    Function is used to avoid "dust offers" that have
     //    very small amount of tokens to sell, and it would
     //    cost more gas to accept the offer, than the value
@@ -229,6 +229,7 @@ contract MatchingMarket is MatchingEvents, SimpleMarket, DSAuth, DSNote {
         note
         returns (bool)
     {
+        require(msg.sender == tx.origin, "No indirect calls please");
         require(address(pay_gem) != DAI, "Can't set dust for DAI");
         
         uint256 dust = uniswapSimplePriceOracle.getPriceFor(DAI, address(pay_gem), daiDustLimit);
