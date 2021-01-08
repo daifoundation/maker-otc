@@ -20,7 +20,7 @@ pragma solidity ^0.5.12;
 import "ds-note/note.sol";
 import "ds-auth/auth.sol";
 import "./simple_market.sol";
-import "./uniswap/UniswapLibrary.sol";
+import "./uniswap/UniswapSimplePriceOracle.sol";
 
 contract MatchingEvents {
     event LogBuyEnabled(bool isEnabled);
@@ -51,14 +51,15 @@ contract MatchingMarket is MatchingEvents, SimpleMarket, DSAuth, DSNote {
 
     // dust management
     address DAI;
-    address uniswapFactory;
     uint256 daiDustLimit;
+    UniswapSimplePriceOracle uniswapSimplePriceOracle;
 
-
-    constructor(address _DAI, address _uniswapFactory, uint256 _daiDustLimit) public {
+    constructor(address _DAI, uint256 _daiDustLimit, UniswapSimplePriceOracle _uniswapSimplePriceOracle) public {
         DAI = _DAI;
-        uniswapFactory = _uniswapFactory;
         daiDustLimit = _daiDustLimit;
+        uniswapSimplePriceOracle = _uniswapSimplePriceOracle;
+
+        _setMinSell(ERC20(DAI), daiDustLimit);
     }
     // After close, anyone can cancel an offer
     modifier can_cancel(uint id) {
@@ -225,18 +226,14 @@ contract MatchingMarket is MatchingEvents, SimpleMarket, DSAuth, DSNote {
         ERC20 pay_gem     //token to assign minimum sell amount to
     )
         public
-        auth
         note
         returns (bool)
     {
         require(address(pay_gem) != DAI, "Can't set dust for DAI");
         
-        (uint reserve0, uint reserve1) = UniswapV2Library.getReserves(uniswapFactory, address(DAI), address(pay_gem));
-        uint256 dust = UniswapV2Library.getAmountOut(daiDustLimit, reserve0, reserve1);
+        uint256 dust = uniswapSimplePriceOracle.getPriceFor(DAI, address(pay_gem), daiDustLimit);
 
-        _dust[address(pay_gem)] = dust;
-        emit LogMinSell(address(pay_gem), dust);
-        return true;
+        return _setMinSell(pay_gem, dust);
     }
 
     //returns the minimum sell amount for an offer
@@ -402,6 +399,18 @@ contract MatchingMarket is MatchingEvents, SimpleMarket, DSAuth, DSNote {
     }
 
     // ---- Internal Functions ---- //
+
+    function _setMinSell(
+        ERC20 pay_gem,     //token to assign minimum sell amount to
+        uint256 dust
+    )
+        internal
+        returns (bool)
+    {
+        _dust[address(pay_gem)] = dust;
+        emit LogMinSell(address(pay_gem), dust);
+        return true;
+    }
 
     function _buys(uint id, uint amount)
         internal
