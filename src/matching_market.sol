@@ -47,7 +47,6 @@ contract MatchingMarket is MatchingEvents, SimpleMarket, DSAuth, DSNote {
     mapping(address => uint) public _dust;                      //minimum sell amount for a token to avoid dust offers
     mapping(uint => uint) public _near;         //next unsorted offer id
     uint _head;                                 //first unsorted offer id
-    uint public dustId;                         // id of the latest offer marked as dust
 
     // dust management
     address DAI;
@@ -61,11 +60,15 @@ contract MatchingMarket is MatchingEvents, SimpleMarket, DSAuth, DSNote {
 
         _setMinSell(ERC20(DAI), daiDustLimit);
     }
+
     // After close, anyone can cancel an offer
+    // If dust, anyone can cancel an offer
+    // If owner, can cancel an offer
     modifier can_cancel(uint id) {
         require(isActive(id), "Offer was deleted or taken, or never existed.");
+
         require(
-            msg.sender == getOwner(id) || id == dustId,
+            msg.sender == getOwner(id) || offers[id].pay_amt < _dust[address(offers[id].pay_gem)],
             "Offer can not be cancelled because user is not owner, and market is open, and offer sells required amount of tokens."
         );
         _;
@@ -429,7 +432,6 @@ contract MatchingMarket is MatchingEvents, SimpleMarket, DSAuth, DSNote {
         require(super.buy(id, amount));
         // If offer has become dust during buy, we cancel it
         if (isActive(id) && offers[id].pay_amt < _dust[address(offers[id].pay_gem)]) {
-            dustId = id; //enable current msg.sender to call cancel(id)
             cancel(id);
         }
         return true;
