@@ -624,6 +624,17 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertTrue(!otc.isActive(id0));
         assertTrue(!otc.isActive(id1));
     }
+    function testDustMakerOfferCanceled2() public {
+        assertTrue(otc.matchingEnabled());
+        dai.transfer(address(user1), 30);
+        user1.doApprove(address(otc), 30, dai);
+        mkr.approve(address(otc), 25);
+        user1.doSetMinSellAmount(mkr, 10);
+        uint id0 = user1.doOffer(30, dai, 30, mkr, 0);
+        uint id1 = otc.offer(25, mkr, 25, dai, 0);
+        assertTrue(!otc.isActive(id0));
+        assertTrue(!otc.isActive(id1));
+    }
     function testDustNotNewDustOfferIsCreated() public {
         assertTrue(otc.matchingEnabled());
         daiWithDustLimit.transfer(address(user1), 30);

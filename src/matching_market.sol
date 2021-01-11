@@ -431,7 +431,7 @@ contract MatchingMarket is MatchingEvents, SimpleMarket, DSAuth, DSNote {
         }
         require(super.buy(id, amount));
         // If offer has become dust during buy, we cancel it
-        if (isActive(id) && offers[id].pay_amt < _dust[address(offers[id].pay_gem)]) {
+        if (isActive(id) && (offers[id].pay_amt < _dust[address(offers[id].pay_gem)] || offers[id].buy_amt < _dust[address(offers[id].buy_gem)])) {
             cancel(id);
         }
         return true;
