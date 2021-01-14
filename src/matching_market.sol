@@ -43,16 +43,16 @@ contract MatchingMarket is MatchingEvents, SimpleMarket, DSNote {
     uint _head;                                 //first unsorted offer id
 
     // dust management
-    address DAI;
-    uint256 daiDustLimit;
+    address dustToken;
+    uint256 dustLimit;
     UniswapSimplePriceOracle uniswapSimplePriceOracle;
 
-    constructor(address _DAI, uint256 _daiDustLimit, UniswapSimplePriceOracle _uniswapSimplePriceOracle) public {
-        DAI = _DAI;
-        daiDustLimit = _daiDustLimit;
+    constructor(address _dustToken, uint256 _dustLimit, UniswapSimplePriceOracle _uniswapSimplePriceOracle) public {
+        dustToken = _dustToken;
+        dustLimit = _dustLimit;
         uniswapSimplePriceOracle = _uniswapSimplePriceOracle;
 
-        _setMinSell(ERC20(DAI), daiDustLimit);
+        _setMinSell(ERC20(dustToken), dustLimit);
     }
 
     // After close, anyone can cancel an offer
@@ -218,9 +218,9 @@ contract MatchingMarket is MatchingEvents, SimpleMarket, DSNote {
         public
     {
         require(msg.sender == tx.origin, "No indirect calls please");
-        require(address(pay_gem) != DAI, "Can't set dust for DAI");
+        require(address(pay_gem) != dustToken, "Can't set dust for the dustToken");
         
-        uint256 dust = uniswapSimplePriceOracle.getPriceFor(DAI, address(pay_gem), daiDustLimit);
+        uint256 dust = uniswapSimplePriceOracle.getPriceFor(dustToken, address(pay_gem), dustLimit);
 
         _setMinSell(pay_gem, dust);
     }
