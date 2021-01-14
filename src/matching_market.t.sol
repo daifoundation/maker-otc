@@ -3,8 +3,10 @@ pragma solidity ^0.5.12;
 import "ds-test/test.sol";
 import "ds-token/base.sol";
 import "./matching_market.sol";
+import "./oracle/PriceOracle.sol";
+import "./oracle/UniswapSimplePriceOracle.sol";
 
-contract DummySimplePriceOracle {
+contract DummySimplePriceOracle is PriceOracle {
     uint256 price;
     function setPrice(address, uint256 _price) public {
         price = _price;
@@ -123,7 +125,7 @@ contract OrderMatchingGasTest is DSTest {
         dgd = new DSTokenBase(DGD_SUPPLY);
 
         DummySimplePriceOracle priceOracle = new DummySimplePriceOracle();
-        otc = new MatchingMarket(address(dai), 0, UniswapSimplePriceOracle(address(priceOracle)));
+        otc = new MatchingMarket(address(dai), 0, address(priceOracle));
         user1 = new MarketTester(otc, priceOracle);
         dai.transfer(address(user1), (DAI_SUPPLY / 3) * 2);
         user1.doApprove(address(otc), DAI_SUPPLY / 3, dai );
@@ -412,7 +414,7 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         mkr = new DSTokenBase(MKR_SUPPLY);
         dgd = new DSTokenBase(DGD_SUPPLY);
         DummySimplePriceOracle priceOracle = new DummySimplePriceOracle();
-        otc = new MatchingMarket(address(daiWithDustLimit), 10, UniswapSimplePriceOracle(address(priceOracle)));
+        otc = new MatchingMarket(address(daiWithDustLimit), 10, address(priceOracle));
         user1 = new MarketTester(otc, priceOracle);
     }
     function testGetFirstNextUnsortedOfferOneOffer() public {
@@ -1791,7 +1793,7 @@ contract LiveTest is DSTest {
         address weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
         UniswapSimplePriceOracle priceOracle = new UniswapSimplePriceOracle(uniswapFactory);
-        MatchingMarket otc = new MatchingMarket(dai, 10 ether, priceOracle);
+        MatchingMarket otc = new MatchingMarket(dai, 10 ether, address(priceOracle));
         
         otc.setMinSell(ERC20(weth));
 
@@ -1805,7 +1807,7 @@ contract LiveTest is DSTest {
         address dai = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
         UniswapSimplePriceOracle priceOracle = new UniswapSimplePriceOracle(uniswapFactory);
-        MatchingMarket otc = new MatchingMarket(dai, 10 ether, priceOracle);
+        MatchingMarket otc = new MatchingMarket(dai, 10 ether, address(priceOracle));
         
         // this reverts
         otc.setMinSell(ERC20(dai));
@@ -1818,7 +1820,7 @@ contract LiveTest is DSTest {
         address bat = 0x0D8775F648430679A709E98d2b0Cb6250d2887EF;
 
         UniswapSimplePriceOracle priceOracle = new UniswapSimplePriceOracle(uniswapFactory);
-        MatchingMarket otc = new MatchingMarket(dai, 10 ether, priceOracle);
+        MatchingMarket otc = new MatchingMarket(dai, 10 ether, address(priceOracle));
         
         otc.setMinSell(ERC20(bat));
 
@@ -1835,7 +1837,7 @@ contract IndirectCallsTest is DSTest {
         address bat = 0x0D8775F648430679A709E98d2b0Cb6250d2887EF;
 
         UniswapSimplePriceOracle priceOracle = new UniswapSimplePriceOracle(uniswapFactory);
-        MatchingMarket otc = new MatchingMarket(dai, 10 ether, priceOracle);
+        MatchingMarket otc = new MatchingMarket(dai, 10 ether, address(priceOracle));
 
         // fails
         otc.setMinSell(ERC20(bat));
