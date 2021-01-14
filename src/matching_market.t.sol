@@ -64,10 +64,9 @@ contract MarketTester {
     }
     function doSetMinSellAmount(ERC20 pay_gem, uint min_amount)
         public
-        returns (bool)
     {
         priceOracle.setPrice(address(pay_gem), min_amount);
-        return market.setMinSell(pay_gem);
+        market.setMinSell(pay_gem);
     }
     function doGetMinSellAmount(ERC20 pay_gem)
         public

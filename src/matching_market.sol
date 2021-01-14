@@ -230,14 +230,13 @@ contract MatchingMarket is MatchingEvents, SimpleMarket, DSAuth, DSNote {
     )
         public
         note
-        returns (bool)
     {
         require(msg.sender == tx.origin, "No indirect calls please");
         require(address(pay_gem) != DAI, "Can't set dust for DAI");
         
         uint256 dust = uniswapSimplePriceOracle.getPriceFor(DAI, address(pay_gem), daiDustLimit);
 
-        return _setMinSell(pay_gem, dust);
+        _setMinSell(pay_gem, dust);
     }
 
     //returns the minimum sell amount for an offer
@@ -409,11 +408,9 @@ contract MatchingMarket is MatchingEvents, SimpleMarket, DSAuth, DSNote {
         uint256 dust
     )
         internal
-        returns (bool)
     {
         _dust[address(pay_gem)] = dust;
         emit LogMinSell(address(pay_gem), dust);
-        return true;
     }
 
     function _buys(uint id, uint amount)
