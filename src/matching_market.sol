@@ -216,7 +216,6 @@ contract MatchingMarket is MatchingEvents, SimpleMarket, DSNote {
         ERC20 pay_gem     //token to assign minimum sell amount to
     )
         public
-        note
     {
         require(msg.sender == tx.origin, "No indirect calls please");
         require(address(pay_gem) != DAI, "Can't set dust for DAI");
