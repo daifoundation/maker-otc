@@ -36,19 +36,6 @@ contract MarketTester {
     {
         return market.getNextUnsortedOffer(mid);
     }
-    function doSetBuyEnabled(bool ebu_)
-        public
-        returns (bool)
-    {
-        return market.setBuyEnabled(ebu_);
-    }
-    function doIsBuyEnabled()
-        public
-        view
-        returns (bool)
-    {
-        return market.buyEnabled();
-    }
     function doSetMinSellAmount(ERC20 pay_gem, uint min_amount)
         public
     {
@@ -499,46 +486,6 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         mkr.approve(address(otc), 30);
         offer_id[1] = otc.offer(30, mkr, 100, dai, 0);
         otc.insert(offer_id[1],7);  //there is no active offer at pos 7
-    }
-    function testBuyEnabledByDefault() public {
-        assertTrue(otc.buyEnabled());
-    }
-    function testSetBuyDisabled() public {
-        otc.setBuyEnabled(false);
-        assertTrue(!otc.buyEnabled());
-        expectEventsExact(address(otc));
-        emit LogBuyEnabled(false);
-    }
-    function testSetBuyEnabled() public {
-        otc.setBuyEnabled(false);
-        otc.setBuyEnabled(true);
-        assertTrue(otc.buyEnabled());
-        expectEventsExact(address(otc));
-        emit LogBuyEnabled(false);
-        emit LogBuyEnabled(true);
-    }
-    function testFailBuyDisabled() public {
-        otc.setBuyEnabled(false);
-        mkr.approve(address(otc), 30);
-        dai.transfer(address(user1), 100 );
-        offer_id[1] = otc.offer(30, mkr, 100, dai, 0);
-        user1.doBuy(offer_id[1], 30);//should fail
-    }
-    function testBuyEnabledBuyWorks() public {
-        otc.setBuyEnabled(false);
-        otc.setBuyEnabled(true);
-        mkr.approve(address(otc), 30);
-        dai.transfer(address(user1), 90);
-        user1.doApprove(address(otc), 90, dai);
-        offer_id[1] = otc.offer(30, mkr, 90, dai, 0);
-        user1.doBuy(offer_id[1], 30);
-
-        expectEventsExact(address(otc));
-        emit LogBuyEnabled(false);
-        emit LogBuyEnabled(true);
-        emit LogItemUpdate(offer_id[1]);
-        emit LogTrade(30, address(mkr), 100, address(dai));
-        emit LogItemUpdate(offer_id[1]);
     }
     function testSetGetMinSellAmout() public {
         user1.doSetMinSellAmount(mkr, 100);

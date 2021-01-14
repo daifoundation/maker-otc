@@ -18,12 +18,10 @@
 pragma solidity ^0.5.12;
 
 import "ds-note/note.sol";
-import "ds-auth/auth.sol";
 import "./simple_market.sol";
 import "./uniswap/UniswapSimplePriceOracle.sol";
 
 contract MatchingEvents {
-    event LogBuyEnabled(bool isEnabled);
     event LogMinSell(address pay_gem, uint min_amount);
     event LogUnsortedOffer(uint id);
     event LogSortedOffer(uint id);
@@ -31,9 +29,7 @@ contract MatchingEvents {
     event LogDelete(address keeper, uint id);
 }
 
-contract MatchingMarket is MatchingEvents, SimpleMarket, DSAuth, DSNote {
-    bool public buyEnabled = true;      //buy enabled
-
+contract MatchingMarket is MatchingEvents, SimpleMarket, DSNote {
     struct sortInfo {
         uint next;  //points to id of next higher offer
         uint prev;  //points to id of previous lower offer
@@ -241,13 +237,6 @@ contract MatchingMarket is MatchingEvents, SimpleMarket, DSAuth, DSNote {
         return _dust[address(pay_gem)];
     }
 
-    //set buy functionality enabled/disabled
-    function setBuyEnabled(bool buyEnabled_) public auth returns (bool) {
-        buyEnabled = buyEnabled_;
-        emit LogBuyEnabled(buyEnabled);
-        return true;
-    }
-
     //return the best offer for a token pair
     //      the best offer is the lowest one if it's an ask,
     //      and highest one if it's a bid offer
@@ -395,7 +384,6 @@ contract MatchingMarket is MatchingEvents, SimpleMarket, DSAuth, DSNote {
         internal
         returns (bool)
     {
-        require(buyEnabled);
         if (amount == offers[id].pay_amt) {
             if (isOfferSorted(id)) {
                 //offers[id] must be removed from sorted list because all of it is bought
