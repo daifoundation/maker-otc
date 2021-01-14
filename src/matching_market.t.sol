@@ -36,19 +36,6 @@ contract MarketTester {
     {
         return market.getNextUnsortedOffer(mid);
     }
-    function doSetMatchingEnabled(bool ema_)
-        public
-        returns (bool)
-    {
-        return market.setMatchingEnabled(ema_);
-    }
-    function doIsMatchingEnabled()
-        public
-        view
-        returns (bool)
-    {
-        return market.matchingEnabled();
-    }
     function doSetBuyEnabled(bool ebu_)
         public
         returns (bool)
@@ -553,47 +540,6 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         emit LogTrade(30, address(mkr), 100, address(dai));
         emit LogItemUpdate(offer_id[1]);
     }
-    function testMatchingEnabledByDefault() public {
-        assertTrue(otc.matchingEnabled());
-    }
-    function testDisableMatching() public {
-        assertTrue(otc.setMatchingEnabled(false));
-        assertTrue(!otc.matchingEnabled());
-        expectEventsExact(address(otc));
-        emit LogMatchingEnabled(false);
-    }
-    function testFailMatchingEnabledUserCantMakeUnsortedOffer() public {
-        assertTrue(otc.matchingEnabled());
-        dai.transfer(address(user1), 1);
-        offer_id[1] = user1.doUnsortedOffer(1, dai, 1, mkr);
-    }
-    function testMatchingDisabledUserCanMakeUnsortedOffer() public {
-        assertTrue(otc.setMatchingEnabled(false));
-        assertTrue(!otc.matchingEnabled());
-        dai.transfer(address(user1), 1);
-        user1.doApprove(address(otc), 1, dai);
-        offer_id[1] = user1.doUnsortedOffer(1, dai, 1, mkr);
-        assertTrue(offer_id[1] > 0);
-        assertEq(otc.getFirstUnsortedOffer(), 0);
-        assertEq(otc.getBestOffer(dai, mkr), 0);
-    }
-    function testMatchingEnabledAuthUserCanMakeUnsortedOffer() public {
-        assertTrue(otc.setMatchingEnabled(true));
-        assertTrue(otc.matchingEnabled());
-        dai.approve(address(otc), 1);
-        offer_id[1] = otc.offer(1, dai, 1, mkr);
-        assertTrue(offer_id[1] > 0);
-    }
-    function testMatchingDisabledCancelDoesNotChangeSortedList() public {
-        assertTrue(otc.setMatchingEnabled(true));
-        assertTrue(otc.matchingEnabled());
-        dai.approve(address(otc), 1);
-        offer_id[1] = otc.offer(1, dai, 1, mkr, 0);
-        assertTrue(otc.setMatchingEnabled(false));
-        assertTrue(!otc.matchingEnabled());
-        otc.cancel(offer_id[1]);
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[1]);
-    }
     function testSetGetMinSellAmout() public {
         user1.doSetMinSellAmount(mkr, 100);
         assertEq(otc.getMinSell(mkr), 100);
@@ -614,7 +560,6 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         offer_id[1] = otc.offer(30, mkr, 90, dai, 0);
     }
     function testDustMakerOfferCanceled() public {
-        assertTrue(otc.matchingEnabled());
         daiWithDustLimit.transfer(address(user1), 30);
         user1.doApprove(address(otc), 30, daiWithDustLimit);
         mkr.approve(address(otc), 25);
@@ -624,7 +569,6 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertTrue(!otc.isActive(id1));
     }
     function testDustMakerOfferCanceled2() public {
-        assertTrue(otc.matchingEnabled());
         dai.transfer(address(user1), 30);
         user1.doApprove(address(otc), 30, dai);
         mkr.approve(address(otc), 25);
@@ -635,7 +579,6 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         assertTrue(!otc.isActive(id1));
     }
     function testDustNotNewDustOfferIsCreated() public {
-        assertTrue(otc.matchingEnabled());
         daiWithDustLimit.transfer(address(user1), 30);
         user1.doApprove(address(otc), 30, daiWithDustLimit);
         mkr.approve(address(otc), 25);

@@ -25,7 +25,6 @@ import "./uniswap/UniswapSimplePriceOracle.sol";
 contract MatchingEvents {
     event LogBuyEnabled(bool isEnabled);
     event LogMinSell(address pay_gem, uint min_amount);
-    event LogMatchingEnabled(bool isEnabled);
     event LogUnsortedOffer(uint id);
     event LogSortedOffer(uint id);
     event LogInsert(address keeper, uint id);
@@ -34,8 +33,7 @@ contract MatchingEvents {
 
 contract MatchingMarket is MatchingEvents, SimpleMarket, DSAuth, DSNote {
     bool public buyEnabled = true;      //buy enabled
-    bool public matchingEnabled = true; //true: enable matching,
-                                         //false: revert to expiring market
+
     struct sortInfo {
         uint next;  //points to id of next higher offer
         uint prev;  //points to id of previous lower offer
@@ -120,8 +118,7 @@ contract MatchingMarket is MatchingEvents, SimpleMarket, DSAuth, DSNote {
         returns (uint)
     {
         require(!locked, "Reentrancy attempt");
-        function (uint256,ERC20,uint256,ERC20) returns (uint256) fn = matchingEnabled ? _offeru : super.offer;
-        return fn(pay_amt, pay_gem, buy_amt, buy_gem);
+        return _offeru(pay_amt, pay_gem, buy_amt, buy_gem);
     }
 
     // Make a new offer. Takes funds from the caller into market escrow.
@@ -154,10 +151,7 @@ contract MatchingMarket is MatchingEvents, SimpleMarket, DSAuth, DSNote {
         require(!locked, "Reentrancy attempt");
         require(_dust[address(pay_gem)] <= pay_amt);
 
-        if (matchingEnabled) {
-          return _matcho(pay_amt, pay_gem, buy_amt, buy_gem, pos, rounding);
-        }
-        return super.offer(pay_amt, pay_gem, buy_amt, buy_gem);
+        return _matcho(pay_amt, pay_gem, buy_amt, buy_gem, pos, rounding);
     }
 
     //Transfers funds from caller to offer maker, and from market to caller.
@@ -167,8 +161,7 @@ contract MatchingMarket is MatchingEvents, SimpleMarket, DSAuth, DSNote {
         returns (bool)
     {
         require(!locked, "Reentrancy attempt");
-        function (uint256,uint256) returns (bool) fn = matchingEnabled ? _buys : super.buy;
-        return fn(id, amount);
+        return _buys(id, amount);
     }
 
     // Cancel an offer. Refunds offer maker.
@@ -178,12 +171,10 @@ contract MatchingMarket is MatchingEvents, SimpleMarket, DSAuth, DSNote {
         returns (bool success)
     {
         require(!locked, "Reentrancy attempt");
-        if (matchingEnabled) {
-            if (isOfferSorted(id)) {
-                require(_unsort(id));
-            } else {
-                require(_hide(id));
-            }
+        if (isOfferSorted(id)) {
+            require(_unsort(id));
+        } else {
+            require(_hide(id));
         }
         return super.cancel(id);    //delete the offer.
     }
@@ -254,19 +245,6 @@ contract MatchingMarket is MatchingEvents, SimpleMarket, DSAuth, DSNote {
     function setBuyEnabled(bool buyEnabled_) public auth returns (bool) {
         buyEnabled = buyEnabled_;
         emit LogBuyEnabled(buyEnabled);
-        return true;
-    }
-
-    //set matching enabled/disabled
-    //    If matchingEnabled true(default), then inserted offers are matched.
-    //    Except the ones inserted by contracts, because those end up
-    //    in the unsorted list of offers, that must be later sorted by
-    //    keepers using insert().
-    //    If matchingEnabled is false then MatchingMarket is reverted to ExpiringMarket,
-    //    and matching is not done, and sorted lists are disabled.
-    function setMatchingEnabled(bool matchingEnabled_) public auth returns (bool) {
-        matchingEnabled = matchingEnabled_;
-        emit LogMatchingEnabled(matchingEnabled);
         return true;
     }
 
