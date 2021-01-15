@@ -43,9 +43,9 @@ contract MatchingMarket is MatchingEvents, SimpleMarket, DSNote {
     uint _head;                                 //first unsorted offer id
 
     // dust management
-    address dustToken;
-    uint256 dustLimit;
-    PriceOracle priceOracle;
+    address public dustToken;
+    uint256 public dustLimit;
+    PriceOracle public priceOracle;
 
     constructor(address _dustToken, uint256 _dustLimit, address _priceOracle) public {
         dustToken = _dustToken;
