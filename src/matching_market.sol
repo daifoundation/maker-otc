@@ -17,7 +17,6 @@
 
 pragma solidity ^0.5.12;
 
-import "ds-note/note.sol";
 import "./simple_market.sol";
 import "./oracle/PriceOracle.sol";
 
@@ -29,7 +28,7 @@ contract MatchingEvents {
     event LogDelete(address keeper, uint id);
 }
 
-contract MatchingMarket is MatchingEvents, SimpleMarket, DSNote {
+contract MatchingMarket is MatchingEvents, SimpleMarket {
     struct sortInfo {
         uint next;  //points to id of next higher offer
         uint prev;  //points to id of previous lower offer
