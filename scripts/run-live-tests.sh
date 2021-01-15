@@ -3,7 +3,7 @@ set -e
 cd "$(dirname "$0")"
 cd ..
 
-dapp build
+dapp --use solc:0.5.12 build
 
 
 echo "Testing on forked mainnet"
