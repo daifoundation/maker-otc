@@ -7,9 +7,9 @@ dapp --use solc:0.5.12 build
 
 
 echo "Testing on forked mainnet"
-export DAPP_TEST_ORIGIN=0x47f5b4ddafd69a6271f3e15518076e0305a2c722 # fool otc contract that we do direct calls
+export DAPP_TEST_ORIGIN=0x3be95e4159a131e56a84657c4ad4d43ec7cd865d # fool otc contract that we do direct calls
 export DAPP_TEST_NUMBER=11607594
-hevm dapp-test --json-file=out/dapp.sol.json --rpc=https://parity-mainnet.makerfoundation.com:8545 --match live
+hevm dapp-test --json-file=out/dapp.sol.json --rpc=https://parity-mainnet.makerfoundation.com:8545 --match live --verbose 1
 
 echo "Testing indirect calls on forked mainnet"
 export DAPP_TEST_ORIGIN=0x0

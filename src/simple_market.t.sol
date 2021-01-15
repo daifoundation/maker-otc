@@ -21,12 +21,32 @@ contract MarketTester {
     }
 }
 
-contract SimpleMarketTest is DSTest, EventfulMarket {
+interface Hevm {
+    function warp(uint256) external;
+}
+
+contract HevmCheat {
+    Hevm hevm;
+
+    // CHEAT_CODE = 0x7109709ECfa91a80626fF3989D68f67F5b1DD12D
+    bytes20 constant CHEAT_CODE =
+        bytes20(uint160(uint256(keccak256('hevm cheat code'))));
+
+    function setUp() public {
+        hevm = Hevm(address(CHEAT_CODE));
+        hevm.warp(1);
+    }
+}
+
+contract SimpleMarketTest is DSTest, HevmCheat, EventfulMarket {
     MarketTester user1;
     ERC20 dai;
     ERC20 mkr;
     SimpleMarket otc;
+
     function setUp() public {
+        super.setUp();
+
         otc = new SimpleMarket();
         user1 = new MarketTester(otc);
 
@@ -232,12 +252,15 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
     }
 }
 
-contract TransferTest is DSTest {
+contract TransferTest is DSTest, HevmCheat {
     MarketTester user1;
     ERC20 dai;
     ERC20 mkr;
     SimpleMarket otc;
+
     function setUp() public {
+        super.setUp();
+
         otc = new SimpleMarket();
         user1 = new MarketTester(otc);
 
@@ -397,13 +420,15 @@ contract CancelTransferTest is TransferTest {
     }
 }
 
-contract GasTest is DSTest {
+contract GasTest is DSTest, HevmCheat {
     ERC20 dai;
     ERC20 mkr;
     SimpleMarket otc;
     uint id;
 
     function setUp() public {
+        super.setUp();
+
         otc = new SimpleMarket();
 
         dai = new DSTokenBase(10 ** 9);
