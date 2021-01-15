@@ -65,7 +65,7 @@ contract MatchingMarket is MatchingEvents, SimpleMarket {
 
         require(
             msg.sender == getOwner(id) || offers[id].pay_amt < _dust[address(offers[id].pay_gem)] || offers[id].buy_amt < _dust[address(offers[id].buy_gem)],
-            "Offer can not be cancelled because user is not owner, and market is open, and offer sells required amount of tokens."
+            "Offer can not be cancelled because user is not owner nor a dust one."
         );
         _;
     }
