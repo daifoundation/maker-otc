@@ -3,17 +3,16 @@ pragma solidity ^0.5.12;
 import "ds-test/test.sol";
 import "ds-token/base.sol";
 import "./matching_market.sol";
-import "./oracle/PriceOracle.sol";
 import "./oracle/UniswapSimplePriceOracle.sol";
 import {HevmCheat} from "./simple_market.t.sol";
 
-contract DummySimplePriceOracle is PriceOracle {
+contract DummySimplePriceOracle {
     uint256 price;
     function setPrice(address, uint256 _price) public {
         price = _price;
     }
 
-    function getPriceFor(address tokenA, address tokenB, uint256 tokenAAmt) public returns (uint256) {
+    function getPriceFor(address, address, uint256) public view returns (uint256) {
         return price;
     }
 }
@@ -418,7 +417,7 @@ contract OrderMatchingTest is DSTest, HevmCheat, EventfulMarket, MatchingEvents 
     function doSetMinSellAmount(ERC20 pay_gem, uint min_amount)
         internal
     {
-        DummySimplePriceOracle(address(otc.priceOracle())).setPrice(address(pay_gem), min_amount);
+        DummySimplePriceOracle(otc.priceOracle()).setPrice(address(pay_gem), min_amount);
         otc.setMinSell(pay_gem);
     }
     function testGetFirstNextUnsortedOfferOneOffer() public {
