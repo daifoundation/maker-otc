@@ -6,7 +6,6 @@ This repository contains implementation of the protocol to exchange ERC20 compli
 ## Development
 
 ```
-dapp build
 ./scripts/run-tests.sh # run unit tests
 ./scripts/run-live-tests.sh # runs tests against the mainnet
 ```

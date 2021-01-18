@@ -3,7 +3,6 @@ pragma solidity ^0.5.12;
 import "ds-test/test.sol";
 import "ds-token/base.sol";
 import "./matching_market.sol";
-import "./oracle/UniswapSimplePriceOracle.sol";
 import {HevmCheat} from "./simple_market.t.sol";
 
 contract DummySimplePriceOracle {
@@ -385,7 +384,7 @@ contract OrderMatchingGasTest is DSTest, HevmCheat {
 contract OrderMatchingTest is DSTest, HevmCheat, EventfulMarket, MatchingEvents {
     MarketTester user1;
     ERC20 dai;
-    ERC20 daiWithDustLimit;
+    ERC20 dustToken;
     ERC20 mkr;
     ERC20 dgd;
     MatchingMarket otc;
@@ -407,11 +406,11 @@ contract OrderMatchingTest is DSTest, HevmCheat, EventfulMarket, MatchingEvents 
         super.setUp();
 
         dai = new DSTokenBase(DAI_SUPPLY);
-        daiWithDustLimit = new DSTokenBase(DAI_SUPPLY);
+        dustToken = new DSTokenBase(DAI_SUPPLY);
         mkr = new DSTokenBase(MKR_SUPPLY);
         dgd = new DSTokenBase(DGD_SUPPLY);
         DummySimplePriceOracle priceOracle = new DummySimplePriceOracle();
-        otc = new MatchingMarket(address(daiWithDustLimit), 10, address(priceOracle));
+        otc = new MatchingMarket(address(dustToken), 10, address(priceOracle));
         user1 = new MarketTester(otc);
     }
     function doSetMinSellAmount(ERC20 pay_gem, uint min_amount)
@@ -503,7 +502,7 @@ contract OrderMatchingTest is DSTest, HevmCheat, EventfulMarket, MatchingEvents 
         offer_id[1] = otc.offer(30, mkr, 100, dai, 0);
     }
     function testFailCanNotSetSellAmountForMainTokenSettingDust() public {
-        doSetMinSellAmount(daiWithDustLimit,100);
+        doSetMinSellAmount(dustToken,100);
     }
     function testOfferSellsMoreThanOrEqualThanRequired() public {
         mkr.approve(address(otc), 30);
@@ -512,11 +511,11 @@ contract OrderMatchingTest is DSTest, HevmCheat, EventfulMarket, MatchingEvents 
         offer_id[1] = otc.offer(30, mkr, 90, dai, 0);
     }
     function testDustMakerOfferCanceled() public {
-        daiWithDustLimit.transfer(address(user1), 30);
-        user1.doApprove(address(otc), 30, daiWithDustLimit);
+        dustToken.transfer(address(user1), 30);
+        user1.doApprove(address(otc), 30, dustToken);
         mkr.approve(address(otc), 25);
-        uint id0 = user1.doOffer(30, daiWithDustLimit, 30, mkr, 0);
-        uint id1 = otc.offer(25, mkr, 25, daiWithDustLimit, 0);
+        uint id0 = user1.doOffer(30, dustToken, 30, mkr, 0);
+        uint id1 = otc.offer(25, mkr, 25, dustToken, 0);
         assertTrue(!otc.isActive(id0));
         assertTrue(!otc.isActive(id1));
     }
@@ -531,19 +530,19 @@ contract OrderMatchingTest is DSTest, HevmCheat, EventfulMarket, MatchingEvents 
         assertTrue(!otc.isActive(id1));
     }
     function testDustNotNewDustOfferIsCreated() public {
-        daiWithDustLimit.transfer(address(user1), 30);
-        user1.doApprove(address(otc), 30, daiWithDustLimit);
+        dustToken.transfer(address(user1), 30);
+        user1.doApprove(address(otc), 30, dustToken);
         mkr.approve(address(otc), 25);
-        uint id0 = otc.offer(25, mkr, 25, daiWithDustLimit, 0);
-        uint id1 = user1.doOffer(30, daiWithDustLimit, 30, mkr, 0);
+        uint id0 = otc.offer(25, mkr, 25, dustToken, 0);
+        uint id1 = user1.doOffer(30, dustToken, 30, mkr, 0);
         assertTrue(!otc.isActive(id0));
         assertTrue(!otc.isActive(id1));
     }
     function testBuyDustOfferCanceled() public {
-        daiWithDustLimit.transfer(address(user1), 30);
-        user1.doApprove(address(otc), 30, daiWithDustLimit);
+        dustToken.transfer(address(user1), 30);
+        user1.doApprove(address(otc), 30, dustToken);
         mkr.approve(address(otc), 25);
-        uint id0 = user1.doOffer(30, daiWithDustLimit, 30, mkr, 0);
+        uint id0 = user1.doOffer(30, dustToken, 30, mkr, 0);
         otc.buy(id0, 25);
         assertTrue(!otc.isActive(id0));
     }
