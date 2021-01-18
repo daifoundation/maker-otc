@@ -250,14 +250,6 @@ contract SimpleMarketTest is DSTest, HevmCheat, EventfulMarket {
         // other buy failures will return false
         otc.buy(id, uint(-1));
     }
-    // function testTransferFromEOA() public {
-    //     otc.offer(30, ERC20(address(123)), 100, dai);
-    // }
-    // function testTransferToEOA() public {
-    //     mkr.approve(address(otc), 30);
-    //     uint256 id = otc.offer(30, mkr, 100, ERC20(address(123)));
-    //     otc.buy(id, 30);
-    // }
     function testFailTransferFromEOA() public {
         otc.offer(30, ERC20(address(123)), 100, dai);
     }
