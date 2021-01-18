@@ -298,10 +298,6 @@ contract SimpleMarket is EventfulMarket, DSMath {
     }
 
     function _callOptionalReturn(ERC20 token, bytes memory data) private {
-        // We need to perform a low level call here, to bypass Solidity's return data size checking mechanism, since
-        // we're implementing it ourselves. We use {Address.functionCall} to perform this call, which verifies that
-        // the target address contains contract code and also asserts for success in the low-level call.
-
         uint256 size;
         assembly { size := extcodesize(token) }
         require(size > 0, "Not a contract");
@@ -309,7 +305,6 @@ contract SimpleMarket is EventfulMarket, DSMath {
         (bool success, bytes memory returndata) = address(token).call(data);
         require(success, "Token call failed");
         if (returndata.length > 0) { // Return data is optional
-            // solhint-disable-next-line max-line-length
             require(abi.decode(returndata, (bool)), "SafeERC20: ERC20 operation did not succeed");
         }
     }
