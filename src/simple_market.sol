@@ -1,5 +1,8 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 /// simple_market.sol
-// Copyright (C) 2016 - 2020 Maker Ecosystem Growth Holdings, INC.
+
+// Copyright (C) 2016 - 2021 Maker Ecosystem Growth Holdings, INC.
 
 //
 // This program is free software: you can redistribute it and/or modify

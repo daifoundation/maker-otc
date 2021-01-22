@@ -1,5 +1,8 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 /// matching_market.sol
-// Copyright (C) 2017 - 2020 Maker Ecosystem Growth Holdings, INC.
+
+// Copyright (C) 2017 - 2021 Maker Ecosystem Growth Holdings, INC.
 
 //
 // This program is free software: you can redistribute it and/or modify
@@ -57,9 +60,8 @@ contract MatchingMarket is MatchingEvents, SimpleMarket {
         _setMinSell(ERC20(dustToken), dustLimit);
     }
 
-    // After close, anyone can cancel an offer
-    // If dust, anyone can cancel an offer
     // If owner, can cancel an offer
+    // If dust, anyone can cancel an offer
     modifier can_cancel(uint id) {
         require(isActive(id), "Offer was deleted or taken, or never existed.");
 
