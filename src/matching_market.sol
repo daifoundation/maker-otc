@@ -64,7 +64,7 @@ contract MatchingMarket is MatchingEvents, SimpleMarket {
         require(isActive(id), "Offer was deleted or taken, or never existed.");
 
         require(
-            msg.sender == getOwner(id) || offers[id].pay_amt < _dust[address(offers[id].pay_gem)] || offers[id].buy_amt < _dust[address(offers[id].buy_gem)],
+            msg.sender == getOwner(id) || offers[id].pay_amt < _dust[address(offers[id].pay_gem)],
             "Offer can not be cancelled because user is not owner nor a dust one."
         );
         _;
@@ -94,17 +94,11 @@ contract MatchingMarket is MatchingEvents, SimpleMarket {
 
     // Make a new offer. Takes funds from the caller into market escrow.
     //
-    // If matching is enabled:
     //     * creates new offer without putting it in
     //       the sorted list.
     //     * available to authorized contracts only!
     //     * keepers should call insert(id,pos)
     //       to put offer in the sorted list.
-    //
-    // If matching is disabled:
-    //     * calls expiring market's offer().
-    //     * available to everyone without authorization.
-    //     * no sorting is done.
     //
     function offer(
         uint pay_amt,    //maker (ask) sell how much
@@ -395,7 +389,7 @@ contract MatchingMarket is MatchingEvents, SimpleMarket {
         }
         require(super.buy(id, amount));
         // If offer has become dust during buy, we cancel it
-        if (isActive(id) && (offers[id].pay_amt < _dust[address(offers[id].pay_gem)] || offers[id].buy_amt < _dust[address(offers[id].buy_gem)])) {
+        if (isActive(id) && offers[id].pay_amt < _dust[address(offers[id].pay_gem)]) {
             cancel(id);
         }
         return true;
