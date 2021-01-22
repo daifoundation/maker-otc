@@ -389,7 +389,7 @@ contract MatchingMarket is MatchingEvents, SimpleMarket {
         }
         require(super.buy(id, amount));
         // If offer has become dust during buy, we cancel it
-        if (isActive(id) && (offers[id].pay_amt < _dust[address(offers[id].pay_gem)])) {
+        if (isActive(id) && offers[id].pay_amt < _dust[address(offers[id].pay_gem)]) {
             cancel(id);
         }
         return true;
