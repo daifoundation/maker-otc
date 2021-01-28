@@ -1,3 +1,23 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/// simple_market.t.sol
+
+// Copyright (C) 2016 - 2021 Maker Ecosystem Growth Holdings, INC.
+
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 pragma solidity ^0.5.12;
 
 import "ds-test/test.sol";
@@ -21,12 +41,32 @@ contract MarketTester {
     }
 }
 
-contract SimpleMarketTest is DSTest, EventfulMarket {
+interface Hevm {
+    function warp(uint256) external;
+}
+
+contract HevmCheat {
+    Hevm hevm;
+
+    // CHEAT_CODE = 0x7109709ECfa91a80626fF3989D68f67F5b1DD12D
+    bytes20 constant CHEAT_CODE =
+        bytes20(uint160(uint256(keccak256('hevm cheat code'))));
+
+    function setUp() public {
+        hevm = Hevm(address(CHEAT_CODE));
+        hevm.warp(1);
+    }
+}
+
+contract SimpleMarketTest is DSTest, HevmCheat, EventfulMarket {
     MarketTester user1;
     ERC20 dai;
     ERC20 mkr;
     SimpleMarket otc;
+
     function setUp() public {
+        super.setUp();
+
         otc = new SimpleMarket();
         user1 = new MarketTester(otc);
 
@@ -230,14 +270,20 @@ contract SimpleMarketTest is DSTest, EventfulMarket {
         // other buy failures will return false
         otc.buy(id, uint(-1));
     }
+    function testFailTransferFromEOA() public {
+        otc.offer(30, ERC20(address(123)), 100, dai);
+    }
 }
 
-contract TransferTest is DSTest {
+contract TransferTest is DSTest, HevmCheat {
     MarketTester user1;
     ERC20 dai;
     ERC20 mkr;
     SimpleMarket otc;
+
     function setUp() public {
+        super.setUp();
+
         otc = new SimpleMarket();
         user1 = new MarketTester(otc);
 
@@ -397,13 +443,15 @@ contract CancelTransferTest is TransferTest {
     }
 }
 
-contract GasTest is DSTest {
+contract GasTest is DSTest, HevmCheat {
     ERC20 dai;
     ERC20 mkr;
     SimpleMarket otc;
     uint id;
 
     function setUp() public {
+        super.setUp();
+
         otc = new SimpleMarket();
 
         dai = new DSTokenBase(10 ** 9);

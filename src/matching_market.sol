@@ -1,5 +1,8 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 /// matching_market.sol
-// Copyright (C) 2017 - 2020 Maker Ecosystem Growth Holdings, INC.
+
+// Copyright (C) 2017 - 2021 Maker Ecosystem Growth Holdings, INC.
 
 //
 // This program is free software: you can redistribute it and/or modify
@@ -17,23 +20,21 @@
 
 pragma solidity ^0.5.12;
 
-import "./expiring_market.sol";
-import "ds-note/note.sol";
+import "./simple_market.sol";
+
+interface PriceOracleLike {
+  function getPriceFor(address, address, uint256) external view returns (uint256);
+}
 
 contract MatchingEvents {
-    event LogBuyEnabled(bool isEnabled);
     event LogMinSell(address pay_gem, uint min_amount);
-    event LogMatchingEnabled(bool isEnabled);
     event LogUnsortedOffer(uint id);
     event LogSortedOffer(uint id);
     event LogInsert(address keeper, uint id);
     event LogDelete(address keeper, uint id);
 }
 
-contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
-    bool public buyEnabled = true;      //buy enabled
-    bool public matchingEnabled = true; //true: enable matching,
-                                         //false: revert to expiring market
+contract MatchingMarket is MatchingEvents, SimpleMarket {
     struct sortInfo {
         uint next;  //points to id of next higher offer
         uint prev;  //points to id of previous lower offer
@@ -45,18 +46,28 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
     mapping(address => uint) public _dust;                      //minimum sell amount for a token to avoid dust offers
     mapping(uint => uint) public _near;         //next unsorted offer id
     uint _head;                                 //first unsorted offer id
-    uint public dustId;                         // id of the latest offer marked as dust
 
+    // dust management
+    address public dustToken;
+    uint256 public dustLimit;
+    address public priceOracle;
 
-    constructor(uint64 close_time) ExpiringMarket(close_time) public {
+    constructor(address _dustToken, uint256 _dustLimit, address _priceOracle) public {
+        dustToken = _dustToken;
+        dustLimit = _dustLimit;
+        priceOracle = _priceOracle;
+
+        _setMinSell(ERC20(dustToken), dustLimit);
     }
 
-    // After close, anyone can cancel an offer
+    // If owner, can cancel an offer
+    // If dust, anyone can cancel an offer
     modifier can_cancel(uint id) {
         require(isActive(id), "Offer was deleted or taken, or never existed.");
+
         require(
-            isClosed() || msg.sender == getOwner(id) || id == dustId,
-            "Offer can not be cancelled because user is not owner, and market is open, and offer sells required amount of tokens."
+            msg.sender == getOwner(id) || offers[id].pay_amt < _dust[address(offers[id].pay_gem)],
+            "Offer can not be cancelled because user is not owner nor a dust one."
         );
         _;
     }
@@ -85,17 +96,11 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
     // Make a new offer. Takes funds from the caller into market escrow.
     //
-    // If matching is enabled:
     //     * creates new offer without putting it in
     //       the sorted list.
     //     * available to authorized contracts only!
     //     * keepers should call insert(id,pos)
     //       to put offer in the sorted list.
-    //
-    // If matching is disabled:
-    //     * calls expiring market's offer().
-    //     * available to everyone without authorization.
-    //     * no sorting is done.
     //
     function offer(
         uint pay_amt,    //maker (ask) sell how much
@@ -107,8 +112,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         returns (uint)
     {
         require(!locked, "Reentrancy attempt");
-        function (uint256,ERC20,uint256,ERC20) returns (uint256) fn = matchingEnabled ? _offeru : super.offer;
-        return fn(pay_amt, pay_gem, buy_amt, buy_gem);
+        return _offeru(pay_amt, pay_gem, buy_amt, buy_gem);
     }
 
     // Make a new offer. Takes funds from the caller into market escrow.
@@ -141,10 +145,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         require(!locked, "Reentrancy attempt");
         require(_dust[address(pay_gem)] <= pay_amt);
 
-        if (matchingEnabled) {
-          return _matcho(pay_amt, pay_gem, buy_amt, buy_gem, pos, rounding);
-        }
-        return super.offer(pay_amt, pay_gem, buy_amt, buy_gem);
+        return _matcho(pay_amt, pay_gem, buy_amt, buy_gem, pos, rounding);
     }
 
     //Transfers funds from caller to offer maker, and from market to caller.
@@ -154,8 +155,7 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         returns (bool)
     {
         require(!locked, "Reentrancy attempt");
-        function (uint256,uint256) returns (bool) fn = matchingEnabled ? _buys : super.buy;
-        return fn(id, amount);
+        return _buys(id, amount);
     }
 
     // Cancel an offer. Refunds offer maker.
@@ -165,12 +165,10 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         returns (bool success)
     {
         require(!locked, "Reentrancy attempt");
-        if (matchingEnabled) {
-            if (isOfferSorted(id)) {
-                require(_unsort(id));
-            } else {
-                require(_hide(id));
-            }
+        if (isOfferSorted(id)) {
+            require(_unsort(id));
+        } else {
+            require(_hide(id));
         }
         return super.cancel(id);    //delete the offer.
     }
@@ -207,23 +205,22 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         return true;
     }
 
-    //set the minimum sell amount for a token
+    //set the minimum sell amount for a token. Uses Uniswap as a price oracle.
     //    Function is used to avoid "dust offers" that have
     //    very small amount of tokens to sell, and it would
     //    cost more gas to accept the offer, than the value
     //    of tokens received.
     function setMinSell(
-        ERC20 pay_gem,     //token to assign minimum sell amount to
-        uint dust          //maker (ask) minimum sell amount
+        ERC20 pay_gem     //token to assign minimum sell amount to
     )
         public
-        auth
-        note
-        returns (bool)
     {
-        _dust[address(pay_gem)] = dust;
-        emit LogMinSell(address(pay_gem), dust);
-        return true;
+        require(msg.sender == tx.origin, "No indirect calls please");
+        require(address(pay_gem) != dustToken, "Can't set dust for the dustToken");
+        
+        uint256 dust = PriceOracleLike(priceOracle).getPriceFor(dustToken, address(pay_gem), dustLimit);
+
+        _setMinSell(pay_gem, dust);
     }
 
     //returns the minimum sell amount for an offer
@@ -235,26 +232,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         returns (uint)
     {
         return _dust[address(pay_gem)];
-    }
-
-    //set buy functionality enabled/disabled
-    function setBuyEnabled(bool buyEnabled_) public auth returns (bool) {
-        buyEnabled = buyEnabled_;
-        emit LogBuyEnabled(buyEnabled);
-        return true;
-    }
-
-    //set matching enabled/disabled
-    //    If matchingEnabled true(default), then inserted offers are matched.
-    //    Except the ones inserted by contracts, because those end up
-    //    in the unsorted list of offers, that must be later sorted by
-    //    keepers using insert().
-    //    If matchingEnabled is false then MatchingMarket is reverted to ExpiringMarket,
-    //    and matching is not done, and sorted lists are disabled.
-    function setMatchingEnabled(bool matchingEnabled_) public auth returns (bool) {
-        matchingEnabled = matchingEnabled_;
-        emit LogMatchingEnabled(matchingEnabled);
-        return true;
     }
 
     //return the best offer for a token pair
@@ -390,11 +367,20 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
 
     // ---- Internal Functions ---- //
 
+    function _setMinSell(
+        ERC20 pay_gem,     //token to assign minimum sell amount to
+        uint256 dust
+    )
+        internal
+    {
+        _dust[address(pay_gem)] = dust;
+        emit LogMinSell(address(pay_gem), dust);
+    }
+
     function _buys(uint id, uint amount)
         internal
         returns (bool)
     {
-        require(buyEnabled);
         if (amount == offers[id].pay_amt) {
             if (isOfferSorted(id)) {
                 //offers[id] must be removed from sorted list because all of it is bought
@@ -406,7 +392,6 @@ contract MatchingMarket is MatchingEvents, ExpiringMarket, DSNote {
         require(super.buy(id, amount));
         // If offer has become dust during buy, we cancel it
         if (isActive(id) && offers[id].pay_amt < _dust[address(offers[id].pay_gem)]) {
-            dustId = id; //enable current msg.sender to call cancel(id)
             cancel(id);
         }
         return true;

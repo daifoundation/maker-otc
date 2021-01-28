@@ -1,9 +1,40 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/// matching_market.t.sol
+
+// Copyright (C) 2017 - 2021 Maker Ecosystem Growth Holdings, INC.
+
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 pragma solidity ^0.5.12;
 
 import "ds-test/test.sol";
 import "ds-token/base.sol";
-
 import "./matching_market.sol";
+import {HevmCheat} from "./simple_market.t.sol";
+
+contract DummySimplePriceOracle {
+    uint256 price;
+    function setPrice(address, uint256 _price) public {
+        price = _price;
+    }
+
+    function getPriceFor(address, address, uint256) public view returns (uint256) {
+        return price;
+    }
+}
 
 contract MarketTester {
     MatchingMarket market;
@@ -23,38 +54,6 @@ contract MarketTester {
         returns (uint)
     {
         return market.getNextUnsortedOffer(mid);
-    }
-    function doSetMatchingEnabled(bool ema_)
-        public
-        returns (bool)
-    {
-        return market.setMatchingEnabled(ema_);
-    }
-    function doIsMatchingEnabled()
-        public
-        view
-        returns (bool)
-    {
-        return market.matchingEnabled();
-    }
-    function doSetBuyEnabled(bool ebu_)
-        public
-        returns (bool)
-    {
-        return market.setBuyEnabled(ebu_);
-    }
-    function doIsBuyEnabled()
-        public
-        view
-        returns (bool)
-    {
-        return market.buyEnabled();
-    }
-    function doSetMinSellAmount(ERC20 pay_gem, uint min_amount)
-        public
-        returns (bool)
-    {
-        return market.setMinSell(pay_gem, min_amount);
     }
     function doGetMinSellAmount(ERC20 pay_gem)
         public
@@ -114,7 +113,8 @@ contract MarketTester {
         return market;
     }
 }
-contract OrderMatchingGasTest is DSTest {
+
+contract OrderMatchingGasTest is DSTest, HevmCheat {
     MarketTester user1;
     ERC20 dai;
     ERC20 mkr;
@@ -131,10 +131,14 @@ contract OrderMatchingGasTest is DSTest {
     uint constant MKR_SUPPLY = (10 ** 9) * (10 ** 18);
 
     function setUp() public {
-        otc = new MatchingMarket(uint64(now + 1 weeks));
+        super.setUp();
+
         dai = new DSTokenBase(DAI_SUPPLY);
         mkr = new DSTokenBase(MKR_SUPPLY);
         dgd = new DSTokenBase(DGD_SUPPLY);
+
+        DummySimplePriceOracle priceOracle = new DummySimplePriceOracle();
+        otc = new MatchingMarket(address(dai), 0, address(priceOracle));
         user1 = new MarketTester(otc);
         dai.transfer(address(user1), (DAI_SUPPLY / 3) * 2);
         user1.doApprove(address(otc), DAI_SUPPLY / 3, dai );
@@ -173,6 +177,7 @@ contract OrderMatchingGasTest is DSTest {
             offer[offer_index] = user1.doOffer(offer_index+1, dai, 1, mkr);
         }
     }
+
     // Creates test to match match_order_count number of orders
     function execOrderMatchingGasTest(uint match_order_count) public {
         uint mkr_sell;
@@ -396,9 +401,10 @@ contract OrderMatchingGasTest is DSTest {
 //        assertTrue(false);
     }
 }
-contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
+contract OrderMatchingTest is DSTest, HevmCheat, EventfulMarket, MatchingEvents {
     MarketTester user1;
     ERC20 dai;
+    ERC20 dustToken;
     ERC20 mkr;
     ERC20 dgd;
     MatchingMarket otc;
@@ -417,11 +423,21 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
     uint constant MKR_SUPPLY = (10 ** 9) * (10 ** 18);
 
     function setUp() public {
+        super.setUp();
+
         dai = new DSTokenBase(DAI_SUPPLY);
+        dustToken = new DSTokenBase(DAI_SUPPLY);
         mkr = new DSTokenBase(MKR_SUPPLY);
         dgd = new DSTokenBase(DGD_SUPPLY);
-        otc = new MatchingMarket(uint64(now + 1 weeks));
+        DummySimplePriceOracle priceOracle = new DummySimplePriceOracle();
+        otc = new MatchingMarket(address(dustToken), 10, address(priceOracle));
         user1 = new MarketTester(otc);
+    }
+    function doSetMinSellAmount(ERC20 pay_gem, uint min_amount)
+        internal
+    {
+        DummySimplePriceOracle(otc.priceOracle()).setPrice(address(pay_gem), min_amount);
+        otc.setMinSell(pay_gem);
     }
     function testGetFirstNextUnsortedOfferOneOffer() public {
         mkr.approve(address(otc), 30);
@@ -495,134 +511,48 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         offer_id[1] = otc.offer(30, mkr, 100, dai, 0);
         otc.insert(offer_id[1],7);  //there is no active offer at pos 7
     }
-    function testBuyEnabledByDefault() public {
-        assertTrue(otc.buyEnabled());
-    }
-    function testSetBuyDisabled() public {
-        otc.setBuyEnabled(false);
-        assertTrue(!otc.buyEnabled());
-        expectEventsExact(address(otc));
-        emit LogBuyEnabled(false);
-    }
-    function testSetBuyEnabled() public {
-        otc.setBuyEnabled(false);
-        otc.setBuyEnabled(true);
-        assertTrue(otc.buyEnabled());
-        expectEventsExact(address(otc));
-        emit LogBuyEnabled(false);
-        emit LogBuyEnabled(true);
-    }
-    function testFailBuyDisabled() public {
-        otc.setBuyEnabled(false);
-        mkr.approve(address(otc), 30);
-        dai.transfer(address(user1), 100 );
-        offer_id[1] = otc.offer(30, mkr, 100, dai, 0);
-        user1.doBuy(offer_id[1], 30);//should fail
-    }
-    function testBuyEnabledBuyWorks() public {
-        otc.setBuyEnabled(false);
-        otc.setBuyEnabled(true);
-        mkr.approve(address(otc), 30);
-        dai.transfer(address(user1), 90);
-        user1.doApprove(address(otc), 90, dai);
-        offer_id[1] = otc.offer(30, mkr, 90, dai, 0);
-        user1.doBuy(offer_id[1], 30);
-
-        expectEventsExact(address(otc));
-        emit LogBuyEnabled(false);
-        emit LogBuyEnabled(true);
-        emit LogItemUpdate(offer_id[1]);
-        emit LogTrade(30, address(mkr), 100, address(dai));
-        emit LogItemUpdate(offer_id[1]);
-    }
-    function testMatchingEnabledByDefault() public {
-        assertTrue(otc.matchingEnabled());
-    }
-    function testDisableMatching() public {
-        assertTrue(otc.setMatchingEnabled(false));
-        assertTrue(!otc.matchingEnabled());
-        expectEventsExact(address(otc));
-        emit LogMatchingEnabled(false);
-    }
-    function testFailMatchingEnabledUserCantMakeUnsortedOffer() public {
-        assertTrue(otc.matchingEnabled());
-        dai.transfer(address(user1), 1);
-        offer_id[1] = user1.doUnsortedOffer(1, dai, 1, mkr);
-    }
-    function testMatchingDisabledUserCanMakeUnsortedOffer() public {
-        assertTrue(otc.setMatchingEnabled(false));
-        assertTrue(!otc.matchingEnabled());
-        dai.transfer(address(user1), 1);
-        user1.doApprove(address(otc), 1, dai);
-        offer_id[1] = user1.doUnsortedOffer(1, dai, 1, mkr);
-        assertTrue(offer_id[1] > 0);
-        assertEq(otc.getFirstUnsortedOffer(), 0);
-        assertEq(otc.getBestOffer(dai, mkr), 0);
-    }
-    function testMatchingEnabledAuthUserCanMakeUnsortedOffer() public {
-        assertTrue(otc.setMatchingEnabled(true));
-        assertTrue(otc.matchingEnabled());
-        dai.approve(address(otc), 1);
-        offer_id[1] = otc.offer(1, dai, 1, mkr);
-        assertTrue(offer_id[1] > 0);
-    }
-    function testMatchingDisabledCancelDoesNotChangeSortedList() public {
-        assertTrue(otc.setMatchingEnabled(true));
-        assertTrue(otc.matchingEnabled());
-        dai.approve(address(otc), 1);
-        offer_id[1] = otc.offer(1, dai, 1, mkr, 0);
-        assertTrue(otc.setMatchingEnabled(false));
-        assertTrue(!otc.matchingEnabled());
-        otc.cancel(offer_id[1]);
-        assertEq(otc.getBestOffer(dai, mkr), offer_id[1]);
-    }
     function testSetGetMinSellAmout() public {
-        otc.setMinSell(dai, 100);
-        assertEq(otc.getMinSell(dai), 100);
+        doSetMinSellAmount(mkr, 100);
+        assertEq(otc.getMinSell(mkr), 100);
     }
     function testFailOfferSellsLessThanRequired() public {
         mkr.approve(address(otc), 30);
-        otc.setMinSell(mkr, 31);
+        doSetMinSellAmount(mkr, 31);
         assertEq(otc.getMinSell(mkr), 31);
         offer_id[1] = otc.offer(30, mkr, 100, dai, 0);
     }
-    function testFailNonOwnerCanNotSetSellAmount() public {
-        user1.doSetMinSellAmount(dai,100);
+    function testFailCanNotSetSellAmountForMainTokenSettingDust() public {
+        doSetMinSellAmount(dustToken,100);
     }
     function testOfferSellsMoreThanOrEqualThanRequired() public {
         mkr.approve(address(otc), 30);
-        otc.setMinSell(mkr,30);
+        doSetMinSellAmount(mkr,30);
         assertEq(otc.getMinSell(mkr), 30);
         offer_id[1] = otc.offer(30, mkr, 90, dai, 0);
     }
     function testDustMakerOfferCanceled() public {
-        assertTrue(otc.matchingEnabled());
-        dai.transfer(address(user1), 30);
-        user1.doApprove(address(otc), 30, dai);
+        dustToken.transfer(address(user1), 30);
+        user1.doApprove(address(otc), 30, dustToken);
         mkr.approve(address(otc), 25);
-        otc.setMinSell(dai, 10);
-        uint id0 = user1.doOffer(30, dai, 30, mkr, 0);
-        uint id1 = otc.offer(25, mkr, 25, dai, 0);
+        uint id0 = user1.doOffer(30, dustToken, 30, mkr, 0);
+        uint id1 = otc.offer(25, mkr, 25, dustToken, 0);
         assertTrue(!otc.isActive(id0));
         assertTrue(!otc.isActive(id1));
     }
     function testDustNotNewDustOfferIsCreated() public {
-        assertTrue(otc.matchingEnabled());
-        dai.transfer(address(user1), 30);
-        user1.doApprove(address(otc), 30, dai);
+        dustToken.transfer(address(user1), 30);
+        user1.doApprove(address(otc), 30, dustToken);
         mkr.approve(address(otc), 25);
-        otc.setMinSell(dai, 10);
-        uint id0 = otc.offer(25, mkr, 25, dai, 0);
-        uint id1 = user1.doOffer(30, dai, 30, mkr, 0);
+        uint id0 = otc.offer(25, mkr, 25, dustToken, 0);
+        uint id1 = user1.doOffer(30, dustToken, 30, mkr, 0);
         assertTrue(!otc.isActive(id0));
         assertTrue(!otc.isActive(id1));
     }
     function testBuyDustOfferCanceled() public {
-        dai.transfer(address(user1), 30);
-        user1.doApprove(address(otc), 30, dai);
+        dustToken.transfer(address(user1), 30);
+        user1.doApprove(address(otc), 30, dustToken);
         mkr.approve(address(otc), 25);
-        otc.setMinSell(dai, 10);
-        uint id0 = user1.doOffer(30, dai, 30, mkr, 0);
+        uint id0 = user1.doOffer(30, dustToken, 30, mkr, 0);
         otc.buy(id0, 25);
         assertTrue(!otc.isActive(id0));
     }
@@ -1430,6 +1360,32 @@ contract OrderMatchingTest is DSTest, EventfulMarket, MatchingEvents {
         offer_id[4] = otc.offer(10, dai, 1, mkr, offer_id[3]);
         assertEq(otc.getBetterOffer(offer_id[4]), offer_id[2]);
         assertEq(otc.getWorseOffer(offer_id[4]), 0);
+    }
+
+    function testCancelDustOffers() public {
+        dai.transfer(address(user1), 30);
+        user1.doApprove(address(otc), 30, dai);
+        mkr.approve(address(otc), 25);
+        uint id0 = user1.doOffer(30, dai, 30, mkr, 0);
+        
+        assertTrue(otc.isActive(id0));
+
+        doSetMinSellAmount(dai, 50);
+
+        otc.cancel(id0);
+
+        assertTrue(!otc.isActive(id0));
+    }
+
+    function failTestCancelNotDustOffers() public {
+        dai.transfer(address(user1), 30);
+        user1.doApprove(address(otc), 30, dai);
+        mkr.approve(address(otc), 25);
+        uint id0 = user1.doOffer(30, dai, 30, mkr, 0);
+        
+        assertTrue(otc.isActive(id0));
+
+        otc.cancel(id0);
     }
 
     function testOfferMatchOneOnOneSendAmounts() public {
