@@ -20,4 +20,4 @@ The second important design choice is the use of the Escrow model for Makers - e
 
 ## API
 
-Please refer to [https://oasisdex.com/docs/references/smart-contract].
+Please refer to https://oasisdex.com/docs/references/smart-contract
