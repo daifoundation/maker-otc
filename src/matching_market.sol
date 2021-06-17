@@ -2,7 +2,7 @@
 
 /// matching_market.sol
 
-// Copyright (C) 2017 - 2021 Maker Ecosystem Growth Holdings, INC.
+// Copyright (C) 2017 - 2021 Dai Foundation
 
 //
 // This program is free software: you can redistribute it and/or modify
@@ -217,7 +217,7 @@ contract MatchingMarket is MatchingEvents, SimpleMarket {
     {
         require(msg.sender == tx.origin, "No indirect calls please");
         require(address(pay_gem) != dustToken, "Can't set dust for the dustToken");
-        
+
         uint256 dust = PriceOracleLike(priceOracle).getPriceFor(dustToken, address(pay_gem), dustLimit);
 
         _setMinSell(pay_gem, dust);

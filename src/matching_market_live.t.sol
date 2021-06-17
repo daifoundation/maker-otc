@@ -2,7 +2,7 @@
 
 /// matching_market_live.t.sol
 
-// Copyright (C) 2021 Maker Ecosystem Growth Holdings, INC.
+// Copyright (C) 2021 Dai Foundation
 
 //
 // This program is free software: you can redistribute it and/or modify
@@ -33,7 +33,7 @@ contract LiveTest is DSTest {
 
         UniswapSimplePriceOracle priceOracle = new UniswapSimplePriceOracle(uniswapFactory);
         MatchingMarket otc = new MatchingMarket(dai, 10 ether, address(priceOracle));
-        
+
         otc.setMinSell(ERC20(weth));
 
         uint256 expectedWethAmount = 8207693541443256; // 10 DAI in eth
@@ -47,7 +47,7 @@ contract LiveTest is DSTest {
 
         UniswapSimplePriceOracle priceOracle = new UniswapSimplePriceOracle(uniswapFactory);
         MatchingMarket otc = new MatchingMarket(dai, 10 ether, address(priceOracle));
-        
+
         // this reverts
         otc.setMinSell(ERC20(dai));
     }
@@ -60,7 +60,7 @@ contract LiveTest is DSTest {
 
         UniswapSimplePriceOracle priceOracle = new UniswapSimplePriceOracle(uniswapFactory);
         MatchingMarket otc = new MatchingMarket(dai, 10 ether, address(priceOracle));
-        
+
         otc.setMinSell(ERC20(bat));
 
         uint256 expectedBatAmount = 37835208948564443771; // 10 DAI in bat
