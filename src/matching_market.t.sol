@@ -2,7 +2,7 @@
 
 /// matching_market.t.sol
 
-// Copyright (C) 2017 - 2021 Maker Ecosystem Growth Holdings, INC.
+// Copyright (C) 2017 - 2021 Dai Foundation
 
 //
 // This program is free software: you can redistribute it and/or modify
@@ -1367,7 +1367,7 @@ contract OrderMatchingTest is DSTest, HevmCheat, EventfulMarket, MatchingEvents 
         user1.doApprove(address(otc), 30, dai);
         mkr.approve(address(otc), 25);
         uint id0 = user1.doOffer(30, dai, 30, mkr, 0);
-        
+
         assertTrue(otc.isActive(id0));
 
         doSetMinSellAmount(dai, 50);
@@ -1382,7 +1382,7 @@ contract OrderMatchingTest is DSTest, HevmCheat, EventfulMarket, MatchingEvents 
         user1.doApprove(address(otc), 30, dai);
         mkr.approve(address(otc), 25);
         uint id0 = user1.doOffer(30, dai, 30, mkr, 0);
-        
+
         assertTrue(otc.isActive(id0));
 
         otc.cancel(id0);

@@ -2,7 +2,7 @@
 
 /// simple_market.t.sol
 
-// Copyright (C) 2016 - 2021 Maker Ecosystem Growth Holdings, INC.
+// Copyright (C) 2016 - 2021 Dai Foundation
 
 //
 // This program is free software: you can redistribute it and/or modify
