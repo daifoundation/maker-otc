@@ -1,4 +1,4 @@
-# This is a simple on-chain OTC market for ERC20-compatible tokens.
+# The OasisDEX protocol - This is a simple on-chain OTC market for ERC20-compatible tokens.
 
 This repository contains implementation of the protocol to exchange ERC20 compliant tokens using fully decentralized, on-chain order book and matching engine. The protocol is used by OasisDEX, eth2dai.com and many other DeFi projects. 
 
