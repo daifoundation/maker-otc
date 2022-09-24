@@ -186,7 +186,7 @@ contract MatchingMarket is MatchingEvents, SimpleMarket {
         require(!isOfferSorted(id));    //make sure offers[id] is not yet sorted
         require(isActive(id));          //make sure offers[id] is active
 
-        _hide(id);                      //remove offer from unsorted offers list
+        require(_hide(id));                      //remove offer from unsorted offers list
         _sort(id, pos);                 //put offer into the sorted offers list
         emit LogInsert(msg.sender, id);
         return true;
@@ -386,7 +386,7 @@ contract MatchingMarket is MatchingEvents, SimpleMarket {
                 //offers[id] must be removed from sorted list because all of it is bought
                 _unsort(id);
             }else{
-                _hide(id);
+                require(_hide(id));
             }
         }
         require(super.buy(id, amount));
